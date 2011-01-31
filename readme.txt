@@ -196,6 +196,23 @@ For all operating systems with a database that has demo data:      142 MB
 For all operating systems with a database that has no demo data:   139 MB
 For all operating systems without a database:   				   136 MB
 
+Mac-OS-X-i386 without a database 59 MB
+Linux-i386 without a database 54 MB
+FreeBSD-x86 without a database 53 MB
+Windows-x86 without a database 44 MB
 
-NOTE: With database means the user will not run through the openmrs setup wizard.
+
+NOTE: With database (either with or without demo data) means the user will not run through the openmrs setup wizard.
 	  Where database does not mean mysql, it is rather the database files.
+	  
+SUMMARY: Using a single package for all (most) platforms approximately tripples the download size.
+         Including an empty database without demo data increases the size by only around 3 MB
+         Including a database with demo data increases the size by only around 6 MB
+         
+         
+     
+MySQL MXJ documentation can be found at:
+http://dev.mysql.com/doc/refman/5.1/en/connector-mxj.html
+
+Details on how to add or remove platform specific databases can be found at: 
+http://dev.mysql.com/doc/refman/5.1/en/connector-mxj-usagenotes-packaging.html
