@@ -58,7 +58,7 @@ running setup, subsequent runs will always take you to the openmrs login screen.
 
 
 NOTE: Using Maven Package will generate the executable jar file in the target folder.
-      By Monday i will be done with the maven instructions. (How to run using maven)
+      How to run directly from eclipse using maven is not yet done.
       
 
 

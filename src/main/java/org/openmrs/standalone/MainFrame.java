@@ -1,3 +1,16 @@
+/**
+ * The contents of this file are subject to the OpenMRS Public License
+ * Version 1.0 (the "License"); you may not use this file except in
+ * compliance with the License. You may obtain a copy of the License at
+ * http://license.openmrs.org
+ *
+ * Software distributed under the License is distributed on an "AS IS"
+ * basis, WITHOUT WARRANTY OF ANY KIND, either express or implied. See the
+ * License for the specific language governing rights and limitations
+ * under the License.
+ *
+ * Copyright (C) OpenMRS, LLC.  All Rights Reserved.
+ */
 package org.openmrs.standalone;
 
 import java.awt.Cursor;
@@ -7,10 +20,8 @@ import java.awt.Toolkit;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.KeyEvent;
-import java.io.IOException;
 import java.io.PrintStream;
 
-import javax.imageio.ImageIO;
 import javax.swing.BorderFactory;
 import javax.swing.JButton;
 import javax.swing.JLabel;
@@ -167,7 +178,7 @@ public class MainFrame extends javax.swing.JFrame implements ActionListener {
 		catch (IOException e) {
 			e.printStackTrace();
 		}*/
-		
+
 		//Redirect output and error streams to a text field.
 		PrintStream stream = new PrintStream(new TextAreaWriter(txtLog));
 		System.setOut(stream);
@@ -220,7 +231,7 @@ public class MainFrame extends javax.swing.JFrame implements ActionListener {
 				if (!validPorts())
 					return;
 				
-				saveTomcatPort();
+				tomcatPort = StandaloneUtil.fromStringToInt(txtTomcatPort.getText());
 				
 				btnStart.setEnabled(false);
 				btnStop.setEnabled(true);
@@ -248,10 +259,6 @@ public class MainFrame extends javax.swing.JFrame implements ActionListener {
 		}
 	}
 	
-	private void saveTomcatPort() {
-		tomcatPort = StandaloneUtil.fromStringToInt(txtTomcatPort.getText());
-	}
-	
 	public int getTomcatPort() {
 		return tomcatPort;
 	}
@@ -265,6 +272,9 @@ public class MainFrame extends javax.swing.JFrame implements ActionListener {
 		btnStart.setEnabled(enable);
 	}
 	
+	/**
+	 * Sets the default tomcat and mysql port numbers to those that are available.
+	 */
 	private void setAvailablePorts() {
 		tomcatPort = StandaloneUtil.fromStringToInt(txtTomcatPort.getText());
 		while (tomcatPort < StandaloneUtil.MAX_PORT_NUMBER) {
@@ -285,6 +295,13 @@ public class MainFrame extends javax.swing.JFrame implements ActionListener {
 		txtMySqlPort.setText(String.valueOf(mysqlPort));
 	}
 	
+	/**
+	 * Checks if the user has set allowed port numbers for both tomcat and mysql, and if not so,
+	 * displays an error message telling them to enter another one while at the same time setting
+	 * focus to the invalid port.
+	 * 
+	 * @return true if both ports are allowed, else false.
+	 */
 	private boolean validPorts() {
 		tomcatPort = StandaloneUtil.fromStringToInt(txtTomcatPort.getText());
 		if (!StandaloneUtil.isPortAvailable(tomcatPort)) {
