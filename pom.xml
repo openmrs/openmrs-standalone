@@ -63,7 +63,6 @@
 				<executions>
 					<execution>
 						<id>package-jar-with-dependencies</id>
-						<phase>package</phase>
 						<goals>
 							<goal>single</goal>
 						</goals>
@@ -81,6 +80,7 @@
 					</execution>
 				</executions>
 			</plugin>
+        
 		</plugins>
 	</build>
 
