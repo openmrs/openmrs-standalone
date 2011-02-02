@@ -49,6 +49,9 @@ public class MainFrame extends javax.swing.JFrame implements ActionListener {
 	
 	private int tomcatPort = 8088;
 	
+	private TextAreaWriter textAreaWriter;
+	
+	
 	/** Creates new form ServerUI */
 	public MainFrame(ApplicationController appController) {
 		this.appController = appController;
@@ -96,6 +99,21 @@ public class MainFrame extends javax.swing.JFrame implements ActionListener {
 		fileMenu.add(browserMenuItem);
 		
 		fileMenu.add(fileMenuSep);
+		
+		JMenuItem clearMenuItem = new JMenuItem();
+		clearMenuItem.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_C, preferredMetaKey));
+		clearMenuItem.setMnemonic('C');
+		clearMenuItem.setText("Clear Output");
+		clearMenuItem.addActionListener(new java.awt.event.ActionListener() {
+			
+			public void actionPerformed(java.awt.event.ActionEvent evt) {
+				clearMenuItemActionPerformed(evt);
+			}
+		});
+		
+		fileMenu.add(clearMenuItem);
+		
+		fileMenu.add(new JSeparator());
 		
 		quitMenuItem.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_Q, preferredMetaKey));
 		quitMenuItem.setMnemonic('K');
@@ -180,7 +198,8 @@ public class MainFrame extends javax.swing.JFrame implements ActionListener {
 		}*/
 
 		//Redirect output and error streams to a text field.
-		PrintStream stream = new PrintStream(new TextAreaWriter(txtLog));
+		textAreaWriter = new TextAreaWriter(txtLog);
+		PrintStream stream = new PrintStream(textAreaWriter);
 		System.setOut(stream);
 		System.setErr(stream);
 		
@@ -194,6 +213,10 @@ public class MainFrame extends javax.swing.JFrame implements ActionListener {
 	
 	private void quitMenuItemActionPerformed(java.awt.event.ActionEvent evt) {
 		exitForm(null);
+	}
+	
+	private void clearMenuItemActionPerformed(java.awt.event.ActionEvent evt) {
+		textAreaWriter.clear();
 	}
 	
 	/** Exit the Application */

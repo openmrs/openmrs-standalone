@@ -30,7 +30,6 @@ import javax.swing.JTextArea;
 public class TextAreaWriter extends FilterOutputStream {
 	
 	private JTextArea text;
-	
 	private int length;
 	
 	public TextAreaWriter(JTextArea text) {
@@ -43,26 +42,37 @@ public class TextAreaWriter extends FilterOutputStream {
 		text.append(aString);
 	}
 	
-	public void write(byte b[], int off, int len) throws IOException {
-		length += len;
-		String aString = new String(b, off, len);
-		text.append(aString);
+	public void write(byte b[], int off, int len) {
 		
-		//Not to run out memory, start trimming the oldest characters whenever we reach
-		//a particular threshold.
-		if (length > 10000) {
-			text.setText(text.getText().substring(len));
-			length = length - len;
+		String aString = null;
+		
+		try{
+			length += len;
+			aString = new String(b, off, len);
+			text.append(aString);
+			
+			//Not to run out memory, start trimming the oldest characters whenever we reach
+			//a particular threshold.
+			if (length > 10000) {
+				text.setText(text.getText().substring(len));
+				length = length - len;
+			}
+			
+			//scroll to the bottom.
+			text.setCaretPosition(length);
 		}
-		
-		//scroll to the bottom.
-		text.setCaretPosition(length);
+		catch(Exception ex){
+			//This is most likely thrown at text.setCaretPosition() due to the user having removed some of the log output.
+			length = 0;
+			text.append(aString);
+			//printing to the std streams here may result in an infinite loop since will keep calling into this same routine.
+		}
 		
 		//Append to the log file under currentdir/tomcat/logs
 		try {
 			Calendar cal = Calendar.getInstance();
 			String fileName = cal.get(Calendar.DATE) + "-" + cal.get(Calendar.MONTH) + 1 + "-" + cal.get(Calendar.YEAR)
-			        + ".log";
+			+ ".log";
 			String path = new File(fileName).getAbsolutePath();
 			path = path.substring(0, path.lastIndexOf(File.separatorChar) + 1) + "tomcat" + File.separatorChar + "logs";
 			new File(path).mkdirs();
@@ -71,7 +81,12 @@ public class TextAreaWriter extends FilterOutputStream {
 			aWriter.close();
 		}
 		catch (Exception ex) {
-
+			//printing to the std streams here may result in an infinite loop since will keep calling into this same routine.
 		}
+	}
+	
+	public void clear(){
+		length = 0;
+		text.setText("");
 	}
 }
