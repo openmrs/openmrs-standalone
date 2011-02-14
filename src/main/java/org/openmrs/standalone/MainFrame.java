@@ -20,8 +20,10 @@ import java.awt.Toolkit;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.KeyEvent;
+import java.io.IOException;
 import java.io.PrintStream;
 
+import javax.imageio.ImageIO;
 import javax.swing.BorderFactory;
 import javax.swing.JButton;
 import javax.swing.JLabel;
@@ -36,29 +38,40 @@ import javax.swing.JTextArea;
 import javax.swing.JTextField;
 import javax.swing.KeyStroke;
 import javax.swing.SwingUtilities;
+import javax.swing.UIManager;
 import javax.swing.WindowConstants;
 
 /**
- * The application's main and only window/view.
+ * Provides non command line (GUI) interface to the standalone launcher..
  */
-public class MainFrame extends javax.swing.JFrame implements ActionListener {
-	
-	private static final String TITLE = "OpenMRS Standalone";
+public class MainFrame extends javax.swing.JFrame implements ActionListener, UserInterface {
 	
 	private ApplicationController appController;
 	
-	private int tomcatPort = 8088;
+	private int tomcatPort = UserInterface.DEFAULT_TOMCAT_PORT;
 	
 	private TextAreaWriter textAreaWriter;
 	
-	
 	/** Creates new form ServerUI */
-	public MainFrame(ApplicationController appController) {
+	public MainFrame(ApplicationController appController, String tomcatPort, String mysqlPort) {
 		this.appController = appController;
-		initComponents();
+		
+		if(tomcatPort != null && tomcatPort.trim().length() > 0)
+			this.tomcatPort = StandaloneUtil.fromStringToInt(tomcatPort);
+		
+		initComponents(mysqlPort);
 	}
 	
-	private void initComponents() {
+	private void initComponents(String mysqlPort) {
+		
+		try {
+			// Set native look and feel
+			UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
+		}
+		catch (Exception ex) {
+			ex.printStackTrace();
+		}
+		
 		setSize(600, 300);
 		setAlwaysOnTop(true);
 		setResizable(true);
@@ -80,7 +93,7 @@ public class MainFrame extends javax.swing.JFrame implements ActionListener {
 			}
 		});
 		
-		setStatus("Starting...");
+		setStatus(UserInterface.STATUS_MESSAGE_STARTING);
 		
 		int preferredMetaKey = Toolkit.getDefaultToolkit().getMenuShortcutKeyMask();
 		
@@ -137,9 +150,9 @@ public class MainFrame extends javax.swing.JFrame implements ActionListener {
 		mainPanel.setLayout(new GridBagLayout());
 		
 		lblTomcatPort = new JLabel("Tomcat Port");
-		txtTomcatPort = new JTextField("8088", 5);
+		txtTomcatPort = new JTextField(tomcatPort+"", 5);
 		lblMySqlPort = new JLabel("MySQL Port");
-		txtMySqlPort = new JTextField("3316", 5);
+		txtMySqlPort = new JTextField(mysqlPort, 5);
 		txtLog = new JTextArea();
 		
 		btnStart = new JButton("Start");
@@ -190,13 +203,13 @@ public class MainFrame extends javax.swing.JFrame implements ActionListener {
 		
 		add(mainPanel);
 		
-		/*try {
+		try {
 			setIconImage(ImageIO.read(getClass().getResource("openmrs_logo_white.gif")));
 		}
 		catch (IOException e) {
 			e.printStackTrace();
-		}*/
-
+		}
+		
 		//Redirect output and error streams to a text field.
 		textAreaWriter = new TextAreaWriter(txtLog);
 		PrintStream stream = new PrintStream(textAreaWriter);
@@ -204,7 +217,7 @@ public class MainFrame extends javax.swing.JFrame implements ActionListener {
 		System.setErr(stream);
 		
 		setAvailablePorts();
-		StandaloneUtil.changeMySqlPort(txtMySqlPort.getText());
+		//StandaloneUtil.setPortsAndMySqlPassword(txtMySqlPort.getText());
 	}
 	
 	private void browserMenuItemActionPerformed(java.awt.event.ActionEvent evt) {
@@ -224,12 +237,11 @@ public class MainFrame extends javax.swing.JFrame implements ActionListener {
 		try {
 			//Prompt only if server is running.
 			if (btnStop.isEnabled()) {
-				if (JOptionPane.showConfirmDialog(this, "Exiting will stop the server. Do you really want to?", getTitle(),
-				    JOptionPane.YES_NO_OPTION) == JOptionPane.NO_OPTION)
+				if (JOptionPane.showConfirmDialog(this, UserInterface.PROMPT_EXIT, getTitle(), JOptionPane.YES_NO_OPTION) == JOptionPane.NO_OPTION)
 					return;
 			}
 			
-			setStatus("Shutting down...");
+			setStatus(UserInterface.STATUS_MESSAGE_SHUTTINGDOWN);
 			
 			menuBar.setEnabled(false);
 			btnStop.setEnabled(false);
@@ -259,16 +271,16 @@ public class MainFrame extends javax.swing.JFrame implements ActionListener {
 				btnStart.setEnabled(false);
 				btnStop.setEnabled(true);
 				
-				setStatus("Starting...");
+				setStatus(UserInterface.STATUS_MESSAGE_STARTING);
 				
 				appController.start();
 			} else if (event.getSource() == btnStop) {
 				
-				if (JOptionPane.showConfirmDialog(this, "Do you really want to stop the server?", getTitle(),
+				if (JOptionPane.showConfirmDialog(this, UserInterface.PROMPT_STOPSERVER, getTitle(),
 				    JOptionPane.YES_NO_OPTION) == JOptionPane.NO_OPTION)
 					return;
 				
-				setStatus("Stopping...");
+				setStatus(UserInterface.STATUS_MESSAGE_STOPPING);
 				btnStop.setEnabled(false);
 				
 				appController.stop();
@@ -286,12 +298,16 @@ public class MainFrame extends javax.swing.JFrame implements ActionListener {
 		return tomcatPort;
 	}
 	
-	void enableStop(boolean enable) {
+	public String getMySqlPort(){
+		return txtMySqlPort.getText();
+	}
+	
+	public void enableStop(boolean enable) {
 		btnStop.setEnabled(enable);
 		browserMenuItem.setEnabled(enable);
 	}
 	
-	void enableStart(boolean enable) {
+	public void enableStart(boolean enable) {
 		btnStart.setEnabled(enable);
 	}
 	

@@ -83,7 +83,10 @@ NOTE: Using Maven Package will generate the executable jar file in the target fo
 7- 	For the section: "Do you currently have a database user other than root that has read/write access to the openmrs database?",
 	Choose Yes, and then enter a user name and password for an account which will be created by the embedded database engine.
 	If you choose No, enter a user name and password for an account which will be created by the openmrs setup wizard.
-	In other wards, choosing Yes or No here is almost the same.
+	In other wards, choosing Yes or No here is almost the same. I all the time choose Yes.
+	If you will be distributing the database and do not want every installation have the same password, the password has to be: test
+	The reason is that when the application starts, it checks for the mysql password and if it is test, it is replaced with a randomly
+	generated 12 character password which is written back to the runtime properties file.
 	
 8-	Click "Continue" to go to the next wizard screen, and feel free to fill what you want on this screen.
 
@@ -99,8 +102,12 @@ NOTE: Using Maven Package will generate the executable jar file in the target fo
 The release/distribution (end user) folder structure should look like this:
 
 contextname-runtime.properties       e.g openmrs-runtime.properties, openmrs-1.6.1-runtime.properties, openmrs-1.9.0-runtime.properties, etc
+									 If you want to use this runtime properties file, make sure that the web application context name does
+									 not match with any existing runtime properties file in say the user's home folder. This is because of 
+									 the openmrs runtime properties file search order which will only look in the current application folder
+									 as the last resort if no runtime properties file has been found in any of the other possible locations.
 
-standalone-0.0.1-SNAPSHOT.jar                       This is the output executable jar for this standalone project. 
+standalone-0.0.1-SNAPSHOT.jar        This is the output executable jar for this standalone project. 
 									 You can build this right from eclipse by right clicking on the project
 									 and then select Export -> Java -> Runnable JAR file.
 									 The name of this jar file needs to be standalone-0.0.1-SNAPSHOT.jar because it is 
@@ -116,7 +123,7 @@ tomcat/webapps/openmrs.war			 This is the application war file. You could as wel
                                      multiple versions of openmrs, then make sure that the name of the war file is different
                                      for each. e.g openmrs.war, openmrs-1.6.1.war, openmrs-1.7.0.war, etc
 
-database/data                 If you do not want the user to be taken through the openmrs web database setup wizard, just copy
+database/data                 		 If you do not want the user to be taken through the openmrs web database setup wizard, just copy
 									 all the contents of the mysql data folder into this. This folder is the default one but you
 									 can change the location using the database connection string.
 
@@ -127,7 +134,11 @@ tomcat/logs							 This is where the log files are created with names having a c
 									 convenient way of showing what is going on without having to first open the 
 									 log file. Not to run out of memory, the text area displayed logs are
 									 trimmed, starting with the oldest, in order not to exceeed 1,000 characters.
+									
+splashscreen.gif					 This is the splash screen displayed on startup. It can be any .gif as long as the name remains
+									 the same because it is hardcoded in the application.
 									 
+
 
 ............... DATABASE CONNECTION STRING.......................
 
@@ -174,19 +185,50 @@ MySQL Port					This is the port at which to run mysql
 
 File -> Quit				This menu item stops tomcat and mysql and then closes the application.
 File -> Launch Browser		This menu item opens the openmrs login page for the current web application context.
+File -> Clear Output		This clears the output log in the user interface text area. But does not clear the log file
+							written on the file system.
 
 Start						This button runs tomcat, which will automatically start the mysql database engine if it
 							was not already running. For the embedded mysql, the first connection automatically starts
 							the mysql engine.
 							
-Stop						This button stops tomcat and then also stops the mysql database engine.
+Stop						This button stops tomcat and then also stops the mysql database engine, without closing the application.
 
 
 NOTE: Minimizing or Maximizing the application window does not have any effect on the server. The window close icon will stop
 	  the server (behaves as File -> Quit) but will first ask if you really want to, and will only do so when you select
 	  the Yes option.
 	  
-	 
+	
+	
+...................HOW TO RUN FROM COMMAND LINE....................................
+
+Running from command line requires the -commandline switch.
+e.g. java -jar standalone-0.0.1-SNAPSHOT.jar -commandline
+
+-mysqlport: 	Use to override the mysql port in the runtime properties file.
+-tomcatport: 	Use to override the tomcat port in the runtime properties file.
+start			Use to start the server.
+stop			Use to stop the server.
+browser			Use to launch a new browser instance.
+
+ 
+ 
+...................HOW TO GENERATE A DATABASE TO INCLUDE WITH A DISTIBUTION.....................
+
+1- Make sure you have no runtime properties file that the web application will find.
+2- Run the standalone-0.0.1-SNAPSHOT.jar. You can just double click it, or run from command line as above.
+3- This will take you through the openmrs setup wizard (because the runtime properties file was not found) and 
+   respond to it as per the instructions above under "HOW TO RESPOND TO THE OPENMRS SETUP WIZARD"
+4- After the wizard completes, copy the generated runtime properties file and put it in the root folder of the distribution
+   as per the above instructions under "DISTRIBUTION FOLDER STRUCTURE"
+5- If you did not change the database location as per the default connection string, the database will already be under the
+   "database/data" folder. You do not have to distribute the "database/bin" or "database/share" folders, therefore you can just
+   delete them to reduce the distribution size.
+   
+NOTE: The default location of the "database" folder is that where the standalone-0.0.1-SNAPSHOT.jar file is.
+
+
 	  
 ................. SOME ROUGH STATISTICS SO FAR...........................
 

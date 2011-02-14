@@ -13,11 +13,15 @@
  */
 package org.openmrs.standalone;
 
+import java.io.BufferedOutputStream;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.OutputStream;
+import java.io.OutputStreamWriter;
 import java.io.PrintStream;
+import java.io.PrintWriter;
 
 /**
  * The only reason for existence of this class is to enable us increase tomcat memory by passing the
@@ -27,13 +31,13 @@ import java.io.PrintStream;
  */
 public class Bootstrap {
 	
-	class StreamProxy extends Thread {
+	class InputStreamProxy extends Thread {
 		
 		final InputStream is;
 		
 		final PrintStream os;
 		
-		StreamProxy(InputStream is, PrintStream os) {
+		InputStreamProxy(InputStream is, PrintStream os) {
 			this.is = is;
 			this.os = os;
 		}
@@ -53,10 +57,37 @@ public class Bootstrap {
 		}
 	}
 	
+	class OutputStreamProxy extends Thread {
+		
+		final OutputStream os;
+		
+		OutputStreamProxy(OutputStream os) {
+			this.os = os;
+		}
+		
+		public void run() {
+			try {
+				PrintWriter writer = new PrintWriter(new OutputStreamWriter(new BufferedOutputStream(os)), true);
+				
+				InputStreamReader isr = new InputStreamReader(System.in);
+				BufferedReader br = new BufferedReader(isr);
+				String line = null;
+				while ((line = br.readLine()) != null) {
+					writer.println(line);
+				}
+			}
+			catch (IOException ex) {
+				throw new RuntimeException(ex.getMessage(), ex);
+			}
+		}
+	}
+	
 	/**
 	 * Spawns off a new JVM to launch the main function of the ApplicationController class.
+	 * 
+	 * @param args the command line arguments.
 	 */
-	private void launch() {
+	private void launch(String args) {
 		
 		Process process = null;
 		
@@ -65,17 +96,21 @@ public class Bootstrap {
 			process = Runtime
 			        .getRuntime()
 			        .exec(
-			            "java -Xmx512m -Xms512m -XX:PermSize=256m -XX:MaxPermSize=256m -XX:NewSize=128m -cp standalone-0.0.1-SNAPSHOT.jar org.openmrs.standalone.ApplicationController");
+			            "java -splash:splashscreen.gif -Xmx512m -Xms512m -XX:PermSize=256m -XX:MaxPermSize=256m -XX:NewSize=128m -cp standalone-0.0.1-SNAPSHOT.jar org.openmrs.standalone.ApplicationController" + args);
 			
 			// Proxy the System.out and System.err from the spawned process back to the main window.  This
 			// is important or the spawned process could block.
-			StreamProxy errorStreamProxy = new StreamProxy(process.getErrorStream(), System.err);
-			StreamProxy outStreamProxy = new StreamProxy(process.getInputStream(), System.out);
+			InputStreamProxy errorStreamProxy = new InputStreamProxy(process.getErrorStream(), System.err);
+			InputStreamProxy inputStreamProxy = new InputStreamProxy(process.getInputStream(), System.out);
+			OutputStreamProxy outputStreamProxy = new OutputStreamProxy(process.getOutputStream());
 			
 			errorStreamProxy.start();
-			outStreamProxy.start();
+			inputStreamProxy.start();
+			outputStreamProxy.start();
 			
 			System.out.println("Exit:" + process.waitFor());
+			
+			System.exit(0);
 		}
 		catch (Exception ex) {
 			System.out.println("There was a problem in the program.  Details:");
@@ -95,9 +130,14 @@ public class Bootstrap {
 	/**
 	 * This is the entry point for the entire executable jar.
 	 * 
-	 * @param args
+	 * @param args the command line arguments.
 	 */
 	public static void main(String[] args) {
-		new Bootstrap().launch();
+		String commandLineArguments = "";
+		for (String arg : args) {
+			commandLineArguments += (" " + arg);
+		}
+		
+		new Bootstrap().launch(commandLineArguments);
 	}
 }

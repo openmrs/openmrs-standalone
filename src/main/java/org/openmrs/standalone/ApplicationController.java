@@ -13,13 +13,16 @@
  */
 package org.openmrs.standalone;
 
+import java.io.File;
+import java.util.Properties;
+
 /**
  * Manages the application workflow.
  */
 public class ApplicationController {
 	
-	/** The application's view. */
-	private MainFrame mainFrame;
+	/** The application's user interface. */
+	private UserInterface userInterface;
 	
 	/** Helps us spawn background threads such that we do not freeze the UI. */
 	private SwingWorker workerThread;
@@ -30,8 +33,8 @@ public class ApplicationController {
 	/** The web app context name. */
 	private String contextName;
 	
-	public ApplicationController() {
-		init();
+	public ApplicationController(boolean commandLineMode, String tomcatPort, String mysqlPort) {
+		init(commandLineMode, tomcatPort, mysqlPort);
 	}
 	
 	/**
@@ -40,7 +43,51 @@ public class ApplicationController {
 	 * @param args
 	 */
 	public static void main(String[] args) {
-		new ApplicationController();
+		
+		String tomcatPort = null;
+		String mySqlPort = null;
+		
+		Properties properties = OpenmrsUtil.getRuntimeProperties(StandaloneUtil.getContextName()); //StandaloneUtil.getRuntimeProperties(); //OpenmrsUtil.getRuntimeProperties(StandaloneUtil.getContextName());
+		if (properties != null) {
+			tomcatPort = properties.getProperty("tomcatport");
+		}
+		
+		//Some users may prefer command line to having the GUI, by providing the -commandline switch.
+		//Command line args can always override the values in the runtime properties file.
+		boolean commandLine = false;
+		boolean mySqlPortArg = false;
+		boolean tomcatPortArg = false;
+		for (String arg : args) {
+			arg = arg.toLowerCase();
+			if (mySqlPortArg) {
+				mySqlPort = arg;
+				mySqlPortArg = false;
+			} else if (tomcatPortArg) {
+				tomcatPort = arg;
+				tomcatPortArg = false;
+			} else if (arg.contains("commandline")) {
+				commandLine = true;
+			} else if (arg.contains("tomcatport")) {
+				tomcatPortArg = true;
+			} else if (arg.contains("mysqlport")) {
+				mySqlPortArg = true;
+			} else {
+				System.out.println("Exited because of unknown argument: " + arg);
+				System.exit(0);
+			}
+		}
+		
+		if(mySqlPort == null)
+			mySqlPort = UserInterface.DEFAULT_MYSQL_PORT;
+		
+		if(tomcatPort == null)
+			tomcatPort = UserInterface.DEFAULT_TOMCAT_PORT + "";
+		
+		//If launching for the first time, change the mysql password to ensure that
+		//installations do not share the same password.
+		mySqlPort = StandaloneUtil.setPortsAndMySqlPassword(mySqlPort, tomcatPort);
+		
+		new ApplicationController(commandLine, tomcatPort, mySqlPort);
 	}
 	
 	/**
@@ -63,15 +110,18 @@ public class ApplicationController {
 			public void finished() {
 				Object value = workerThread.get();
 				
-				mainFrame.enableStart(value == null);
-				mainFrame.enableStop(value != null);
+				userInterface.enableStart(value == null);
+				userInterface.enableStop(value != null);
 				
 				if (value != null) {
-					mainFrame.setStatus("Running");
-					StandaloneUtil.launchBrowser(mainFrame.getTomcatPort(), contextName);
+					userInterface.setStatus(getRunningStatusMessage());
+					StandaloneUtil.launchBrowser(userInterface.getTomcatPort(), contextName);
 				} else {
-					mainFrame.setStatus("Stopped");
+					userInterface.setStatus(UserInterface.STATUS_MESSAGE_STOPPED);
 				}
+				
+				//userInterface.enableStart(value == null);
+				//userInterface.enableStop(value != null);
 			}
 		};
 		
@@ -90,9 +140,10 @@ public class ApplicationController {
 			}
 			
 			public void finished() {
-				mainFrame.setStatus("Stopped");
-				mainFrame.enableStart(true);
-				mainFrame.enableStop(false);
+				userInterface.enableStart(true);
+				userInterface.enableStop(false);
+				
+				userInterface.setStatus(UserInterface.STATUS_MESSAGE_STOPPED);
 				
 				Runtime.getRuntime().gc();
 			}
@@ -121,12 +172,17 @@ public class ApplicationController {
 	}
 	
 	/**
-	 * Creates the application window and automatically runs the server
+	 * Creates the application user interface and automatically runs the server
 	 */
-	private void init() {
-		mainFrame = new MainFrame(this);
-		mainFrame.setStatus("Starting...");
-		mainFrame.setVisible(true);
+	private void init(boolean commandLineMode, String tomcatPort, String mySqlPort) {
+		if (commandLineMode) {
+			userInterface = new CommandLine(this, tomcatPort, mySqlPort);
+		} else {
+			userInterface = new MainFrame(this, tomcatPort, mySqlPort);
+		}
+		
+		userInterface.setStatus(UserInterface.STATUS_MESSAGE_STARTING);
+		userInterface.setVisible(true);
 		
 		// add shutdown hook to stop server
 		Runtime.getRuntime().addShutdownHook(new Thread() {
@@ -146,15 +202,18 @@ public class ApplicationController {
 	 */
 	private String startServer() {
 		try {
+			//This is an attempt to prevent some of the bad behavior caused by tomcat caching
+			//some stuff in this directory.
+			deleteTomcatWorkDir();
+			
+			StandaloneUtil.setPortsAndMySqlPassword(userInterface.getMySqlPort(), userInterface.getTomcatPort() + "");
+			
 			contextName = StandaloneUtil.getContextName();
 			tomcatManager = null;
-			tomcatManager = new TomcatManager(contextName, mainFrame.getTomcatPort());
+			tomcatManager = new TomcatManager(contextName, userInterface.getTomcatPort());
 			tomcatManager.run();
 			
-			// Wait a second to be sure the server is ready
-			Thread.sleep(1000);
-			
-			return "Running";
+			return getRunningStatusMessage();
 		}
 		catch (Exception ex) {
 			ex.printStackTrace();
@@ -182,5 +241,23 @@ public class ApplicationController {
 	 */
 	public boolean launchBrowser(int port) {
 		return StandaloneUtil.launchBrowser(port, contextName);
+	}
+	
+	/**
+	 * Deletes the tomcat work directory.
+	 */
+	private void deleteTomcatWorkDir() {
+		try {
+			String path = new File("").getAbsolutePath() + File.separatorChar + "tomcat" + File.separatorChar + "work";
+			new File(path).delete();
+		}
+		catch (Exception ex) {
+			ex.printStackTrace();
+		}
+	}
+	
+	private String getRunningStatusMessage() {
+		return UserInterface.STATUS_MESSAGE_RUNNING + " - Tomcat Port:" + userInterface.getTomcatPort() + "  MySQL Port:"
+		        + userInterface.getMySqlPort();
 	}
 };

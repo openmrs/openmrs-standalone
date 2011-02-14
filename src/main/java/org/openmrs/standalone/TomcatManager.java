@@ -78,10 +78,14 @@ public class TomcatManager {
 	 */
 	public boolean stop() {
 		
+		boolean stopMySql = false;
+		
 		//stop tomcat.
 		try {
 			if (container != null) {
 				container.stop();
+				container = null;
+				stopMySql = true;
 			}
 		}
 		catch (LifecycleException exception) {
@@ -90,12 +94,8 @@ public class TomcatManager {
 		}
 		
 		//stop mysql.
-		try {
-			ServerLauncherSocketFactory.shutdown(new File("database"), new File("database/data"));
-		}
-		catch (Exception exception) {
-			System.out.println("Cannot Stop MySQL" + exception.getMessage());
-		}
+		if(stopMySql)
+			StandaloneUtil.stopMySqlServer();
 		
 		return true;
 	}
