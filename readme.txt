@@ -227,6 +227,8 @@ browser			Use to launch a new browser instance.
    delete them to reduce the distribution size.
    
 NOTE: The default location of the "database" folder is that where the standalone-0.0.1-SNAPSHOT.jar file is.
+      Also remember to include the runtime properties file in the root folder of the distribution if you want this
+      database to be used.
 
 
 	  
