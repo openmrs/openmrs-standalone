@@ -77,15 +77,15 @@ public class ApplicationController {
 			}
 		}
 		
+		//If launching for the first time, change the mysql password to ensure that
+		//installations do not share the same password.
+		mySqlPort = StandaloneUtil.setPortsAndMySqlPassword(mySqlPort, tomcatPort);
+		
 		if(mySqlPort == null)
 			mySqlPort = UserInterface.DEFAULT_MYSQL_PORT;
 		
 		if(tomcatPort == null)
 			tomcatPort = UserInterface.DEFAULT_TOMCAT_PORT + "";
-		
-		//If launching for the first time, change the mysql password to ensure that
-		//installations do not share the same password.
-		mySqlPort = StandaloneUtil.setPortsAndMySqlPassword(mySqlPort, tomcatPort);
 		
 		new ApplicationController(commandLine, tomcatPort, mySqlPort);
 	}
