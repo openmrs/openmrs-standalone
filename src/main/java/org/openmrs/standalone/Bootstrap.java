@@ -86,8 +86,9 @@ public class Bootstrap {
 	 * Spawns off a new JVM to launch the main function of the ApplicationController class.
 	 * 
 	 * @param args the command line arguments.
+	 * @param showSplashScreen determines whether the splashscreen is to be shown.
 	 */
-	private void launch(String args) {
+	private void launch(String args, boolean showSplashScreen) {
 		
 		Process process = null;
 		
@@ -96,7 +97,10 @@ public class Bootstrap {
 			process = Runtime
 			        .getRuntime()
 			        .exec(
-			            "java -splash:splashscreen.gif -Xmx512m -Xms512m -XX:PermSize=256m -XX:MaxPermSize=256m -XX:NewSize=128m -cp standalone-0.0.1-SNAPSHOT.jar org.openmrs.standalone.ApplicationController" + args);
+			            "java "
+			                    + (showSplashScreen ? "-splash:splashscreen.gif" : "")
+			                    + " -Xmx512m -Xms512m -XX:PermSize=256m -XX:MaxPermSize=256m -XX:NewSize=128m -cp standalone-0.0.1-SNAPSHOT.jar org.openmrs.standalone.ApplicationController"
+			                    + args);
 			
 			// Proxy the System.out and System.err from the spawned process back to the main window.  This
 			// is important or the spawned process could block.
@@ -133,11 +137,16 @@ public class Bootstrap {
 	 * @param args the command line arguments.
 	 */
 	public static void main(String[] args) {
+		boolean showSplashScreen = true;
+		
 		String commandLineArguments = "";
 		for (String arg : args) {
 			commandLineArguments += (" " + arg);
+			
+			if (arg.contains("commandline"))
+				showSplashScreen = false;
 		}
 		
-		new Bootstrap().launch(commandLineArguments);
+		new Bootstrap().launch(commandLineArguments, showSplashScreen);
 	}
 }

@@ -42,8 +42,8 @@ public class ApplicationController {
 	 * 
 	 * @param args
 	 */
-	public static void main(String[] args) {
-		
+	public static void main(String[] args){
+	
 		String tomcatPort = null;
 		String mySqlPort = null;
 		
