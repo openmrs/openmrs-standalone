@@ -11,9 +11,9 @@ NOTE: This standalone application is not tied to any particular openmrs version.
       named: mysql-connector-mxj-gpl-5-0-11.jar and mysql-connector-mxj-gpl-5-0-11-db-files.jar
       Then installed them into my local maven repository using the following respective maven commands:
       
-mvn install:install-file -DgroupId=com.mysql -DartifactId=mysql-connector-mxj -Dversion=5.0.11 -Dfile=/mysql-connector-mxj-gpl-5-0-11.jar -Dpackaging=jar
+mvn install:install-file -DgroupId=com.mysql -DartifactId=mysql-connector-mxj -Dversion=5.0.11 -Dfile=mysql-connector-mxj-gpl-5-0-11.jar -Dpackaging=jar
       
-mvn install:install-file -DgroupId=com.mysql -DartifactId=mysql-connector-mxj-dbfiles -Dversion=5.0.11 -Dfile=/mysql-connector-mxj-gpl-5-0-11-db-files.jar -Dpackaging=jar
+mvn install:install-file -DgroupId=com.mysql -DartifactId=mysql-connector-mxj-dbfiles -Dversion=5.0.11 -Dfile=mysql-connector-mxj-gpl-5-0-11-db-files.jar -Dpackaging=jar
 
 
 
@@ -69,8 +69,8 @@ NOTE: Using Maven Package will generate the executable jar file in the target fo
 	paste it into the "Database Connection:" text field of the openmrs setup wizard.
 
 2-  For the section: "Do you currently have an OpenMRS database installed that you would like to connect to?",
-	select Yes. And for the database, leave the default as openmrs. If you want a different name, make sure it matches with
-	your connection string as in Step 1 above.
+	select No. And for the database, enter the default as openmrs.
+	Enter "openmrs" and "test" as the username and password
 	
 3- 	Click "Continue" to go to the next wizard screen.
 
@@ -81,11 +81,8 @@ NOTE: Using Maven Package will generate the executable jar file in the target fo
 	just choose what you want.
 	
 7- 	For the section: "Do you currently have a database user other than root that has read/write access to the openmrs database?",
-	Choose Yes, and then enter a user name and password for an account which will be created by the embedded database engine.
-	If you choose No, enter a user name and password for an account which will be created by the openmrs setup wizard.
-	In other wards, choosing Yes or No here is almost the same. I all the time choose Yes.
-	If you will be distributing the database and do not want every installation have the same password, the password has to be: test
-	The reason is that when the application starts, it checks for the mysql password and if it is test, it is replaced with a randomly
+	Choose Yes, and then enter a "openmrs" and "test" as the user name and password. This account will be created by the embedded database engine.
+	The reason to use 'test' is that when the application starts, it checks for the mysql password and if it is test, it is replaced with a randomly
 	generated 12 character password which is written back to the runtime properties file.
 	
 8-	Click "Continue" to go to the next wizard screen, and feel free to fill what you want on this screen.
@@ -142,9 +139,7 @@ splashscreen.gif					 This is the splash screen displayed on startup. It can be 
 
 ............... DATABASE CONNECTION STRING.......................
 
-jdbc:mysql:mxj://localhost:3316/openmrs?autoReconnect=true&sessionVariables=storage_engine=InnoDB&useUnicode=true
-&characterEncoding=UTF-8&server.initialize-user=true&createDatabaseIfNotExist=true&server.basedir=database
-&server.datadir=database/data&server.collation-server=utf8_general_ci&server.character-set-server=utf8
+jdbc:mysql:mxj://localhost:3316/openmrs?autoReconnect=true&sessionVariables=storage_engine=InnoDB&useUnicode=true&characterEncoding=UTF-8&server.initialize-user=true&createDatabaseIfNotExist=true&server.basedir=database&server.datadir=database/data&server.collation-server=utf8_general_ci&server.character-set-server=utf8
 
 The above default database connection string has all in the openmrs mysql default database connection string plus a 
 few additional parameters as explained below:
@@ -217,15 +212,13 @@ browser			Use to launch a new browser instance.
 ...................HOW TO GENERATE A DATABASE TO INCLUDE WITH A DISTIBUTION.....................
 
 1- Make sure you have no runtime properties file that the web application will find.
-2- Run the standalone-0.0.1-SNAPSHOT.jar. You can just double click it, or run from command line as above.
-3- This will take you through the openmrs setup wizard (because the runtime properties file was not found) and 
+2- Make sure you have no extra moduls that the web application will find
+3- Run the standalone-0.0.1-SNAPSHOT.jar. You can just double click it, or run from command line as above.
+4- This will take you through the openmrs setup wizard (because the runtime properties file was not found) and 
    respond to it as per the instructions above under "HOW TO RESPOND TO THE OPENMRS SETUP WIZARD"
-4- After the wizard completes, copy the generated runtime properties file and put it in the root folder of the distribution
+5- After the wizard completes, copy the generated runtime properties file and put it in the root folder of the distribution
    as per the above instructions under "DISTRIBUTION FOLDER STRUCTURE"
-5- If you did not change the database location as per the default connection string, the database will already be under the
-   "database/data" folder. You do not have to distribute the "database/bin" or "database/share" folders, therefore you can just
-   delete them to reduce the distribution size.
-   
+6- Run packagezip.sh to create the distributable zip file
 NOTE: The default location of the "database" folder is that where the standalone-0.0.1-SNAPSHOT.jar file is.
       Also remember to include the runtime properties file in the root folder of the distribution if you want this
       database to be used.
