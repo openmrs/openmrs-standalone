@@ -147,6 +147,13 @@ public class Bootstrap {
 				showSplashScreen = false;
 		}
 		
+		// add shutdown hook to stop server
+		Runtime.getRuntime().addShutdownHook(new Thread() {	
+			public void run() {
+				StandaloneUtil.stopMySqlServer();
+			}
+		});
+		
 		new Bootstrap().launch(commandLineArguments, showSplashScreen);
 	}
 }

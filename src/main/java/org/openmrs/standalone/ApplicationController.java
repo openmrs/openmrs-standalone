@@ -16,6 +16,8 @@ package org.openmrs.standalone;
 import java.io.File;
 import java.util.Properties;
 
+import com.mysql.management.util.ProcessUtil;
+
 /**
  * Manages the application workflow.
  */
@@ -43,7 +45,7 @@ public class ApplicationController {
 	 * @param args
 	 */
 	public static void main(String[] args){
-	
+		
 		String tomcatPort = null;
 		String mySqlPort = null;
 		
@@ -186,7 +188,6 @@ public class ApplicationController {
 		
 		// add shutdown hook to stop server
 		Runtime.getRuntime().addShutdownHook(new Thread() {
-			
 			public void run() {
 				stopServer();
 			}
