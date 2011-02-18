@@ -100,6 +100,7 @@ public class StandaloneUtil {
 		final String KEY_CONNECTION_PASSWORD = "connection.password";
 		final String KEY_CONNECTION_URL = "connection.url";
 		final String KEY_TOMCAT_PORT = "tomcatport";
+		final String KEY_RESET_CONNECTION_PASSWORD = "reset_connection_password";
 		
 		InputStream input = null;
 		OutputStreamWriter output = null;
@@ -111,9 +112,13 @@ public class StandaloneUtil {
 			String connectionString = properties.getProperty(KEY_CONNECTION_URL);
 			String password = properties.getProperty(KEY_CONNECTION_PASSWORD);
 			String username = properties.getProperty(KEY_CONNECTION_USERNAME);
+			String resetConnectionPassword = properties.getProperty(KEY_RESET_CONNECTION_PASSWORD);
 			
 			//We change the mysql password only if it is test.
-			if (password != null && password.toLowerCase().equals("test")) {
+			//if (password != null && password.toLowerCase().equals("test")) {
+			
+			//Change the mysql password if instructed to.
+			if ("true".equalsIgnoreCase(resetConnectionPassword)) {
 				String newPassword = "";
 				// intentionally left out these characters: ufsb$() to prevent certain words forming randomly
 				String chars = "acdeghijklmnopqrtvwxyzACDEGHIJKLMNOPQRTVWXYZ0123456789.|~@^&";
@@ -124,6 +129,9 @@ public class StandaloneUtil {
 				
 				if (setMysqlPassword(connectionString, username, password, newPassword)) {
 					properties.put(KEY_CONNECTION_PASSWORD, newPassword);
+					
+					//Now remove the reset connection password property such that we do not change the password again.
+					properties.remove(KEY_RESET_CONNECTION_PASSWORD);
 					
 					propertiesFileChanged = true;
 				}
