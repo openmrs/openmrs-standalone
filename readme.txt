@@ -132,7 +132,7 @@ tomcat/logs							 This is where the log files are created with names having a c
 									 log file. Not to run out of memory, the text area displayed logs are
 									 trimmed, starting with the oldest, in order not to exceeed 1,000 characters.
 									
-splashscreen.gif					 This is the splash screen displayed on startup. It can be any .gif as long as the name remains
+splashscreen-loading.png			 This is the splash screen displayed on startup. It can be any .png as long as the name remains
 									 the same because it is hardcoded in the application.
 									 
 
@@ -222,6 +222,8 @@ browser			Use to launch a new browser instance.
 NOTE: The default location of the "database" folder is that where the standalone-0.0.1-SNAPSHOT.jar file is.
       Also remember to include the runtime properties file in the root folder of the distribution if you want this
       database to be used.
+      You should also add the application_data_directory key to the runtime properties file. Something like this:
+      application_data_directory=appdata 
 
 
 	  

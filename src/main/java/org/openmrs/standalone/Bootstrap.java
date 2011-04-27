@@ -98,7 +98,7 @@ public class Bootstrap {
 			        .getRuntime()
 			        .exec(
 			            "java "
-			                    + (showSplashScreen ? "-splash:splashscreen.gif" : "")
+			                    + (showSplashScreen ? "-splash:splashscreen-loading.png" : "")
 			                    + " -Xmx512m -Xms512m -XX:PermSize=256m -XX:MaxPermSize=256m -XX:NewSize=128m -cp standalone-0.0.1-SNAPSHOT.jar org.openmrs.standalone.ApplicationController"
 			                    + args);
 			
