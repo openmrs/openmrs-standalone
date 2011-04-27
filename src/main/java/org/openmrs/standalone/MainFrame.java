@@ -73,7 +73,6 @@ public class MainFrame extends javax.swing.JFrame implements ActionListener, Use
 		}
 		
 		setSize(600, 300);
-		setAlwaysOnTop(true);
 		setResizable(true);
 		setLocationRelativeTo(null);
 		
