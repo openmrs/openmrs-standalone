@@ -94,9 +94,10 @@ NOTE: Using Maven Package will generate the executable jar file in the target fo
 11-	Click "Continue" to go to the next wizard screen and click "Finish".
 
 
-...................DISTRIBUTION FOLDER STRUCTURE............................
+...................DISTRIBUTION FOLDER STRUCTURE (This is a MUST)............................
 
 The release/distribution (end user) folder structure should look like this:
+NOTE: Without this folder structure, you will get errors while trying to run the standalone application.
 
 contextname-runtime.properties       e.g openmrs-runtime.properties, openmrs-1.6.1-runtime.properties, openmrs-1.9.0-runtime.properties, etc
 									 If you want to use this runtime properties file, make sure that the web application context name does
@@ -111,7 +112,7 @@ standalone-0.0.1-SNAPSHOT.jar        This is the output executable jar for this 
 									 hard coded in the Bootstrap class as so.
                                         
 tomcat/conf/web.xml                  This has the jsp servlet mapping, mime mappings, and other parameters shared
-									 by all web applications in this tomcat instance.
+									 by all web applications in this tomcat instance. You can copy this from "tomcat/conf" folder of your tomcat installation.
 
 tomcat/webapps/openmrs.war			 This is the application war file. You could as well use the expanded folder.
                                      The name of this war file, or expanded web app folder is used to determine the
