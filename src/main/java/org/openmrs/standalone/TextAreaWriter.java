@@ -71,7 +71,7 @@ public class TextAreaWriter extends FilterOutputStream {
 		//Append to the log file under currentdir/tomcat/logs
 		try {
 			Calendar cal = Calendar.getInstance();
-			String fileName = cal.get(Calendar.DATE) + "-" + cal.get(Calendar.MONTH) + 1 + "-" + cal.get(Calendar.YEAR)
+			String fileName = cal.get(Calendar.DATE) + "-" + (cal.get(Calendar.MONTH) + 1) + "-" + cal.get(Calendar.YEAR)
 			+ ".log";
 			String path = new File(fileName).getAbsolutePath();
 			path = path.substring(0, path.lastIndexOf(File.separatorChar) + 1) + "tomcat" + File.separatorChar + "logs";
