@@ -31,7 +31,7 @@ cd ..
 echo Creating zip file
 zip -q -r $name.zip $name -x \*.svn/\* \*database/bin/\* \*database/share/\* \*tomcat/logs/\* \*tomcat/work/\* \*tomcat/webapps/openmrs/\*
 
-echo Cleaning up temp files
-rm -rf $name
+#echo Cleaning up temp files
+#rm -rf $name
 
 echo Done.  Zip $name.zip created
