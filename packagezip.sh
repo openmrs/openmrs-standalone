@@ -17,14 +17,14 @@ mkdir $name
 cd $name
 ln -s ../database database
 ln -s ../tomcat tomcat
-cp ../*.gif .
-cp ../openmrs-runtime.properties .
+cp ../*.png .
+cp ../openmrs-standalone-runtime.properties .
 cp ../target/*.jar .
 
 # TODO: Add an "if statement" here to look for this property?
 
-echo "application_data_directory=appdata" >> openmrs-runtime.properties
-echo "reset_connection_password=true" >> openmrs-runtime.properties
+echo "application_data_directory=appdata" >> openmrs-standalone-runtime.properties
+echo "reset_connection_password=true" >> openmrs-standalone-runtime.properties
 
 cd ..
 
