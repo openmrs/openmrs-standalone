@@ -18,8 +18,8 @@ cd $name
 ln -s ../database database
 ln -s ../tomcat tomcat
 cp ../*.png .
-cp ../openmrs-standalone-runtime.properties 
-cp ../target/*.jar 
+cp ../openmrs-standalone-runtime.properties .
+cp ../target/*.jar .
 cp ../openmrs.war tomcat/webapps/openmrs-standalone.war
 
 # TODO: Add an "if statement" here to look for this property?
