@@ -30,7 +30,7 @@ echo "reset_connection_password=true" >> openmrs-standalone-runtime.properties
 cd ..
 
 echo Creating zip file
-zip -q -r $name.zip $name -x \*.svn/\* \*database/bin/\* \*database/share/\* \*tomcat/logs/\* \*tomcat/work/\* \*tomcat/webapps/openmrs/\*
+zip -q -r $name.zip $name -x \*.svn/\* \*.DS_Store/\* \*__MACOSX/\* \*database/bin/\* \*database/share/\* \*tomcat/logs/\* \*tomcat/work/\* \*tomcat/webapps/openmrs/\*
 
 #echo Cleaning up temp files
 #rm -rf $name
