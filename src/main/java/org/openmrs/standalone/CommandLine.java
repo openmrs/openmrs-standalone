@@ -16,6 +16,7 @@ package org.openmrs.standalone;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.io.PrintStream;
 
 /**
  * Provides command line (non GUI) interface to the standalone launcher.
@@ -46,15 +47,19 @@ public class CommandLine implements UserInterface {
 	
 	private SwingWorker workerThread;
 	
-	
 	public CommandLine(ApplicationController appController, String tomcatPort, String mySqlPort) {
 		this.appController = appController;
 		
-		if(mySqlPort != null)
+		if (mySqlPort != null)
 			this.mySqlPort = mySqlPort;
 		
-		if(tomcatPort != null)
+		if (tomcatPort != null)
 			this.tomcatPort = StandaloneUtil.fromStringToInt(tomcatPort);
+		
+		LogWriter logWriter = new LogWriter();
+		PrintStream stream = new PrintStream(logWriter);
+		System.setOut(stream);
+		System.setErr(stream);
 	}
 	
 	public void enableStart(boolean enable) {
@@ -74,7 +79,7 @@ public class CommandLine implements UserInterface {
 		return tomcatPort;
 	}
 	
-	public String getMySqlPort(){
+	public String getMySqlPort() {
 		return mySqlPort;
 	}
 	
@@ -97,13 +102,13 @@ public class CommandLine implements UserInterface {
 		System.out.println(message);
 	}
 	
-	private void displayStatusMessage(){
+	private void displayStatusMessage() {
 		String message = "browser - to launch a new browser instance.";
-		if(!running)
+		if (!running)
 			message = "to change the tomcat or mysql port, use -tomcatport and -mysqlport respectively.";
 		
 		displayMessage("[" + status + "] Type: exit - to quit, "
-			+ (running ? "stop - to stop the server, " : "start - to start the server, ") + message);
+		        + (running ? "stop - to stop the server, " : "start - to start the server, ") + message);
 	}
 	
 	private void processUserInput() {
@@ -116,7 +121,7 @@ public class CommandLine implements UserInterface {
 		}
 	}
 	
-	private void processCommadLine(String line) {	
+	private void processCommadLine(String line) {
 		if (line.contains(CMD_LAUNCH_BROWSE)) {
 			appController.launchBrowser(tomcatPort);
 		} else if (line.startsWith(CMD_START)) {
@@ -136,18 +141,15 @@ public class CommandLine implements UserInterface {
 			boolean tomcatPortArg = false;
 			for (String arg : args) {
 				arg = arg.toLowerCase();
-				if(mySqlPortArg){
+				if (mySqlPortArg) {
 					mySqlPort = arg;
 					mySqlPortArg = false;
-				}
-				else if(tomcatPortArg){
+				} else if (tomcatPortArg) {
 					tomcatPort = StandaloneUtil.fromStringToInt(arg);
 					tomcatPortArg = false;
-				}
-				else if(arg.contains("tomcatport")){
+				} else if (arg.contains("tomcatport")) {
 					tomcatPortArg = true;
-				}
-				else if(arg.contains("mysqlport")){
+				} else if (arg.contains("mysqlport")) {
 					mySqlPortArg = true;
 				}
 			}
@@ -158,7 +160,7 @@ public class CommandLine implements UserInterface {
 	
 	private void stopServer() {
 		if (running) {
-			try{
+			try {
 				System.out.println(UserInterface.PROMPT_STOP + " Type: y/yes or n/no");
 				String line = bufferedReader.readLine().trim();
 				if ("yes".equalsIgnoreCase(line) || "y".equalsIgnoreCase(line)) {
