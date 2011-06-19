@@ -51,6 +51,8 @@ public class StandaloneUtil {
 	 */
 	public static final int MAX_PORT_NUMBER = 49151;
 	
+	private static String CONTEXT_NAME;
+	
 	/**
 	 * Checks to see if a specific port is available.
 	 * 
@@ -245,35 +247,31 @@ public class StandaloneUtil {
 	
 	public static String getContextName() {
 		
-		// This will create a reference to a file in the
-		// current working directory, which is the path
-		// where the application started (at least on
-		// Win32 & Mac OS X)
-		File baseDirectory = new File("");
-		
-		// This is the path to the application's base directory
-		String path = baseDirectory.getAbsolutePath();
-		
-		//Get the name of the war file in the tomcat/webapps folder.
-		//If no war file found, the just get the name of the folder.
-		String folderName = null;
-		path = path + File.separatorChar + "tomcat" + File.separatorChar + "webapps";
-		File webappsFolder = new File(path);
-		File files[] = webappsFolder.listFiles();
-		if (files != null) {
-			for (File file : files) {
-				String name = file.getName();
-				if (file.isFile()) {
-					if (name.endsWith(".war")) {
-						return name.substring(0, name.length() - 4);
+		if (CONTEXT_NAME == null) {
+			
+			// This is the path to the application's base directory
+			String path = getBaseDir();
+			
+			//Get the name of the war file in the tomcat/webapps folder.
+			//If no war file found, the just get the name of the folder.
+			path = path + File.separatorChar + "tomcat" + File.separatorChar + "webapps";
+			File webappsFolder = new File(path);
+			File files[] = webappsFolder.listFiles();
+			if (files != null) {
+				for (File file : files) {
+					String name = file.getName();
+					if (file.isFile()) {
+						if (name.endsWith(".war")) {
+							return name.substring(0, name.length() - 4);
+						}
+					} else if (file.isDirectory()) {
+						CONTEXT_NAME = name;
 					}
-				} else if (file.isDirectory()) {
-					folderName = name;
 				}
 			}
 		}
 		
-		return folderName;
+		return CONTEXT_NAME;
 	}
 	
 	private static boolean setMysqlPassword(String url, String username, String oldPassword, String newPassword) {
@@ -315,5 +313,33 @@ public class StandaloneUtil {
 		catch (Exception exception) {
 			System.out.println("Cannot Stop MySQL" + exception.getMessage());
 		}
+	}
+	
+	/**
+	 * Gets the name of the running jar file, without the path.
+	 * 
+	 * @return the name of the running jar file.
+	 */
+	public static String getJarFileName() {
+		return getJarPathName().getName();
+	}
+	
+	/**
+	 * Gets the full path and name of the running jar file.
+	 * 
+	 * @return the full path and name of the jar file.
+	 */
+	private static File getJarPathName() {
+		return new File(Bootstrap.class.getProtectionDomain().getCodeSource().getLocation().getPath());
+	}
+	
+	/**
+	 * Gets the directory of the running jar file.
+	 * 
+	 * @return the full path of the running jar file.
+	 */
+	private static String getBaseDir() {
+		String jarPathName = getJarPathName().getAbsolutePath();
+		return jarPathName.substring(0, jarPathName.lastIndexOf(File.separatorChar));
 	}
 }

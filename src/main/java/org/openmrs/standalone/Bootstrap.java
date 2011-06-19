@@ -94,13 +94,10 @@ public class Bootstrap {
 		
 		try {
 			// Spin up a separate java process calling a non-default Main class in our Jar.  
-			process = Runtime
-			        .getRuntime()
-			        .exec(
-			            "java "
-			                    + (showSplashScreen ? "-splash:splashscreen-loading.png" : "")
-			                    + " -Xmx512m -Xms512m -XX:PermSize=256m -XX:MaxPermSize=256m -XX:NewSize=128m -cp standalone-0.0.1-SNAPSHOT.jar org.openmrs.standalone.ApplicationController"
-			                    + args);
+			process = Runtime.getRuntime().exec(
+			    "java " + (showSplashScreen ? "-splash:splashscreen-loading.png" : "")
+			            + " -Xmx512m -Xms512m -XX:PermSize=256m -XX:MaxPermSize=256m -XX:NewSize=128m -cp "
+			            + StandaloneUtil.getJarFileName() + " org.openmrs.standalone.ApplicationController" + args);
 			
 			// Proxy the System.out and System.err from the spawned process back to the main window.  This
 			// is important or the spawned process could block.
@@ -148,7 +145,8 @@ public class Bootstrap {
 		}
 		
 		// add shutdown hook to stop server
-		Runtime.getRuntime().addShutdownHook(new Thread() {	
+		Runtime.getRuntime().addShutdownHook(new Thread() {
+			
 			public void run() {
 				StandaloneUtil.stopMySqlServer();
 			}
