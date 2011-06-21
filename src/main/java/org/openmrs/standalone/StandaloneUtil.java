@@ -24,6 +24,7 @@ import java.io.Writer;
 import java.net.DatagramSocket;
 import java.net.ServerSocket;
 import java.net.URI;
+import java.net.URISyntaxException;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.Statement;
@@ -330,7 +331,14 @@ public class StandaloneUtil {
 	 * @return the full path and name of the jar file.
 	 */
 	private static File getJarPathName() {
-		return new File(Bootstrap.class.getProtectionDomain().getCodeSource().getLocation().getPath());
+		try {
+			return new File(Bootstrap.class.getProtectionDomain().getCodeSource().getLocation().toURI().getPath());
+		}
+		catch (URISyntaxException ex) {
+			ex.printStackTrace();
+		}
+		
+		return null;
 	}
 	
 	/**
