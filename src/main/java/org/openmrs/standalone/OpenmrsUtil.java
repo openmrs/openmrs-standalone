@@ -52,9 +52,9 @@ public class OpenmrsUtil {
 	 * <pre>
 	 * Finds and loads the runtime properties file for a specific OpenMRS application.
 	 * Searches for the file in this order:
-	 * 1) an environment variable called "{APPLICATIONNAME}_RUNTIME_PROPERTIES_FILE"
-	 * 2) {openmrs_app_dir}/{applicationName}_runtime.properties   // openmrs_app_dir is typically {user_home}/.OpenMRS
-	 * 3) {current directory}/{applicationname}_runtime.properties
+	 * 1) {current directory}/{applicationname}_runtime.properties
+	 * 2) an environment variable called "{APPLICATIONNAME}_RUNTIME_PROPERTIES_FILE"
+	 * 3) {openmrs_app_dir}/{applicationName}_runtime.properties   // openmrs_app_dir is typically {user_home}/.OpenMRS
 	 * </pre>
 	 * 
 	 * @see #getApplicationDataDirectory()
@@ -66,6 +66,64 @@ public class OpenmrsUtil {
 	 */
 	public static Properties getRuntimeProperties(String applicationName) {
 		if (applicationName == null)
+			applicationName = "openmrs";
+		
+		String filepath = null;
+		FileInputStream propertyStream = null;
+		
+		String filename = applicationName + "-runtime.properties";
+		// first look in the current directory (that java was started from)
+		filepath = filename;
+		System.out.println("Attempting to load properties file in current directory: " + filepath);
+		try {
+			propertyStream = new FileInputStream(filepath);
+		}
+		catch (FileNotFoundException e) {
+		}
+		
+		// next look for an environment variable
+		if (propertyStream == null) {
+			String envVarName = applicationName.toUpperCase() + "_RUNTIME_PROPERTIES_FILE";
+			filepath = System.getenv(envVarName);
+			if (filepath != null) {
+				System.out.println("Atempting to load runtime properties from: " + filepath);
+				try {
+					propertyStream = new FileInputStream(filepath);
+				}
+				catch (IOException e) {
+				}
+			}
+		}
+		
+		// next look in the OpenMRS application data directory
+		if (propertyStream == null) {
+			filepath = OpenmrsUtil.getApplicationDataDirectory() + filename;
+			System.out.println("Attempting to load property file from: " + filepath);
+			try {
+				propertyStream = new FileInputStream(filepath);
+			}
+			catch (FileNotFoundException e) {
+			}
+		}
+		
+		try {
+			if (propertyStream != null) {
+				Properties props = new Properties();
+				loadProperties(props, propertyStream);
+				propertyStream.close();
+				System.out.println("Using runtime properties file: " + filepath);
+				return props;
+			}
+		}
+		catch (Exception ex) {
+			ex.printStackTrace();
+		}
+		
+		System.out.println("Failed to get runtime properties file.");
+		
+		return null;
+		
+		/*if (applicationName == null)
 			applicationName = "openmrs";
 		
 		runtimePropertiesPathName = null;
@@ -125,7 +183,7 @@ public class OpenmrsUtil {
 		
 		System.out.println("Failed to get runtime properties file.");
 		
-		return null;
+		return null;*/
 	}
 	
 	/**
