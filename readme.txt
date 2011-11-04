@@ -5,15 +5,15 @@ NOTE: This standalone application is not tied to any particular openmrs version.
 
       As you can see from the pom file, the two artifacts mysql-connector-mxj and mysql-connector-mxj-dbfiles
       need to be put into our nexus maven repository. I have not yet done so because i do not yet have the
-      permissions to. Therefore to make this project compile, i downloaded MySQL Connector/MXJ 5.0.12 from 
+      permissions to. Therefore to make this project compile, i downloaded MySQL Connector/MXJ 5.0.11 from 
       http://dev.mysql.com/downloads/connector/mxj/
       Then decompressed the download file and looked into the mysql-connector-mxj-gpl-5-0-11 folder for two jar files
-      named: mysql-connector-mxj-gpl-5-0-12.jar and mysql-connector-mxj-gpl-5-0-12-db-files.jar
+      named: mysql-connector-mxj-gpl-5-0-11.jar and mysql-connector-mxj-gpl-5-0-11-db-files.jar
       Then installed them into my local maven repository using the following respective maven commands:
       
-mvn install:install-file -DgroupId=com.mysql -DartifactId=mysql-connector-mxj -Dversion=5.0.12 -Dfile=mysql-connector-mxj-gpl-5-0-12.jar -Dpackaging=jar
+mvn install:install-file -DgroupId=com.mysql -DartifactId=mysql-connector-mxj -Dversion=5.0.11 -Dfile=mysql-connector-mxj-gpl-5-0-11.jar -Dpackaging=jar
       
-mvn install:install-file -DgroupId=com.mysql -DartifactId=mysql-connector-mxj-dbfiles -Dversion=5.0.12 -Dfile=mysql-connector-mxj-gpl-5-0-12-db-files.jar -Dpackaging=jar
+mvn install:install-file -DgroupId=com.mysql -DartifactId=mysql-connector-mxj-dbfiles -Dversion=5.0.11 -Dfile=mysql-connector-mxj-gpl-5-0-11-db-files.jar -Dpackaging=jar
 
 
 
