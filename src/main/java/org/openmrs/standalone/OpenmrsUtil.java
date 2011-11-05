@@ -68,15 +68,14 @@ public class OpenmrsUtil {
 		if (applicationName == null)
 			applicationName = "openmrs";
 		
-		String filepath = null;
 		FileInputStream propertyStream = null;
 		
 		String filename = applicationName + "-runtime.properties";
 		// first look in the current directory (that java was started from)
-		filepath = filename;
-		System.out.println("Attempting to load properties file in current directory: " + filepath);
+		runtimePropertiesPathName = filename;
+		System.out.println("Attempting to load properties file in current directory: " + runtimePropertiesPathName);
 		try {
-			propertyStream = new FileInputStream(filepath);
+			propertyStream = new FileInputStream(runtimePropertiesPathName);
 		}
 		catch (FileNotFoundException e) {
 		}
@@ -84,11 +83,11 @@ public class OpenmrsUtil {
 		// next look for an environment variable
 		if (propertyStream == null) {
 			String envVarName = applicationName.toUpperCase() + "_RUNTIME_PROPERTIES_FILE";
-			filepath = System.getenv(envVarName);
-			if (filepath != null) {
-				System.out.println("Atempting to load runtime properties from: " + filepath);
+			runtimePropertiesPathName = System.getenv(envVarName);
+			if (runtimePropertiesPathName != null) {
+				System.out.println("Atempting to load runtime properties from: " + runtimePropertiesPathName);
 				try {
-					propertyStream = new FileInputStream(filepath);
+					propertyStream = new FileInputStream(runtimePropertiesPathName);
 				}
 				catch (IOException e) {
 				}
@@ -97,10 +96,10 @@ public class OpenmrsUtil {
 		
 		// next look in the OpenMRS application data directory
 		if (propertyStream == null) {
-			filepath = OpenmrsUtil.getApplicationDataDirectory() + filename;
-			System.out.println("Attempting to load property file from: " + filepath);
+			runtimePropertiesPathName = OpenmrsUtil.getApplicationDataDirectory() + filename;
+			System.out.println("Attempting to load property file from: " + runtimePropertiesPathName);
 			try {
-				propertyStream = new FileInputStream(filepath);
+				propertyStream = new FileInputStream(runtimePropertiesPathName);
 			}
 			catch (FileNotFoundException e) {
 			}
@@ -111,7 +110,7 @@ public class OpenmrsUtil {
 				Properties props = new Properties();
 				loadProperties(props, propertyStream);
 				propertyStream.close();
-				System.out.println("Using runtime properties file: " + filepath);
+				System.out.println("Using runtime properties file: " + runtimePropertiesPathName);
 				return props;
 			}
 		}
