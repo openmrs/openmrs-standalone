@@ -1,3 +1,17 @@
+TO DO:
+ONCE PEOPLE HAVE DECIDED WHETHER THEY LIKE THE NEW MAVEN-BASED BUILDER, REWRITE THIS
+README FILE TO REFLECT THAT.
+
+QUICK SUMMARY:
+* set the openmrs.version variable in pom.xml
+* mvn clean
+* mvn package
+* (if it fails, manually kill any mysql process that's running on port 3326)
+
+-> output is in the target folder, as openmrs-standalone-(openmrs.version).zip
+-> the contents of that zip are in the similarly-named folder under /target, if you want to test in-place
+
+
 ...........................OpenMRS Standalone README..........................
 
 

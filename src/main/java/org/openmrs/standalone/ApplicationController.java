@@ -13,15 +13,31 @@
  */
 package org.openmrs.standalone;
 
+import java.io.BufferedInputStream;
+import java.io.BufferedOutputStream;
 import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.util.Enumeration;
 import java.util.Properties;
-
-import com.mysql.management.util.ProcessUtil;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipFile;
 
 /**
  * Manages the application workflow.
  */
 public class ApplicationController {
+	
+	/**
+     * List of the different settings the user can choose for the database
+     */
+	public enum DatabaseMode {
+		NO_CHANGES, // just use whatever database is set up, and don't do anything.
+		USE_INITIALIZATION_WIZARD, // clear the database and invoke the initialization wizard
+		EMPTY_DATABASE // use the empty database
+	}
+	
+	private DatabaseMode applyDatabaseChange = null;
 	
 	/** The application's user interface. */
 	private UserInterface userInterface;
@@ -35,7 +51,7 @@ public class ApplicationController {
 	/** The web app context name. */
 	private String contextName;
 	
-	public ApplicationController(boolean commandLineMode, String tomcatPort, String mysqlPort) {
+	public ApplicationController(boolean commandLineMode, String tomcatPort, String mysqlPort) throws Exception {
 		init(commandLineMode, tomcatPort, mysqlPort);
 	}
 	
@@ -44,7 +60,7 @@ public class ApplicationController {
 	 * 
 	 * @param args
 	 */
-	public static void main(String[] args){
+	public static void main(String[] args) throws Exception {
 		
 		String tomcatPort = null;
 		String mySqlPort = null;
@@ -81,7 +97,7 @@ public class ApplicationController {
 		
 		//If launching for the first time, change the mysql password to ensure that
 		//installations do not share the same password.
-		mySqlPort = StandaloneUtil.setPortsAndMySqlPassword(mySqlPort, tomcatPort);
+		//mySqlPort = StandaloneUtil.setPortsAndMySqlPassword(mySqlPort, tomcatPort);
 		
 		if(mySqlPort == null)
 			mySqlPort = UserInterface.DEFAULT_MYSQL_PORT;
@@ -176,7 +192,7 @@ public class ApplicationController {
 	/**
 	 * Creates the application user interface and automatically runs the server
 	 */
-	private void init(boolean commandLineMode, String tomcatPort, String mySqlPort) {
+	private void init(boolean commandLineMode, String tomcatPort, String mySqlPort) throws Exception {
 		if (commandLineMode) {
 			userInterface = new CommandLine(this, tomcatPort, mySqlPort);
 		} else {
@@ -192,8 +208,147 @@ public class ApplicationController {
 				stopServer();
 			}
 		});
+
+		while (needsInitialConfiguration() && applyDatabaseChange == null) {
+			System.out.println("Initial configuration needed");
+			userInterface.showInitialConfig();
+		}
+		
+		if (applyDatabaseChange != null) {
+			System.out.println("Apply database change: " + applyDatabaseChange);
+			if (applyDatabaseChange == DatabaseMode.USE_INITIALIZATION_WIZARD) {
+				deleteActiveDatabase();
+				StandaloneUtil.resetConnectionPassword();
+				StandaloneUtil.startupDatabaseToCreateDefaultUser();
+			} else if (applyDatabaseChange == DatabaseMode.EMPTY_DATABASE) {
+				deleteActiveDatabase();
+				unzipDatabase(new File("emptydatabase.zip"));
+				StandaloneUtil.resetConnectionPassword();
+				StandaloneUtil.startupDatabaseToCreateDefaultUser();
+			}
+			deleteNeedsConfigFile();
+			System.out.println("Done applying database changes");
+			
+			//If launching for the first time, change the mysql password to ensure that
+			//installations do not share the same password.
+			mySqlPort = StandaloneUtil.setPortsAndMySqlPassword(mySqlPort, tomcatPort);
+		}
 		
 		start();
+	}
+	
+	/**
+	 * True if there is no database, or if there's a "needsconfig.txt" file.
+     * @return whether or not initial configuration is needed
+     */
+    private boolean needsInitialConfiguration() {
+    	return !(new File("database").exists()) || new File("needsconfig.txt").exists();
+    }
+    
+	/**
+     * Deletes the /database/data folder
+     */
+    private void deleteActiveDatabase() {
+    	System.out.println("Deleting active database");
+	    if (!deleteFileOrDirectory(new File("database")))
+	    	System.out.println("...failed to delete!");
+    }
+    
+	/**
+     * Deletes the file indicating that configuration is needed.
+     */
+    private void deleteNeedsConfigFile() {
+    	deleteFileOrDirectory(new File("needsconfig.txt"));
+    }
+    
+    /**
+	 * @param dirOrFile
+	 * @return
+	 */
+	private boolean deleteFileOrDirectory(File dirOrFile) {
+		if (!dirOrFile.exists())
+			return true;
+		if (!dirOrFile.isDirectory())
+			return dirOrFile.delete();
+		boolean okay = true;
+		for (File file : dirOrFile.listFiles()) {
+			if (file.isDirectory())
+				okay &= deleteFileOrDirectory(file);
+			else
+				okay &= file.delete();
+		}
+		return okay;
+	}
+	
+	/**
+     * Expands the given zip file as /database
+     * 
+     * @param zipFile
+	 * @throws IOException 
+     */
+    private void unzipDatabase(File zipFile) throws IOException {
+	    System.out.println("Unzipping database from " + zipFile.getName());
+	    File dest = new File("database");
+	    dest.mkdir();
+	    unzip(zipFile, dest);
+    }
+    
+    /**
+	 * Modified version of http://stackoverflow.com/questions/981578/how-to-unzip-files-recursively-in-java/981731#981731
+	 * 
+	 * @param sourceZipFile
+	 * @param unzipDestinationDirectory
+	 * @throws IOException
+	 */
+	public void unzip(File sourceZipFile, File unzipDestinationDirectory) throws IOException {
+	    int BUFFER = 2048;
+	    if (!unzipDestinationDirectory.exists())
+	    	unzipDestinationDirectory.mkdir();
+
+	    ZipFile zipFile;
+	    // Open Zip file for reading
+	    zipFile = new ZipFile(sourceZipFile, ZipFile.OPEN_READ);
+
+	    // Create an enumeration of the entries in the zip file
+	    Enumeration<? extends ZipEntry> zipFileEntries = zipFile.entries();
+
+	    // Process each entry
+	    while (zipFileEntries.hasMoreElements()) {
+	        // grab a zip file entry
+	        ZipEntry entry = zipFileEntries.nextElement();
+	        String currentEntry = entry.getName();
+
+	        File destFile = new File(unzipDestinationDirectory, currentEntry);
+
+	        // grab file's parent directory structure
+	        File destinationParent = destFile.getParentFile();
+
+	        // create the parent directory structure if needed
+	        destinationParent.mkdirs();
+
+            // extract file if not a directory
+            if (!entry.isDirectory()) {
+                BufferedInputStream is =
+                        new BufferedInputStream(zipFile.getInputStream(entry));
+                int currentByte;
+                // establish buffer for writing file
+                byte data[] = new byte[BUFFER];
+                
+                // write the current file to disk
+                FileOutputStream fos = new FileOutputStream(destFile);
+                BufferedOutputStream dest =
+                        new BufferedOutputStream(fos, BUFFER);
+
+                // read and write until last byte is encountered
+                while ((currentByte = is.read(data, 0, BUFFER)) != -1) {
+                    dest.write(data, 0, currentByte);
+                }
+                dest.flush();
+                dest.close();
+                is.close();
+            }
+	    }
+	    zipFile.close();
 	}
 	
 	/**
@@ -261,4 +416,14 @@ public class ApplicationController {
 		return UserInterface.STATUS_MESSAGE_RUNNING + " - Tomcat Port:" + userInterface.getTomcatPort() + "  MySQL Port:"
 		        + userInterface.getMySqlPort();
 	}
+	
+	/**
+	 * Indicates that hte user has requested a database change.
+	 * 
+	 * @param modeToApply
+	 */
+	public void setApplyDatabaseChange(DatabaseMode modeToApply) {
+		this.applyDatabaseChange = modeToApply;
+	}
+	
 };

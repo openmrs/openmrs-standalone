@@ -45,4 +45,9 @@ public interface UserInterface {
 	String getMySqlPort();
 	
 	void setVisible(boolean visible);
+	
+	/**
+     * Shows the "first-time config" dialog (or asks those questions at the command prompt) 
+     */
+    void showInitialConfig();
 }

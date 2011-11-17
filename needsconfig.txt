@@ -1,0 +1,4 @@
+Do not edit or remove this file!
+
+If you see this file, it means that the standalone has not been run for the first time yet.
+It will be automatically deleted once you have chosen which database you want to use.  

@@ -27,8 +27,10 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.sql.Connection;
 import java.sql.DriverManager;
+import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Random;
@@ -106,7 +108,6 @@ public class StandaloneUtil {
 		final String KEY_RESET_CONNECTION_PASSWORD = "reset_connection_password";
 		
 		InputStream input = null;
-		OutputStreamWriter output = null;
 		boolean propertiesFileChanged = false;
 		
 		try {
@@ -176,33 +177,14 @@ public class StandaloneUtil {
 			
 			//Write back properties file only if changed.
 			if (propertiesFileChanged) {
-				output = new OutputStreamWriter(new FileOutputStream(OpenmrsUtil.getRuntimePropertiesPathName()), "UTF-8");
-				
-				Writer out = new BufferedWriter(output);
-				out.write("\n#Last updated by the OpenMRS Standalone application.\n");
-				out.write("#" + new Date() + "\n");
-				for (Map.Entry<Object, Object> e : properties.entrySet()) {
-					out.write(e.getKey() + "=" + e.getValue() + "\n");
-				}
-				out.write("\n");
-				out.flush();
-				out.close();
+				writeRuntimeProperties(properties);
 			}
 			
-			//I just do not like the extra characters that the store() method puts in the properties file.
-			//properties.store(output, null);
-		}
-		catch (Exception ex) {
-
 		}
 		finally {
 			try {
 				if (input != null)
 					input.close();
-				
-				if (output != null)
-					output.close();
-				
 			}
 			catch (Exception ex) {}
 		}
@@ -210,6 +192,36 @@ public class StandaloneUtil {
 		return mySqlPort;
 	}
 	
+	/**
+     * Auto generated method comment
+     * 
+     * @param properties
+     */
+    private static void writeRuntimeProperties(Properties properties) {
+    	//I just do not like the extra characters that the store() method puts in the properties file.
+		//properties.store(output, null);
+    	OutputStreamWriter output = null;
+    	try {
+    		output = new OutputStreamWriter(new FileOutputStream(OpenmrsUtil.getRuntimePropertiesPathName()), "UTF-8");
+
+    		Writer out = new BufferedWriter(output);
+    		out.write("\n#Last updated by the OpenMRS Standalone application.\n");
+    		out.write("#" + new Date() + "\n");
+    		for (Map.Entry<Object, Object> e : properties.entrySet()) {
+    			out.write(e.getKey() + "=" + e.getValue() + "\n");
+    		}
+    		out.write("\n");
+    		out.flush();
+    		out.close();
+    	} catch (IOException ex) {
+    		throw new RuntimeException("Error writing runtime properties file", ex);
+    	} finally {
+    		try {
+    			output.close();
+    		} catch (Exception ex) { }
+    	}
+    }
+
 	/**
 	 * Converts a string to an integer.
 	 * 
@@ -350,4 +362,51 @@ public class StandaloneUtil {
 		String jarPathName = getJarPathName().getAbsolutePath();
 		return jarPathName.substring(0, jarPathName.lastIndexOf(File.separatorChar));
 	}
+	
+	/**
+	 * Resets the connection.password in the runtime properties file to "test"
+	 */
+	public static void resetConnectionPassword() {
+		System.out.println("Resetting connection.password to 'test'");
+		Map<String, String> props = new HashMap<String, String>();
+		props.put("connection.username", "openmrs");
+		props.put("connection.password", "test");
+		updateRuntimeProperties(props);
+	}
+	
+	/**
+	 * Sets the given runtime properties, and re-saves the file
+	 * 
+	 * @param newProps
+	 */
+	private static void updateRuntimeProperties(Map<String, String> newProps) {
+		Properties properties = OpenmrsUtil.getRuntimeProperties(getContextName());
+		properties.putAll(newProps);
+		writeRuntimeProperties(properties);
+	}
+	
+	
+	/**
+	 * Starts and stops MySQL, so that mxj can create the default user
+	 * @throws Exception 
+	 */
+	public static void startupDatabaseToCreateDefaultUser() throws Exception {
+    	try {
+    		Class.forName("com.mysql.jdbc.Driver");
+    	} catch (ClassNotFoundException ex) {
+    		throw new RuntimeException("cannot find mysql driver class");
+    	}
+    	Properties props = OpenmrsUtil.getRuntimeProperties(getContextName());
+    	String url = props.getProperty("connection.url");
+    	if (!url.contains("server.initialize-user=true"))
+    		throw new RuntimeException("connection.url in runtime properties must contain server.initialize-user=true");
+
+		System.out.println("Working directory is " + new File(".").getAbsolutePath());
+		System.out.println("Opening MySQL connection to create openmrs/test users");
+    	Connection conn = DriverManager.getConnection(url, "openmrs", "test");
+    	conn.close();
+    	System.out.println("closed MySQL connection");
+    	stopMySqlServer();
+    }
+	
 }

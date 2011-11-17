@@ -187,4 +187,11 @@ public class CommandLine implements UserInterface {
 			ex.printStackTrace();
 		}
 	}
+
+	/**
+     * @see org.openmrs.standalone.UserInterface#showInitialConfig()
+     */
+    public void showInitialConfig() {
+	    appController.setApplyDatabaseChange(ApplicationController.DatabaseMode.NO_CHANGES);
+    }
 }
