@@ -270,3 +270,4 @@ http://dev.mysql.com/doc/refman/5.1/en/connector-mxj.html
 
 Details on how to add or remove platform specific databases can be found at: 
 http://dev.mysql.com/doc/refman/5.1/en/connector-mxj-usagenotes-packaging.html
+http://blog.teamlazerbeez.com/2011/10/03/embedded-mysql-on-java-with-connectormxj-and-64-bit-linux/
