@@ -28,9 +28,12 @@ import java.awt.event.KeyEvent;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
 
 import javax.imageio.ImageIO;
 import javax.swing.BorderFactory;
+import javax.swing.ImageIcon;
 import javax.swing.JButton;
 import javax.swing.JDialog;
 import javax.swing.JLabel;
@@ -65,7 +68,7 @@ public class MainFrame extends javax.swing.JFrame implements ActionListener, Use
 	public MainFrame(ApplicationController appController, String tomcatPort, String mysqlPort) {
 		this.appController = appController;
 		
-		if(tomcatPort != null && tomcatPort.trim().length() > 0)
+		if (tomcatPort != null && tomcatPort.trim().length() > 0)
 			this.tomcatPort = StandaloneUtil.fromStringToInt(tomcatPort);
 		
 		initComponents(mysqlPort);
@@ -158,7 +161,7 @@ public class MainFrame extends javax.swing.JFrame implements ActionListener, Use
 		mainPanel.setLayout(new GridBagLayout());
 		
 		lblTomcatPort = new JLabel("Tomcat Port");
-		txtTomcatPort = new JTextField(tomcatPort+"", 5);
+		txtTomcatPort = new JTextField(tomcatPort + "", 5);
 		lblMySqlPort = new JLabel("MySQL Port");
 		txtMySqlPort = new JTextField(mysqlPort, 5);
 		txtLog = new JTextArea();
@@ -306,7 +309,7 @@ public class MainFrame extends javax.swing.JFrame implements ActionListener, Use
 		return tomcatPort;
 	}
 	
-	public String getMySqlPort(){
+	public String getMySqlPort() {
 		return txtMySqlPort.getText();
 	}
 	
@@ -410,36 +413,53 @@ public class MainFrame extends javax.swing.JFrame implements ActionListener, Use
 	private JButton btnStop;
 	
 	private JTextArea txtLog;
-
+	
 	/**
-     * @see org.openmrs.standalone.UserInterface#showInitialConfig()
-     */
-    public void showInitialConfig() {
-    	final JDialog configDialog = new JDialog(this, "Configure your OpenMRS Installation", true);
-    	JPanel content = new JPanel();
-    	content.setBorder(BorderFactory.createEmptyBorder(15, 15, 15, 15));
-    	content.setLayout(new BorderLayout(10, 10)); //10,10 = hgap, vgap
-    	configDialog.getContentPane().add(content);
-    	
-    	Font font = new Font(Font.SERIF, Font.PLAIN, 16);
-    	
-    	JLabel instructions = new JLabel("<html><b>Welcome to OpenMRS! OpenMRS can be configured in one of three ways, depending on<br/>your needs. Please click on the configuration that best meets your needs.</b><br/>(You will not see this next time you run OpenMRS)</html>");
-    	instructions.setFont(font);
-    	content.add(instructions, BorderLayout.NORTH);
-
-    	final JButton useCurrent = new JButton("Do Not Modify the Database");
-
-    	final JButton demoDatabase = new JButton("<html><h3>Demonstration mode</h3>Configures OpenMRS with a demonstration database. This is the quickest way to start up OpenMRS with some sample data to evaluate the system or experiment with features. (TO DO: implement this.)</html>");
-    	demoDatabase.setEnabled(false);
-    	colorHelper(demoDatabase, new Color(138, 191, 99));
-    	
-    	final JButton emptyDatabase = new JButton("<html><h3>Starter Implementation</h3>Configures OpenMRS with an empty database. (TO DO: replace this with the MVP/CIEL option.) If you are familiar with OpenMRS and want to start a new system, this is a good place to start.</html>");
-    	colorHelper(emptyDatabase, new Color(255, 243, 136));
-    	
-    	final JButton expertMode = new JButton("<html><h3>Expert Mode</h3>Go through the initial setup wizard yourself.");
-    	colorHelper(expertMode, new Color(255, 138, 138));
-
-    	ActionListener listener = new ActionListener() {
+	 * @see org.openmrs.standalone.UserInterface#showInitialConfig()
+	 */
+	public void showInitialConfig() {
+		final JDialog configDialog = new JDialog(this, "Configure your OpenMRS Installation", true);
+		JPanel content = new JPanel();
+		content.setBorder(BorderFactory.createEmptyBorder(15, 15, 15, 15));
+		content.setLayout(new BorderLayout(10, 10)); //10,10 = hgap, vgap
+		configDialog.getContentPane().add(content);
+		
+		Font font = new Font(Font.SERIF, Font.PLAIN, 16);
+		
+		JLabel instructions = new JLabel(
+		        "<html><b>Welcome to OpenMRS! OpenMRS can be configured in one of three ways, depending on<br/>your needs. Please click on the configuration that best meets your needs.</b><br/>(You will not see this next time you run OpenMRS)</html>");
+		instructions.setFont(font);
+		content.add(instructions, BorderLayout.NORTH);
+		
+		final JButton useCurrent = new JButton("Do Not Modify the Database");
+		final JButton demoDatabase = new JButton("<html><h3>Demonstration Mode</h3></html>", new ImageIcon(getClass()
+		        .getResource("demonstration_mode.png")));
+		Map<JButton, String> buttonDescriptionMap = new HashMap<JButton, String>();
+		demoDatabase.setEnabled(false);
+		buttonDescriptionMap
+		        .put(
+		            demoDatabase,
+		            "Configures OpenMRS with a demonstration database. This is the quickest way to start up OpenMRS with some sample data to evaluate the system or experiment with features.");
+		setButtonProperties(demoDatabase, new Color(136, 235, 148));
+		
+		final JButton emptyDatabase = new JButton("<html><h3>Starter Implementation</h3></html>", new ImageIcon(getClass()
+		        .getResource("starter_impl.png")));
+		buttonDescriptionMap
+		        .put(
+		            emptyDatabase,
+		            "Configures OpenMRS with the MVP/CIEL dictionary, but without any patient data. If you are familiar with OpenMRS and want to start a new system, this is a good place to start.");
+		setButtonProperties(emptyDatabase, new Color(255, 243, 136));
+		
+		final JButton expertMode = new JButton("<html><h3>Expert mode</h3></html>", new ImageIcon(getClass().getResource(
+		    "expert.png")));
+		buttonDescriptionMap
+		        .put(
+		            expertMode,
+		            "Configures OpenMRS with only the core essentials needed to get the system running. You will add all content, including dictionary concepts, to the system after it is running.");
+		setButtonProperties(expertMode, new Color(255, 138, 138));
+		
+		ActionListener listener = new ActionListener() {
+			
 			public void actionPerformed(ActionEvent e) {
 				if (e.getSource() == emptyDatabase) {
 					appController.setApplyDatabaseChange(DatabaseMode.EMPTY_DATABASE);
@@ -451,31 +471,50 @@ public class MainFrame extends javax.swing.JFrame implements ActionListener, Use
 				configDialog.dispose();
 			}
 		};
-
-    	JPanel buttons = new JPanel();
-    	buttons.setLayout(new GridLayout(0, 1, 10, 10)); // 0,1 -> vertical, 10,10=hgap,vgap
-		for (JButton b : Arrays.asList(demoDatabase, emptyDatabase, expertMode)) {
+		
+		JPanel buttons = new JPanel();
+		buttons.setLayout(new GridLayout(0, 1, 10, 20)); // 0,1 -> vertical, 10,20=hgap,vgap
+		for (JButton b : Arrays.asList(emptyDatabase, expertMode)) {
 			b.setFont(font);
-			buttons.add(b);
 			b.addActionListener(listener);
+			buttons.add(createButtonAndDescriptionPanel(b, buttonDescriptionMap.get(b)));
 		}
+		//TODO remove this placeholder panel for the commented out demo data panel
+		//Adding it to beautify the UI
+		buttons.add(new JPanel());
 		content.add(buttons, BorderLayout.CENTER);
-    	
+		
 		configDialog.setPreferredSize(new Dimension(750, 600));
-    	configDialog.pack();
+		configDialog.pack();
 		configDialog.setLocationRelativeTo(this);
-    	configDialog.setVisible(true);
-    }
-
+		configDialog.setVisible(true);
+	}
+	
 	/**
-     * Sets button color. (We can't just set background, because apparently on OSX this doesn't
-     * work, since Apple wants things to match their default platform look and feel.
-     * 
-     * @param demoDatabase
-     * @param color
-     */
-    private void colorHelper(JButton button, Color color) {
-    	button.setBackground(new Color(138, 191, 99));
-    	button.setBorder(BorderFactory.createCompoundBorder(BorderFactory.createLineBorder(color, 2), BorderFactory.createEmptyBorder(5, 5, 5, 5)));
-    }
+	 * Sets button color. (We can't just set background, because apparently on OSX this doesn't
+	 * work, since Apple wants things to match their default platform look and feel.
+	 * 
+	 * @param demoDatabase
+	 * @param color
+	 */
+	private void setButtonProperties(JButton button, Color color) {
+		button.setBackground(color);
+		button.setBorder(BorderFactory.createCompoundBorder(BorderFactory.createMatteBorder(0, 0, 3, 3, color),
+		    BorderFactory.createEmptyBorder(0, 15, 0, 15)));
+		button.setPreferredSize(new Dimension(250, 64));//the height has no effect because of the layout manager
+	}
+	
+	/**
+	 * Utility method that creates jpanel that contains a button and the description
+	 * 
+	 * @param button
+	 * @param description
+	 * @return
+	 */
+	private JPanel createButtonAndDescriptionPanel(JButton button, String description) {
+		JPanel panel = new JPanel(new BorderLayout(15, 0));
+		panel.add(button, BorderLayout.WEST);
+		panel.add(new JLabel("<html><p>" + description + "</p></html>"));
+		return panel;
+	}
 }
