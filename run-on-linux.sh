@@ -1,3 +1,3 @@
 #!/bin/bash
 
-java -jar openmrs-standalone.jar
+java -jar standalone-1.1.1.jar

@@ -435,7 +435,6 @@ public class MainFrame extends javax.swing.JFrame implements ActionListener, Use
 		final JButton demoDatabase = new JButton("<html><h3>Demonstration Mode</h3></html>", new ImageIcon(getClass()
 		        .getResource("demonstration_mode.png")));
 		Map<JButton, String> buttonDescriptionMap = new HashMap<JButton, String>();
-		demoDatabase.setEnabled(false);
 		buttonDescriptionMap
 		        .put(
 		            demoDatabase,
@@ -467,6 +466,8 @@ public class MainFrame extends javax.swing.JFrame implements ActionListener, Use
 					appController.setApplyDatabaseChange(DatabaseMode.NO_CHANGES);
 				} else if (e.getSource() == expertMode) {
 					appController.setApplyDatabaseChange(DatabaseMode.USE_INITIALIZATION_WIZARD);
+				} else if (e.getSource() == demoDatabase) {
+					appController.setApplyDatabaseChange(DatabaseMode.DEMO_DATABASE);
 				}
 				configDialog.dispose();
 			}
@@ -474,7 +475,7 @@ public class MainFrame extends javax.swing.JFrame implements ActionListener, Use
 		
 		JPanel buttons = new JPanel();
 		buttons.setLayout(new GridLayout(0, 1, 10, 20)); // 0,1 -> vertical, 10,20=hgap,vgap
-		for (JButton b : Arrays.asList(emptyDatabase, expertMode)) {
+		for (JButton b : Arrays.asList(demoDatabase, emptyDatabase, expertMode)) {
 			b.setFont(font);
 			b.addActionListener(listener);
 			buttons.add(createButtonAndDescriptionPanel(b, buttonDescriptionMap.get(b)));

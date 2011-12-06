@@ -34,8 +34,8 @@ public class ApplicationController {
 	public enum DatabaseMode {
 		NO_CHANGES, // just use whatever database is set up, and don't do anything.
 		USE_INITIALIZATION_WIZARD, // clear the database and invoke the initialization wizard
-		EMPTY_DATABASE
-		// use the empty database
+		EMPTY_DATABASE, // use the empty database
+		DEMO_DATABASE// Use the demo database
 	}
 	
 	private DatabaseMode applyDatabaseChange = null;
@@ -225,6 +225,11 @@ public class ApplicationController {
 			} else if (applyDatabaseChange == DatabaseMode.EMPTY_DATABASE) {
 				deleteActiveDatabase();
 				unzipDatabase(new File("emptydatabase.zip"));
+				StandaloneUtil.resetConnectionPassword();
+				StandaloneUtil.startupDatabaseToCreateDefaultUser();
+			} else if (applyDatabaseChange == DatabaseMode.DEMO_DATABASE) {
+				deleteActiveDatabase();
+				unzipDatabase(new File("demodatabase.zip"));
 				StandaloneUtil.resetConnectionPassword();
 				StandaloneUtil.startupDatabaseToCreateDefaultUser();
 			}
