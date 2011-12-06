@@ -470,9 +470,7 @@ public class MainFrame extends javax.swing.JFrame implements ActionListener, Use
 			b.addActionListener(listener);
 			buttons.add(b);
 		}
-		//TODO remove this placeholder panel for the commented out demo data panel
-		//Adding it to beautify the UI
-		buttons.add(new JPanel());
+		
 		content.add(buttons, BorderLayout.CENTER);
 		
 		configDialog.setPreferredSize(new Dimension(750, 600));
