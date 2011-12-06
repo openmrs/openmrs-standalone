@@ -28,8 +28,6 @@ import java.awt.event.KeyEvent;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Map;
 
 import javax.imageio.ImageIO;
 import javax.swing.BorderFactory;
@@ -47,6 +45,7 @@ import javax.swing.JSeparator;
 import javax.swing.JTextArea;
 import javax.swing.JTextField;
 import javax.swing.KeyStroke;
+import javax.swing.SwingConstants;
 import javax.swing.SwingUtilities;
 import javax.swing.UIManager;
 import javax.swing.WindowConstants;
@@ -427,35 +426,26 @@ public class MainFrame extends javax.swing.JFrame implements ActionListener, Use
 		Font font = new Font(Font.SERIF, Font.PLAIN, 16);
 		
 		JLabel instructions = new JLabel(
-		        "<html><b>Welcome to OpenMRS! OpenMRS can be configured in one of three ways, depending on<br/>your needs. Please click on the configuration that best meets your needs.</b><br/>(You will not see this next time you run OpenMRS)</html>");
+		        "<html><b>Welcome to OpenMRS! OpenMRS can be configured in one of three ways, depending on your needs. Please click on the configuration that best meets your needs.</b><br/>(You will not see this next time you run OpenMRS)</html>");
 		instructions.setFont(font);
 		content.add(instructions, BorderLayout.NORTH);
 		
 		final JButton useCurrent = new JButton("Do Not Modify the Database");
-		final JButton demoDatabase = new JButton("<html><h3>Demonstration Mode</h3></html>", new ImageIcon(getClass()
-		        .getResource("demonstration_mode.png")));
-		Map<JButton, String> buttonDescriptionMap = new HashMap<JButton, String>();
-		buttonDescriptionMap
-		        .put(
-		            demoDatabase,
-		            "Configures OpenMRS with a demonstration database. This is the quickest way to start up OpenMRS with some sample data to evaluate the system or experiment with features.");
-		setButtonProperties(demoDatabase, new Color(136, 235, 148));
 		
-		final JButton emptyDatabase = new JButton("<html><h3>Starter Implementation</h3></html>", new ImageIcon(getClass()
-		        .getResource("starter_impl.png")));
-		buttonDescriptionMap
-		        .put(
-		            emptyDatabase,
-		            "Configures OpenMRS with the MVP/CIEL dictionary, but without any patient data. If you are familiar with OpenMRS and want to start a new system, this is a good place to start.");
-		setButtonProperties(emptyDatabase, new Color(255, 243, 136));
+		final JButton demoDatabase = new JButton(
+		        "<html><h3>Demonstration mode</h3>Configures OpenMRS with a demonstration database. This is the quickest way to start up OpenMRS with some sample data to evaluate the system or experiment with features</html>",
+		        new ImageIcon(getClass().getResource("demonstration_mode.png")));
+		colorHelper(demoDatabase, new Color(136, 235, 148));
 		
-		final JButton expertMode = new JButton("<html><h3>Expert mode</h3></html>", new ImageIcon(getClass().getResource(
-		    "expert.png")));
-		buttonDescriptionMap
-		        .put(
-		            expertMode,
-		            "Configures OpenMRS with only the core essentials needed to get the system running. You will add all content, including dictionary concepts, to the system after it is running.");
-		setButtonProperties(expertMode, new Color(255, 138, 138));
+		final JButton emptyDatabase = new JButton(
+		        "<html><h3>Starter Implementation</h3>Configures OpenMRS with the MVP/CIEL dictionary, but without any patient data. If you are familiar with OpenMRS and want to start a new system, this is a good place to start.</html>",
+		        new ImageIcon(getClass().getResource("starter_impl.png")));
+		colorHelper(emptyDatabase, new Color(255, 243, 136));
+		
+		final JButton expertMode = new JButton(
+		        "<html><h3>Expert Mode</h3>Go through the initial setup wizard yourself. You will add all content, including dictionary concepts, to the system after it is running.</html>",
+		        new ImageIcon(getClass().getResource("expert.png")));
+		colorHelper(expertMode, new Color(255, 138, 138));
 		
 		ActionListener listener = new ActionListener() {
 			
@@ -478,7 +468,7 @@ public class MainFrame extends javax.swing.JFrame implements ActionListener, Use
 		for (JButton b : Arrays.asList(demoDatabase, emptyDatabase, expertMode)) {
 			b.setFont(font);
 			b.addActionListener(listener);
-			buttons.add(createButtonAndDescriptionPanel(b, buttonDescriptionMap.get(b)));
+			buttons.add(b);
 		}
 		//TODO remove this placeholder panel for the commented out demo data panel
 		//Adding it to beautify the UI
@@ -492,30 +482,15 @@ public class MainFrame extends javax.swing.JFrame implements ActionListener, Use
 	}
 	
 	/**
-	 * Sets button color. (We can't just set background, because apparently on OSX this doesn't
-	 * work, since Apple wants things to match their default platform look and feel.
-	 * 
-	 * @param demoDatabase
-	 * @param color
-	 */
-	private void setButtonProperties(JButton button, Color color) {
-		button.setBackground(color);
-		button.setBorder(BorderFactory.createCompoundBorder(BorderFactory.createMatteBorder(0, 0, 3, 3, color),
-		    BorderFactory.createEmptyBorder(0, 15, 0, 15)));
-		button.setPreferredSize(new Dimension(250, 64));//the height has no effect because of the layout manager
-	}
-	
-	/**
-	 * Utility method that creates jpanel that contains a button and the description
+	 * Sets button color and the horizontal alignment of the text and icon
 	 * 
 	 * @param button
-	 * @param description
-	 * @return
+	 * @param color
 	 */
-	private JPanel createButtonAndDescriptionPanel(JButton button, String description) {
-		JPanel panel = new JPanel(new BorderLayout(15, 0));
-		panel.add(button, BorderLayout.WEST);
-		panel.add(new JLabel("<html><p>" + description + "</p></html>"));
-		return panel;
+	private void colorHelper(JButton button, Color color) {
+		button.setBackground(color);
+		button.setOpaque(true);
+		button.setBorderPainted(false);
+		button.setHorizontalAlignment(SwingConstants.LEFT);
 	}
 }
