@@ -29,12 +29,13 @@ import java.util.zip.ZipFile;
 public class ApplicationController {
 	
 	/**
-     * List of the different settings the user can choose for the database
-     */
+	 * List of the different settings the user can choose for the database
+	 */
 	public enum DatabaseMode {
 		NO_CHANGES, // just use whatever database is set up, and don't do anything.
 		USE_INITIALIZATION_WIZARD, // clear the database and invoke the initialization wizard
-		EMPTY_DATABASE // use the empty database
+		EMPTY_DATABASE
+		// use the empty database
 	}
 	
 	private DatabaseMode applyDatabaseChange = null;
@@ -99,10 +100,10 @@ public class ApplicationController {
 		//installations do not share the same password.
 		//mySqlPort = StandaloneUtil.setPortsAndMySqlPassword(mySqlPort, tomcatPort);
 		
-		if(mySqlPort == null)
+		if (mySqlPort == null)
 			mySqlPort = UserInterface.DEFAULT_MYSQL_PORT;
 		
-		if(tomcatPort == null)
+		if (tomcatPort == null)
 			tomcatPort = UserInterface.DEFAULT_TOMCAT_PORT + "";
 		
 		new ApplicationController(commandLine, tomcatPort, mySqlPort);
@@ -204,11 +205,12 @@ public class ApplicationController {
 		
 		// add shutdown hook to stop server
 		Runtime.getRuntime().addShutdownHook(new Thread() {
+			
 			public void run() {
 				stopServer();
 			}
 		});
-
+		
 		while (needsInitialConfiguration() && applyDatabaseChange == null) {
 			System.out.println("Initial configuration needed");
 			userInterface.showInitialConfig();
@@ -239,29 +241,30 @@ public class ApplicationController {
 	
 	/**
 	 * True if there is no database, or if there's a "needsconfig.txt" file.
-     * @return whether or not initial configuration is needed
-     */
-    private boolean needsInitialConfiguration() {
-    	return !(new File("database").exists()) || new File("needsconfig.txt").exists();
-    }
-    
+	 * 
+	 * @return whether or not initial configuration is needed
+	 */
+	private boolean needsInitialConfiguration() {
+		return !(new File("database").exists()) || new File("needsconfig.txt").exists();
+	}
+	
 	/**
-     * Deletes the /database/data folder
-     */
-    private void deleteActiveDatabase() {
-    	System.out.println("Deleting active database");
-	    if (!deleteFileOrDirectory(new File("database")))
-	    	System.out.println("...failed to delete!");
-    }
-    
+	 * Deletes the /database/data folder
+	 */
+	private void deleteActiveDatabase() {
+		System.out.println("Deleting active database");
+		if (!deleteFileOrDirectory(new File("database")))
+			System.out.println("...failed to delete!");
+	}
+	
 	/**
-     * Deletes the file indicating that configuration is needed.
-     */
-    private void deleteNeedsConfigFile() {
-    	deleteFileOrDirectory(new File("needsconfig.txt"));
-    }
-    
-    /**
+	 * Deletes the file indicating that configuration is needed.
+	 */
+	private void deleteNeedsConfigFile() {
+		deleteFileOrDirectory(new File("needsconfig.txt"));
+	}
+	
+	/**
 	 * @param dirOrFile
 	 * @return
 	 */
@@ -281,74 +284,74 @@ public class ApplicationController {
 	}
 	
 	/**
-     * Expands the given zip file as /database
-     * 
-     * @param zipFile
-	 * @throws IOException 
-     */
-    private void unzipDatabase(File zipFile) throws IOException {
-	    System.out.println("Unzipping database from " + zipFile.getName());
-	    File dest = new File("database");
-	    dest.mkdir();
-	    unzip(zipFile, dest);
-    }
-    
-    /**
-	 * Modified version of http://stackoverflow.com/questions/981578/how-to-unzip-files-recursively-in-java/981731#981731
+	 * Expands the given zip file as /database
+	 * 
+	 * @param zipFile
+	 * @throws IOException
+	 */
+	private void unzipDatabase(File zipFile) throws IOException {
+		System.out.println("Unzipping database from " + zipFile.getName());
+		File dest = new File("database");
+		dest.mkdir();
+		unzip(zipFile, dest);
+	}
+	
+	/**
+	 * Modified version of
+	 * http://stackoverflow.com/questions/981578/how-to-unzip-files-recursively-in
+	 * -java/981731#981731
 	 * 
 	 * @param sourceZipFile
 	 * @param unzipDestinationDirectory
 	 * @throws IOException
 	 */
 	public void unzip(File sourceZipFile, File unzipDestinationDirectory) throws IOException {
-	    int BUFFER = 2048;
-	    if (!unzipDestinationDirectory.exists())
-	    	unzipDestinationDirectory.mkdir();
-
-	    ZipFile zipFile;
-	    // Open Zip file for reading
-	    zipFile = new ZipFile(sourceZipFile, ZipFile.OPEN_READ);
-
-	    // Create an enumeration of the entries in the zip file
-	    Enumeration<? extends ZipEntry> zipFileEntries = zipFile.entries();
-
-	    // Process each entry
-	    while (zipFileEntries.hasMoreElements()) {
-	        // grab a zip file entry
-	        ZipEntry entry = zipFileEntries.nextElement();
-	        String currentEntry = entry.getName();
-
-	        File destFile = new File(unzipDestinationDirectory, currentEntry);
-
-	        // grab file's parent directory structure
-	        File destinationParent = destFile.getParentFile();
-
-	        // create the parent directory structure if needed
-	        destinationParent.mkdirs();
-
-            // extract file if not a directory
-            if (!entry.isDirectory()) {
-                BufferedInputStream is =
-                        new BufferedInputStream(zipFile.getInputStream(entry));
-                int currentByte;
-                // establish buffer for writing file
-                byte data[] = new byte[BUFFER];
-                
-                // write the current file to disk
-                FileOutputStream fos = new FileOutputStream(destFile);
-                BufferedOutputStream dest =
-                        new BufferedOutputStream(fos, BUFFER);
-
-                // read and write until last byte is encountered
-                while ((currentByte = is.read(data, 0, BUFFER)) != -1) {
-                    dest.write(data, 0, currentByte);
-                }
-                dest.flush();
-                dest.close();
-                is.close();
-            }
-	    }
-	    zipFile.close();
+		int BUFFER = 2048;
+		if (!unzipDestinationDirectory.exists())
+			unzipDestinationDirectory.mkdir();
+		
+		ZipFile zipFile;
+		// Open Zip file for reading
+		zipFile = new ZipFile(sourceZipFile, ZipFile.OPEN_READ);
+		
+		// Create an enumeration of the entries in the zip file
+		Enumeration<? extends ZipEntry> zipFileEntries = zipFile.entries();
+		
+		// Process each entry
+		while (zipFileEntries.hasMoreElements()) {
+			// grab a zip file entry
+			ZipEntry entry = zipFileEntries.nextElement();
+			String currentEntry = entry.getName();
+			
+			File destFile = new File(unzipDestinationDirectory, currentEntry);
+			
+			// grab file's parent directory structure
+			File destinationParent = destFile.getParentFile();
+			
+			// create the parent directory structure if needed
+			destinationParent.mkdirs();
+			
+			// extract file if not a directory
+			if (!entry.isDirectory()) {
+				BufferedInputStream is = new BufferedInputStream(zipFile.getInputStream(entry));
+				int currentByte;
+				// establish buffer for writing file
+				byte data[] = new byte[BUFFER];
+				
+				// write the current file to disk
+				FileOutputStream fos = new FileOutputStream(destFile);
+				BufferedOutputStream dest = new BufferedOutputStream(fos, BUFFER);
+				
+				// read and write until last byte is encountered
+				while ((currentByte = is.read(data, 0, BUFFER)) != -1) {
+					dest.write(data, 0, currentByte);
+				}
+				dest.flush();
+				dest.close();
+				is.close();
+			}
+		}
+		zipFile.close();
 	}
 	
 	/**
