@@ -21,6 +21,8 @@ import java.awt.Font;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.GridLayout;
+import java.awt.LayoutManager;
+import java.awt.Rectangle;
 import java.awt.Toolkit;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -49,6 +51,7 @@ import javax.swing.SwingConstants;
 import javax.swing.SwingUtilities;
 import javax.swing.UIManager;
 import javax.swing.WindowConstants;
+import javax.swing.border.BevelBorder;
 
 import org.openmrs.standalone.ApplicationController.DatabaseMode;
 
@@ -468,7 +471,11 @@ public class MainFrame extends javax.swing.JFrame implements ActionListener, Use
 		for (JButton b : Arrays.asList(demoDatabase, emptyDatabase, expertMode)) {
 			b.setFont(font);
 			b.addActionListener(listener);
-			buttons.add(b);
+			JPanel panel = new JPanel();
+			panel.setBorder(BorderFactory.createRaisedBevelBorder());
+			panel.setLayout(new BorderLayout());
+			panel.add(b);
+			buttons.add(panel);
 		}
 		
 		content.add(buttons, BorderLayout.CENTER);
