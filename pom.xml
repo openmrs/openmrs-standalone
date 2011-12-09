@@ -13,7 +13,6 @@
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<tomcat.version>6.0.26</tomcat.version>
-		<openmrs.version>1.10.0-SNAPSHOT</openmrs.version>
 	</properties>
 
 	<dependencies>
@@ -54,9 +53,62 @@
 			<scope>compile</scope>
 		</dependency>
 	</dependencies>
+	
+	<profiles>
+		<profile>
+			<id>default</id> <!-- for 1.9.x and up -->
+			<activation>
+				<activeByDefault>true</activeByDefault>
+			</activation>
+			<properties>
+				<liquibasePluginArtifactId>liquibase-maven-plugin</liquibasePluginArtifactId>
+				<liquibasePluginVersion>2.0.1</liquibasePluginVersion>
+				<liquibaseDemoDataFileName>liquibase-demo-data.xml</liquibaseDemoDataFileName>
+				<liquibaseDemoDataFollowupFileName>liquibase-empty-changelog.xml</liquibaseDemoDataFollowupFileName>
+			</properties>
+		</profile>
+		<profile>
+			<id>1.8.x</id> <!-- activate with -P1.8.x -->
+			<activation>
+				<property>
+					<name>openmrs.version</name>
+					<value>1.8.4</value> <!-- once this ticket is done we can do this magically: http://jira.codehaus.org/browse/MNG-4777 -->
+				</property>
+			</activation>
+			<properties>
+				<liquibasePluginArtifactId>liquibase-plugin</liquibasePluginArtifactId>
+				<liquibasePluginVersion>1.9.5.0</liquibasePluginVersion>
+				<liquibaseDemoDataFileName>liquibase-demo-data-18x.xml</liquibaseDemoDataFileName>
+				<liquibaseDemoDataFollowupFileName>liquibase-rename-helper-tables-18x.xml</liquibaseDemoDataFollowupFileName>
+			</properties>
+		</profile>
+	</profiles>
 
 	<build>
 		<plugins>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-enforcer-plugin</artifactId>
+				<version>1.0</version>
+				<executions>
+					<execution>
+						<id>enforce-property</id>
+						<goals>
+							<goal>enforce</goal>
+						</goals>
+						<configuration>
+							<rules>
+								<requireProperty>
+									<property>openmrs.version</property>
+									<message>openmrs.version property is missing. This should be something like 1.9.0, 1.8.3, or 1.10-alpha.  Add -Dopenmrs.version=1.9.1. NOTE: If building for 1.8.x, also add -P1.8.x</message>
+								</requireProperty>
+							</rules>
+							<fail>true</fail>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
+			
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-compiler-plugin</artifactId>
@@ -127,8 +179,8 @@
 			</plugin>
 			<plugin>
 				<groupId>org.liquibase</groupId>
-				<artifactId>liquibase-maven-plugin</artifactId>
-				<version>2.0.1</version>
+				<artifactId>${liquibasePluginArtifactId}</artifactId>
+				<version>${liquibasePluginVersion}</version>
 				<dependencies>
 					<dependency>
 						<groupId>org.openmrs.api</groupId>
@@ -232,7 +284,7 @@
 						<phase>process-resources</phase>
 						<configuration>
 							<driver>com.mysql.jdbc.Driver</driver>
-							<changeLogFile>liquibase-demo-data.xml</changeLogFile>
+							<changeLogFile>${liquibaseDemoDataFileName}</changeLogFile>
 							<url><![CDATA[jdbc:mysql:mxj://127.0.0.1:3328/openmrs?autoReconnect=true&sessionVariables=storage_engine=InnoDB&useUnicode=true&characterEncoding=UTF-8&server.initialize-user=true&createDatabaseIfNotExist=true&server.basedir=target/demodatabase&server.datadir=target/demodatabase/data&server.collation-server=utf8_general_ci&server.character-set-server=utf8&server.max_allowed_packet=32M]]></url>
 							<username>openmrs</username>
 							<password>test</password>
@@ -279,12 +331,38 @@
 							<goal>update</goal>
 						</goals>
 					</execution>
+					<execution>
+						<id>demo-db-followup</id>
+						<phase>process-resources</phase>
+						<configuration>
+							<driver>com.mysql.jdbc.Driver</driver>
+							<changeLogFile>${liquibaseDemoDataFollowupFileName}</changeLogFile>
+							<url><![CDATA[jdbc:mysql:mxj://127.0.0.1:3328/openmrs?autoReconnect=true&sessionVariables=storage_engine=InnoDB&useUnicode=true&characterEncoding=UTF-8&server.initialize-user=true&createDatabaseIfNotExist=true&server.basedir=target/demodatabase&server.datadir=target/demodatabase/data&server.collation-server=utf8_general_ci&server.character-set-server=utf8&server.max_allowed_packet=32M]]></url>
+							<username>openmrs</username>
+							<password>test</password>
+							<verbose>true</verbose>
+							<dropFirst>false</dropFirst>
+							<systemProperties>
+								<property>
+									<name>liquibase.databaseChangeLogTableName</name>
+									<value>liquibasechangelog</value>
+								</property>
+								<property>
+									<name>liquibase.databaseChangeLogLockTableName</name>
+									<value>liquibasechangeloglock</value>
+								</property>
+							</systemProperties>
+						</configuration>
+						<goals>
+							<goal>update</goal>
+						</goals>
+					</execution>
 				</executions>
 			</plugin>
 			<plugin>
 				<groupId>org.openmrs.standalone</groupId>
 				<artifactId>standalone-build-support</artifactId>
-				<version>0.1</version>
+				<version>0.3</version>
 				<executions>
 					<execution>
 						<id>stop-mysql-after-build</id>

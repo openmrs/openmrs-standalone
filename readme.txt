@@ -5,8 +5,9 @@ README FILE TO REFLECT THAT.
 QUICK SUMMARY:
 * set the openmrs.version variable in pom.xml
 * mvn clean
-* mvn package
-* (if it fails, manually kill any mysql process that's running on port 3326)
+* mvn package -Dopenmrs.version=1.9.0
+* If running a second time, ALWAYS check to make sure mysql processes on port 3326 and 3328 are stopped. 
+  If you DON'T do that, then the "mvn clean" will not really clean. 
 
 -> output is in the target folder, as openmrs-standalone-(openmrs.version).zip
 -> the contents of that zip are in the similarly-named folder under /target, if you want to test in-place

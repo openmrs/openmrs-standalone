@@ -30,6 +30,7 @@ import java.awt.event.KeyEvent;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.util.Arrays;
+import java.util.List;
 
 import javax.imageio.ImageIO;
 import javax.swing.BorderFactory;
@@ -428,11 +429,6 @@ public class MainFrame extends javax.swing.JFrame implements ActionListener, Use
 		
 		Font font = new Font(Font.SERIF, Font.PLAIN, 16);
 		
-		JLabel instructions = new JLabel(
-		        "<html><b>Welcome to OpenMRS! OpenMRS can be configured in one of three ways, depending on your needs. Please click on the configuration that best meets your needs.</b><br/>(You will not see this next time you run OpenMRS)</html>");
-		instructions.setFont(font);
-		content.add(instructions, BorderLayout.NORTH);
-		
 		final JButton useCurrent = new JButton("Do Not Modify the Database");
 		
 		final JButton demoDatabase = new JButton(
@@ -468,7 +464,8 @@ public class MainFrame extends javax.swing.JFrame implements ActionListener, Use
 		
 		JPanel buttons = new JPanel();
 		buttons.setLayout(new GridLayout(0, 1, 10, 20)); // 0,1 -> vertical, 10,20=hgap,vgap
-		for (JButton b : Arrays.asList(demoDatabase, emptyDatabase, expertMode)) {
+		List<JButton> buttonList = Arrays.asList(demoDatabase, /* bwolfe: removing MVP dictionary option emptyDatabase,*/ expertMode);
+		for (JButton b : buttonList) {
 			b.setFont(font);
 			b.addActionListener(listener);
 			JPanel panel = new JPanel();
@@ -477,6 +474,11 @@ public class MainFrame extends javax.swing.JFrame implements ActionListener, Use
 			panel.add(b);
 			buttons.add(panel);
 		}
+		
+		JLabel instructions = new JLabel(
+		        "<html><b>Welcome to OpenMRS! OpenMRS can be configured in one of " + buttonList.size() + " ways, depending on your needs. Please click on the configuration that best meets your needs.</b><br/>(You will not see this next time you run OpenMRS)</html>");
+		instructions.setFont(font);
+		content.add(instructions, BorderLayout.NORTH);
 		
 		content.add(buttons, BorderLayout.CENTER);
 		
