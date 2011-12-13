@@ -229,7 +229,7 @@
 					</execution>
 					<execution>
 						<id>empty-db-add-core-data</id>
-						<phase>process-resources</phase>
+						<phase>package</phase>
 						<configuration>
 							<driver>com.mysql.jdbc.Driver</driver>
 							<changeLogFile>liquibase-core-data.xml</changeLogFile>
@@ -362,7 +362,7 @@
 			<plugin>
 				<groupId>org.openmrs.standalone</groupId>
 				<artifactId>standalone-build-support</artifactId>
-				<version>0.3</version>
+				<version>0.4</version>
 				<executions>
 					<execution>
 						<id>stop-mysql-after-build</id>
