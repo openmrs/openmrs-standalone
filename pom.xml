@@ -229,7 +229,7 @@
 					</execution>
 					<execution>
 						<id>empty-db-add-core-data</id>
-						<phase>package</phase>
+						<phase>process-resources</phase>
 						<configuration>
 							<driver>com.mysql.jdbc.Driver</driver>
 							<changeLogFile>liquibase-core-data.xml</changeLogFile>
