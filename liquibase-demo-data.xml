@@ -8,7 +8,7 @@
 	
 	<changeSet id="20111202-1601" author="standalone" dbms="mysql">
 		<comment>Adding demo data and updating the 'liquibasechangelog' table to work with version 2.0.x</comment>
-		<sqlFile path="Demo-1.8.0.sql" encoding="UTF-8" />
+		<sqlFile path="Demo-1.9.0.sql" encoding="UTF-8" />
 		
 		<!-- 
 			We need to make the liquibasechangelog table modifications to 2.0.x within this changeset because
@@ -16,17 +16,7 @@
 			this changeset into table because of the missing columns that are required.
 			See http://www.liquibase.org/download for more details.
 		 -->
-		 
-		<addColumn tableName="liquibasechangelog">
-			<column name="ORDEREXECUTED" type="int" defaultValueNumeric="-1">
-				<constraints nullable="false"/>
-			</column>
-		</addColumn>
-		<addColumn tableName="liquibasechangelog">
-			<column name="EXECTYPE" type="varchar(10)" defaultValue="EXECUTED">
-				<constraints nullable="false"/>
-			</column>
-		</addColumn>
+
 		<ext:modifyColumn tableName="liquibasechangelog">
 			<column name="MD5SUM" type="varchar(35)" />
 		</ext:modifyColumn>
