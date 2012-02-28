@@ -426,7 +426,7 @@ public class ApplicationController {
 	}
 	
 	/**
-	 * Indicates that hte user has requested a database change.
+	 * Indicates that the user has requested a database change.
 	 * 
 	 * @param modeToApply
 	 */
