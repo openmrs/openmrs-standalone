@@ -48,7 +48,7 @@
 		</dependency>
 		<dependency>
 			<groupId>mysql</groupId>
-			<artifactId>mysql-connector-mxj-db-files</artifactId>
+			<artifactId>mysql-connector-mxj-db-files-fixed</artifactId>
 			<version>5.0.12</version>
 			<scope>compile</scope>
 		</dependency>
