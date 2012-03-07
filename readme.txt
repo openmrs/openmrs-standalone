@@ -1,38 +1,21 @@
-TO DO:
-ONCE PEOPLE HAVE DECIDED WHETHER THEY LIKE THE NEW MAVEN-BASED BUILDER, REWRITE THIS
-README FILE TO REFLECT THAT.
 
-QUICK SUMMARY:
-* set the openmrs.version variable in pom.xml
+...............QUICK SUMMARY FOR BUILDING THE STANDALONE.....................
+* Increase the maven memory: e.g. export MAVEN_OPTS="-Xms1012m -Xmx2024m -XX:PermSize=556m -XX:MaxPermSize=1012m"
 * mvn clean
 * mvn package -Dopenmrs.version=1.9.0
 * If running a second time, ALWAYS check to make sure mysql processes on port 3326 and 3328 are stopped. 
   If you DON'T do that, then the "mvn clean" will not really clean. 
+  A good command to use is: "pkill -f standalone"  (kills anything with "standalone" in the path) 
 
 -> output is in the target folder, as openmrs-standalone-(openmrs.version).zip
 -> the contents of that zip are in the similarly-named folder under /target, if you want to test in-place
 
 
-...........................OpenMRS Standalone README..........................
-
-
-NOTE: This standalone application is not tied to any particular openmrs version.
-
-      As you can see from the pom file, the two artifacts mysql-connector-mxj and mysql-connector-mxj-dbfiles
-      need to be put into our nexus maven repository. I have not yet done so because i do not yet have the
-      permissions to. Therefore to make this project compile, i downloaded MySQL Connector/MXJ 5.0.11 from 
-      http://dev.mysql.com/downloads/connector/mxj/
-      Then decompressed the download file and looked into the mysql-connector-mxj-gpl-5-0-11 folder for two jar files
-      named: mysql-connector-mxj-gpl-5-0-11.jar and mysql-connector-mxj-gpl-5-0-11-db-files.jar
-      Then installed them into my local maven repository using the following respective maven commands:
-      
-mvn install:install-file -DgroupId=com.mysql -DartifactId=mysql-connector-mxj -Dversion=5.0.11 -Dfile=mysql-connector-mxj-gpl-5-0-11.jar -Dpackaging=jar
-      
-mvn install:install-file -DgroupId=com.mysql -DartifactId=mysql-connector-mxj-dbfiles -Dversion=5.0.11 -Dfile=mysql-connector-mxj-gpl-5-0-11-db-files.jar -Dpackaging=jar
+.......................OpenMRS Standalone README............................
 
 
 
-...................HOW TO RUN FROM ECLIPSE.....................
+........................HOW TO RUN FROM ECLIPSE.............................
 
 -	Copy your war file into the "tomcat/webapps" folder. Where the tomcat folder is at the root of the project.
 If you already have openmrs installed and do not want to interfere with it, just rename
