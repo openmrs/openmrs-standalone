@@ -42,7 +42,7 @@
 		</dependency>
 		<dependency>
 			<groupId>mysql</groupId>
-			<artifactId>mysql-connector-mxj</artifactId>
+			<artifactId>mysql-connector-mxj-fixed</artifactId>
 			<version>5.0.12</version>
 			<scope>compile</scope>
 		</dependency>
