@@ -95,13 +95,12 @@ public class Bootstrap {
 		
 		try {	
 			Properties properties = OpenmrsUtil.getRuntimeProperties(StandaloneUtil.getContextName());
-			String memorySettings = properties.getProperty("memory_settings", "-Xmx512m -Xms512m -XX:PermSize=256m -XX:MaxPermSize=256m -XX:NewSize=128m");
-			String debugSettings = properties.getProperty("debug_settings", "");
+			String vm_arguments = properties.getProperty("vm_arguments", "-Xmx512m -Xms512m -XX:PermSize=256m -XX:MaxPermSize=256m -XX:NewSize=128m");
 			
 			// Spin up a separate java process calling a non-default Main class in our Jar.  
 			process = Runtime.getRuntime().exec(
 			    "java " + (showSplashScreen ? "-splash:splashscreen-loading.png" : "")
-			            + " " + debugSettings + " " + memorySettings + " -cp "
+			            + " " + vm_arguments + " -cp "
 			            + StandaloneUtil.getJarFileName() + " org.openmrs.standalone.ApplicationController" + args);
 			
 			// Proxy the System.out and System.err from the spawned process back to the main window.  This
