@@ -96,9 +96,11 @@ public class ApplicationController {
 			}
 		}
 		
-		//If launching for the first time, change the mysql password to ensure that
-		//installations do not share the same password.
-		//mySqlPort = StandaloneUtil.setPortsAndMySqlPassword(mySqlPort, tomcatPort);
+		//Update the runtime properties file with the mysql and tomcat port numbers
+		//which may have been supplied as command line arguments. 
+		//If we have no mysql port number supplied, this method will simply return that
+		//in the runtime properties file database connection string.
+		mySqlPort = StandaloneUtil.setRuntimePropertiesFileMysqlAndTomcatPorts(mySqlPort, tomcatPort);
 		
 		if (mySqlPort == null)
 			mySqlPort = UserInterface.DEFAULT_MYSQL_PORT;

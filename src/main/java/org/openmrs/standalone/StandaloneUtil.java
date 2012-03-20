@@ -409,4 +409,74 @@ public class StandaloneUtil {
     	stopMySqlServer();
     }
 	
+	
+	/**
+	 * Sets the MySQL and Tomcat ports in the run time properties file.
+	 * 
+	 * @param mySqlPort the mysql port number to set.
+	 * @param tomcatPort the Tomcat port number to set.
+	 * @return the mysql port number. If supplied in the parameter, it will be the same, else the
+	 *         one in the connection string.
+	 */
+	public static String setRuntimePropertiesFileMysqlAndTomcatPorts(String mySqlPort, String tomcatPort) {
+		final String KEY_CONNECTION_URL = "connection.url";
+		final String KEY_TOMCAT_PORT = "tomcatport";
+		
+		InputStream input = null;
+		boolean propertiesFileChanged = false;
+		
+		try {
+			Properties properties = OpenmrsUtil.getRuntimeProperties(getContextName()); //new Properties();
+			String connectionString = properties.getProperty(KEY_CONNECTION_URL);
+			String portToken = ":" + mySqlPort + "/";
+			
+			//in a string like this: jdbc:mysql:mxj://localhost:3306/openmrs?autoReconnect=true
+			//look for something like this :3306/
+			String regex = ":[0-9]+/";
+			Pattern pattern = Pattern.compile(regex);
+			Matcher matcher = pattern.matcher(connectionString);
+			
+			//Check if we have a mysql port number to set.
+			if (mySqlPort != null) {
+				
+				//If the mysql port has changed, then update the properties file with the new one.
+				if (!connectionString.contains(portToken)) {
+					connectionString = matcher.replaceAll(portToken);
+					properties.put(KEY_CONNECTION_URL, connectionString);
+					
+					propertiesFileChanged = true;
+				}
+			} else {
+				//Extract the mysql port number in the connection string, for returning to the caller.
+				if (matcher.find()) {
+					mySqlPort = matcher.group();
+					mySqlPort = mySqlPort.replace(":", "");
+					mySqlPort = mySqlPort.replace("/", "");
+				}
+			}
+			
+			//Set the Tomcat port
+			if (tomcatPort != null) {
+				if (!tomcatPort.equals(properties.get(KEY_TOMCAT_PORT))) {
+					properties.put(KEY_TOMCAT_PORT, tomcatPort);
+					propertiesFileChanged = true;
+				}
+			}
+			
+			//Write back properties file only if changed.
+			if (propertiesFileChanged) {
+				writeRuntimeProperties(properties);
+			}
+			
+		}
+		finally {
+			try {
+				if (input != null)
+					input.close();
+			}
+			catch (Exception ex) {}
+		}
+		
+		return mySqlPort;
+	}
 }
