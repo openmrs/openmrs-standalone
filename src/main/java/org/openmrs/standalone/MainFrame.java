@@ -500,4 +500,8 @@ public class MainFrame extends javax.swing.JFrame implements ActionListener, Use
 		button.setBorderPainted(false);
 		button.setHorizontalAlignment(SwingConstants.LEFT);
 	}
+	
+	public void onFinishedInitialConfigCheck(){
+		
+	}
 }

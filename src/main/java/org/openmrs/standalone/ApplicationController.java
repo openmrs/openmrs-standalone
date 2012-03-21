@@ -202,7 +202,6 @@ public class ApplicationController {
 			userInterface = new MainFrame(this, tomcatPort, mySqlPort);
 		}
 		
-		userInterface.setStatus(UserInterface.STATUS_MESSAGE_STARTING);
 		userInterface.setVisible(true);
 		
 		// add shutdown hook to stop server
@@ -219,7 +218,6 @@ public class ApplicationController {
 		}
 		
 		if (applyDatabaseChange != null) {
-			System.out.println("Apply database change: " + applyDatabaseChange);
 			if (applyDatabaseChange == DatabaseMode.USE_INITIALIZATION_WIZARD) {
 				deleteActiveDatabase();
 				StandaloneUtil.resetConnectionPassword();
@@ -235,13 +233,16 @@ public class ApplicationController {
 				StandaloneUtil.resetConnectionPassword();
 				StandaloneUtil.startupDatabaseToCreateDefaultUser();
 			}
+			
 			deleteNeedsConfigFile();
-			System.out.println("Done applying database changes");
 			
 			//If launching for the first time, change the mysql password to ensure that
 			//installations do not share the same password.
 			mySqlPort = StandaloneUtil.setPortsAndMySqlPassword(mySqlPort, tomcatPort);
 		}
+		
+		userInterface.setStatus(UserInterface.STATUS_MESSAGE_STARTING);
+		userInterface.onFinishedInitialConfigCheck();
 		
 		start();
 	}
@@ -435,5 +436,4 @@ public class ApplicationController {
 	public void setApplyDatabaseChange(DatabaseMode modeToApply) {
 		this.applyDatabaseChange = modeToApply;
 	}
-	
 };

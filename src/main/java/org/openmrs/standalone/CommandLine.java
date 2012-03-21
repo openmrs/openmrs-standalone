@@ -29,6 +29,10 @@ public class CommandLine implements UserInterface {
 	
 	private static final String CMD_LAUNCH_BROWSE = "browse";
 	
+	private static final String CMD_DEMO = "demo";
+	
+	private static final String CMD_EXPERT = "expert";
+	
 	private static final String CMD_EXIT = "exit";
 	
 	private ApplicationController appController;
@@ -56,7 +60,7 @@ public class CommandLine implements UserInterface {
 		if (tomcatPort != null)
 			this.tomcatPort = StandaloneUtil.fromStringToInt(tomcatPort);
 		
-		LogWriter logWriter = new LogWriter();
+		CommandLineWriter logWriter = new CommandLineWriter();
 		PrintStream stream = new PrintStream(logWriter);
 		System.setOut(stream);
 		System.setErr(stream);
@@ -84,6 +88,10 @@ public class CommandLine implements UserInterface {
 	}
 	
 	public void setVisible(boolean visible) {
+		//Command line is already visible. :)
+	}
+	
+	public void onFinishedInitialConfigCheck() {
 		workerThread = new SwingWorker() {
 			
 			public Object construct() {
@@ -112,25 +120,33 @@ public class CommandLine implements UserInterface {
 	}
 	
 	private void processUserInput() {
+		displayStatusMessage();
+		processCommadLine();
+	}
+	
+	private void processCommadLine() {
 		try {
-			displayStatusMessage();
-			processCommadLine(bufferedReader.readLine().trim());
+			String line = bufferedReader.readLine().trim();
+			
+			if (line.contains(CMD_LAUNCH_BROWSE)) {
+				appController.launchBrowser(tomcatPort);
+			} else if (line.startsWith(CMD_START)) {
+				startServer(line.split(" "));
+			} else if (CMD_STOP.equalsIgnoreCase(line)) {
+				stopServer();
+			} else if (CMD_EXIT.equalsIgnoreCase(line)) {
+				exit();
+			} else if (CMD_DEMO.equalsIgnoreCase(line)) {
+				appController.setApplyDatabaseChange(ApplicationController.DatabaseMode.DEMO_DATABASE);
+			} else if (CMD_EXPERT.equalsIgnoreCase(line)) {
+				appController.setApplyDatabaseChange(ApplicationController.DatabaseMode.USE_INITIALIZATION_WIZARD);	
+			} else {
+				displayMessage("Unknown command: " + line);
+			}
 		}
 		catch (IOException ex) {
 			ex.printStackTrace();
-		}
-	}
-	
-	private void processCommadLine(String line) {
-		if (line.contains(CMD_LAUNCH_BROWSE)) {
-			appController.launchBrowser(tomcatPort);
-		} else if (line.startsWith(CMD_START)) {
-			startServer(line.split(" "));
-		} else if (CMD_STOP.equalsIgnoreCase(line)) {
-			stopServer();
-		} else if (CMD_EXIT.equalsIgnoreCase(line)) {
-			exit();
-		}
+		}	
 	}
 	
 	private void startServer(String[] args) {
@@ -192,6 +208,7 @@ public class CommandLine implements UserInterface {
      * @see org.openmrs.standalone.UserInterface#showInitialConfig()
      */
     public void showInitialConfig() {
-	    appController.setApplyDatabaseChange(ApplicationController.DatabaseMode.NO_CHANGES);
+		System.out.println(UserInterface.PROMPT_CHOOSE_DEMO_OR_EXPERT_MODE + " Type: " + CMD_DEMO + " or " + CMD_EXPERT);
+		processCommadLine();
     }
 }
