@@ -21,8 +21,6 @@ import java.awt.Font;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.GridLayout;
-import java.awt.LayoutManager;
-import java.awt.Rectangle;
 import java.awt.Toolkit;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -52,7 +50,6 @@ import javax.swing.SwingConstants;
 import javax.swing.SwingUtilities;
 import javax.swing.UIManager;
 import javax.swing.WindowConstants;
-import javax.swing.border.BevelBorder;
 
 import org.openmrs.standalone.ApplicationController.DatabaseMode;
 
@@ -464,7 +461,7 @@ public class MainFrame extends javax.swing.JFrame implements ActionListener, Use
 		
 		JPanel buttons = new JPanel();
 		buttons.setLayout(new GridLayout(0, 1, 10, 20)); // 0,1 -> vertical, 10,20=hgap,vgap
-		List<JButton> buttonList = Arrays.asList(demoDatabase, /* bwolfe: removing MVP dictionary option emptyDatabase,*/ expertMode);
+		List<JButton> buttonList = Arrays.asList(demoDatabase, emptyDatabase, expertMode);
 		for (JButton b : buttonList) {
 			b.setFont(font);
 			b.addActionListener(listener);
