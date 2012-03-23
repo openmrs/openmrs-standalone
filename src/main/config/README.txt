@@ -44,18 +44,18 @@ RUNNING THE STANDLONE APP
 Windows
 -------
 
-Option 1: Double click the 'standalone-1.1.1.jar' file in the expanded archive folder to launch OpenMRS.
+Option 1: Double click the 'openmrs-standalone.jar' file in the expanded archive folder to launch OpenMRS.
 
 Option 2: From the Windows command line, navigate to the expanded archive folder and run this command: 
-java -jar standalone-1.1.1.jar
+java -jar openmrs-standalone.jar
 
 Mac OS X
 --------
 
-Option 1: Double click 'standalone-1.1.1.jar' file in the expanded archive folder to launch OpenMRS.
+Option 1: Double click 'openmrs-standalone.jar' file in the expanded archive folder to launch OpenMRS.
 
 Option 2: Launch Terminal.app or another command line tool and navigate to the root directory of the expanded archive file. Run this command: 
-java -jar standalone-1.1.1.jar
+java -jar openmrs-standalone.jar
 
 Linux
 -----
@@ -63,7 +63,7 @@ Linux
 Option 1: Using a graphical shell such as KDE, GNOME, etc., open the folder that was created when extracting the ZIP file. Double click on the shell script named 'run-on-linux.sh'. If you a get prompted for how to run it, just select 'run'.
 
 Option 2: From the command line, navigate to the directory created when expanding the ZIP file. Run either of the commands below: 
-java -jar standalone-1.1.1.jar
+java -jar openmrs-standalone.jar
 or
 ./run-on-linux.sh
 

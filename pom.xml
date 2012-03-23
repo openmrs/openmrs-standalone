@@ -53,7 +53,7 @@
 			<scope>compile</scope>
 		</dependency>
 	</dependencies>
-	
+
 	<profiles>
 		<profile>
 			<id>default</id> <!-- for 1.9.x and up -->
@@ -85,11 +85,11 @@
 	</profiles>
 
 	<build>
+		<finalName>openmrs-standalone-${openmrs.version}</finalName>
 		<plugins>
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-enforcer-plugin</artifactId>
-				<version>1.0</version>
 				<executions>
 					<execution>
 						<id>enforce-property</id>
@@ -100,7 +100,10 @@
 							<rules>
 								<requireProperty>
 									<property>openmrs.version</property>
-									<message>openmrs.version property is missing. This should be something like 1.9.0, 1.8.3, or 1.10-alpha.  Add -Dopenmrs.version=1.9.1. NOTE: If building for 1.8.x, also add -P1.8.x</message>
+									<message>openmrs.version property is missing. This should be
+										something like 1.9.0, 1.8.3, or 1.10-alpha. Add
+										-Dopenmrs.version=1.9.1. NOTE: If building for 1.8.x, also add
+										-P1.8.x</message>
 								</requireProperty>
 							</rules>
 							<fail>true</fail>
@@ -108,7 +111,7 @@
 					</execution>
 				</executions>
 			</plugin>
-			
+
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-compiler-plugin</artifactId>
@@ -121,45 +124,11 @@
 
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
-				<artifactId>maven-assembly-plugin</artifactId>
-				<executions>
-					<execution>
-						<id>package-jar-with-dependencies</id>
-						<phase>package</phase>
-						<goals>
-							<goal>single</goal>
-						</goals>
-						<configuration>
-							<appendAssemblyId>false</appendAssemblyId>
-							<descriptorRefs>
-								<descriptorRef>jar-with-dependencies</descriptorRef>
-							</descriptorRefs>
-							<archive>
-								<manifest>
-									<mainClass>org.openmrs.standalone.Bootstrap</mainClass>
-								</manifest>
-							</archive>
-						</configuration>
-					</execution>
-				</executions>
-			</plugin>
-			<plugin>
-				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-dependency-plugin</artifactId>
-				<version>2.3</version>
-				<dependencies>
-					<dependency>
-						<groupId>org.openmrs.web</groupId>
-						<artifactId>openmrs-webapp</artifactId>
-						<version>${openmrs.version}</version>
-						<type>war</type>
-						<scope>compile</scope>
-					</dependency>
-				</dependencies>
 				<executions>
 					<execution>
 						<id>copy</id>
-						<phase>package</phase>
+						<phase>process-resources</phase>
 						<goals>
 							<goal>copy</goal>
 						</goals>
@@ -178,33 +147,14 @@
 					</artifactItems>
 				</configuration>
 			</plugin>
+
 			<plugin>
 				<groupId>org.liquibase</groupId>
 				<artifactId>${liquibasePluginArtifactId}</artifactId>
-				<version>${liquibasePluginVersion}</version>
-				<dependencies>
-					<dependency>
-						<groupId>org.openmrs.api</groupId>
-						<artifactId>openmrs-api</artifactId>
-						<version>${openmrs.version}</version>
-						<type>jar</type>
-						<scope>compile</scope>
-					</dependency>
-					<dependency>
-						<groupId>org.openmrs.liquibase.ext</groupId>
-						<artifactId>modify-column</artifactId>
-						<version>2.0.2</version>
-					</dependency>
-					<dependency>
-						<groupId>org.openmrs.liquibase.ext</groupId>
-						<artifactId>identity-insert</artifactId>
-						<version>1.2.1</version>
-					</dependency>
-				</dependencies>
 				<executions>
 					<execution>
 						<id>empty-db-create-schema</id>
-						<phase>process-resources</phase>
+						<phase>generate-resources</phase>
 						<configuration>
 							<driver>com.mysql.jdbc.Driver</driver>
 							<changeLogFile>liquibase-schema-only.xml</changeLogFile>
@@ -230,7 +180,7 @@
 					</execution>
 					<execution>
 						<id>empty-db-add-core-data</id>
-						<phase>process-resources</phase>
+						<phase>generate-resources</phase>
 						<configuration>
 							<driver>com.mysql.jdbc.Driver</driver>
 							<changeLogFile>liquibase-core-data.xml</changeLogFile>
@@ -256,7 +206,7 @@
 					</execution>
 					<execution>
 						<id>empty-db-add-mvp-data</id>
-						<phase>process-resources</phase>
+						<phase>generate-resources</phase>
 						<configuration>
 							<driver>com.mysql.jdbc.Driver</driver>
 							<changeLogFile>liquibase-mvp-data.xml</changeLogFile>
@@ -282,7 +232,7 @@
 					</execution>
 					<execution>
 						<id>empty-db-update-to-latest</id>
-						<phase>process-resources</phase>
+						<phase>generate-resources</phase>
 						<configuration>
 							<driver>com.mysql.jdbc.Driver</driver>
 							<changeLogFile>liquibase-update-to-latest.xml</changeLogFile>
@@ -308,7 +258,7 @@
 					</execution>
 					<execution>
 						<id>demo-db-add-data</id>
-						<phase>process-resources</phase>
+						<phase>generate-resources</phase>
 						<configuration>
 							<driver>com.mysql.jdbc.Driver</driver>
 							<changeLogFile>${liquibaseDemoDataFileName}</changeLogFile>
@@ -334,7 +284,7 @@
 					</execution>
 					<execution>
 						<id>demo-db-update-to-latest</id>
-						<phase>process-resources</phase>
+						<phase>generate-resources</phase>
 						<configuration>
 							<driver>com.mysql.jdbc.Driver</driver>
 							<changeLogFile>liquibase-update-to-latest.xml</changeLogFile>
@@ -360,7 +310,7 @@
 					</execution>
 					<execution>
 						<id>demo-db-followup</id>
-						<phase>process-resources</phase>
+						<phase>generate-resources</phase>
 						<configuration>
 							<driver>com.mysql.jdbc.Driver</driver>
 							<changeLogFile>${liquibaseDemoDataFollowupFileName}</changeLogFile>
@@ -386,35 +336,159 @@
 					</execution>
 				</executions>
 			</plugin>
+			
 			<plugin>
-				<groupId>org.openmrs.standalone</groupId>
-				<artifactId>standalone-build-support</artifactId>
-				<version>0.4</version>
+				<groupId>org.codehaus.mojo</groupId>
+				<artifactId>exec-maven-plugin</artifactId>
 				<executions>
 					<execution>
-						<id>stop-mysql-after-build</id>
-						<phase>process-resources</phase>
-						<configuration>
-							<databaseDirectory>target/emptydatabase</databaseDirectory>
-							<demoDatabaseDirectory>target/demodatabase</demoDatabaseDirectory>
-						</configuration>
+						<phase>prepare-package</phase>
 						<goals>
-							<goal>stop-embedded-mysql</goal>
+							<goal>java</goal>
 						</goals>
+						<configuration>
+							<mainClass>org.openmrs.standalone.StopEmbeddedMySQL</mainClass>
+							<arguments>
+								<argument>target/emptydatabase</argument>
+								<argument>target/demodatabase</argument>
+							</arguments>
+						</configuration>
 					</execution>
+				</executions>
+			</plugin>
+
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-assembly-plugin</artifactId>
+				<executions>
 					<execution>
-						<id>package-zip</id>
+						<id>package-jar-with-dependencies</id>
 						<phase>package</phase>
 						<goals>
-							<goal>package-zip</goal>
+							<goal>single</goal>
 						</goals>
+						<configuration>
+							<finalName>openmrs-standalone</finalName>
+							<appendAssemblyId>false</appendAssemblyId>
+							<descriptorRefs>
+								<descriptorRef>jar-with-dependencies</descriptorRef>
+							</descriptorRefs>
+							<archive>
+								<manifest>
+									<mainClass>org.openmrs.standalone.Bootstrap</mainClass>
+								</manifest>
+							</archive>
+						</configuration>
+					</execution>
+					<execution>
+						<id>zip-demo-data</id>
+						<phase>package</phase>
+						<goals>
+							<goal>single</goal>
+						</goals>
+						<configuration>
+							<finalName>demodatabase</finalName>
+							<appendAssemblyId>false</appendAssemblyId>
+							<descriptors>
+								<descriptor>src/main/assembly/zip-demo-data.xml</descriptor>
+							</descriptors>
+						</configuration>
+					</execution>
+					<execution>
+						<id>zip-mvp-data</id>
+						<phase>package</phase>
+						<goals>
+							<goal>single</goal>
+						</goals>
+						<configuration>
+							<finalName>emptydatabase</finalName>
+							<appendAssemblyId>false</appendAssemblyId>
+							<descriptors>
+								<descriptor>src/main/assembly/zip-mvp-data.xml</descriptor>
+							</descriptors>
+						</configuration>
+					</execution>
+					<execution>
+						<id>zip-standalone</id>
+						<phase>package</phase>
+						<goals>
+							<goal>single</goal>
+						</goals>
+						<configuration>
+							<finalName>openmrs-standalone-${openmrs.version}</finalName>
+							<appendAssemblyId>false</appendAssemblyId>
+							<descriptors>
+								<descriptor>src/main/assembly/zip-standalone.xml</descriptor>
+							</descriptors>
+						</configuration>
 					</execution>
 				</executions>
 			</plugin>
 		</plugins>
+
 		<pluginManagement>
 			<plugins>
-				<!--This plugin's configuration is used to store Eclipse m2e settings only. It has no influence on the Maven build itself.-->
+				<plugin>
+					<groupId>org.apache.maven.plugins</groupId>
+					<artifactId>maven-enforcer-plugin</artifactId>
+					<version>1.0</version>
+				</plugin>
+				<plugin>
+					<groupId>org.apache.maven.plugins</groupId>
+					<artifactId>maven-compiler-plugin</artifactId>
+					<version>2.3.2</version>
+				</plugin>
+				<plugin>
+					<groupId>org.apache.maven.plugins</groupId>
+					<artifactId>maven-dependency-plugin</artifactId>
+					<version>2.3</version>
+					<dependencies>
+						<dependency>
+							<groupId>org.openmrs.web</groupId>
+							<artifactId>openmrs-webapp</artifactId>
+							<version>${openmrs.version}</version>
+							<type>war</type>
+							<scope>compile</scope>
+						</dependency>
+					</dependencies>
+				</plugin>
+				<plugin>
+					<groupId>org.liquibase</groupId>
+					<artifactId>${liquibasePluginArtifactId}</artifactId>
+					<version>${liquibasePluginVersion}</version>
+					<dependencies>
+						<dependency>
+							<groupId>org.openmrs.api</groupId>
+							<artifactId>openmrs-api</artifactId>
+							<version>${openmrs.version}</version>
+							<type>jar</type>
+							<scope>compile</scope>
+						</dependency>
+						<dependency>
+							<groupId>org.openmrs.liquibase.ext</groupId>
+							<artifactId>modify-column</artifactId>
+							<version>2.0.2</version>
+						</dependency>
+						<dependency>
+							<groupId>org.openmrs.liquibase.ext</groupId>
+							<artifactId>identity-insert</artifactId>
+							<version>1.2.1</version>
+						</dependency>
+					</dependencies>
+				</plugin>
+				<plugin>
+					<groupId>org.codehaus.mojo</groupId>
+					<artifactId>exec-maven-plugin</artifactId>
+					<version>1.2.1</version>
+				</plugin>
+				<plugin>
+					<groupId>org.apache.maven.plugins</groupId>
+					<artifactId>maven-assembly-plugin</artifactId>
+					<version>2.3</version>
+				</plugin>
+
+				<!--This plugin's configuration is used to store Eclipse m2e settings 
+					only. It has no influence on the Maven build itself. -->
 				<plugin>
 					<groupId>org.eclipse.m2e</groupId>
 					<artifactId>lifecycle-mapping</artifactId>
@@ -442,18 +516,35 @@
 								<pluginExecution>
 									<pluginExecutionFilter>
 										<groupId>
-											org.openmrs.standalone
+											org.apache.maven.plugins
 										</groupId>
 										<artifactId>
-											standalone-build-support
+											maven-dependency-plugin
 										</artifactId>
 										<versionRange>
-											[0.4,)
+											[2.3,)
 										</versionRange>
 										<goals>
-											<goal>
-												stop-embedded-mysql
-											</goal>
+											<goal>copy</goal>
+										</goals>
+									</pluginExecutionFilter>
+									<action>
+										<ignore></ignore>
+									</action>
+								</pluginExecution>
+								<pluginExecution>
+									<pluginExecutionFilter>
+										<groupId>
+											org.codehaus.mojo
+										</groupId>
+										<artifactId>
+											exec-maven-plugin
+										</artifactId>
+										<versionRange>
+											[1.2.1,)
+										</versionRange>
+										<goals>
+											<goal>java</goal>
 										</goals>
 									</pluginExecutionFilter>
 									<action>

@@ -1,0 +1,36 @@
+<assembly
+	xmlns="http://maven.apache.org/plugins/maven-assembly-plugin/assembly/1.1.0"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/plugins/maven-assembly-plugin/assembly/1.1.0 http://maven.apache.org/xsd/assembly-1.1.0.xsd">
+	<id>zip-standalone</id>
+	<baseDirectory>/</baseDirectory>
+	<formats>
+		<format>zip</format>
+	</formats>
+	<fileSets>
+		<fileSet>
+			<directory>${project.build.directory}</directory>
+			<includes>
+				<include>openmrs-standalone.jar</include>
+				<include>demodatabase.zip</include>
+				<include>emptydatabase.zip</include>
+			</includes>
+			<outputDirectory>${project.build.finalName}</outputDirectory>
+		</fileSet>
+		<fileSet>
+			<directory>src/main/config/tomcat</directory>
+			<outputDirectory>${project.build.finalName}/tomcat</outputDirectory>
+		</fileSet>
+		<fileSet>
+			<directory>${project.build.directory}</directory>
+			<includes>
+				<include>*.war</include>
+			</includes>
+			<outputDirectory>${project.build.finalName}/tomcat/webapps</outputDirectory>
+		</fileSet>
+		<fileSet>
+			<directory>src/main/config</directory>
+			<outputDirectory>${project.build.finalName}</outputDirectory>
+		</fileSet>
+	</fileSets>
+</assembly>
