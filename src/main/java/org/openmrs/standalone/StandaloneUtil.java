@@ -23,11 +23,11 @@ import java.io.OutputStreamWriter;
 import java.io.Writer;
 import java.net.DatagramSocket;
 import java.net.ServerSocket;
+import java.net.Socket;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.sql.Connection;
 import java.sql.DriverManager;
-import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.Date;
 import java.util.HashMap;
@@ -73,22 +73,38 @@ public class StandaloneUtil {
 			ss.setReuseAddress(true);
 			ds = new DatagramSocket(port);
 			ds.setReuseAddress(true);
+			
+			try {
+				closeConnections(ss, ds);
+				
+				//Checking if port is open by trying to connect as a client;
+		        Socket socket = new Socket("127.0.0.1", port);          
+		        socket.close();
+		        return false; //Someone responding on port - so not available;
+		    } catch (Exception e) {    
+		        //Connection refused, so port must be available
+		    }
+
 			return true;
 		}
 		catch (IOException e) {}
 		finally {
-			if (ds != null)
-				ds.close();
-			
-			if (ss != null) {
-				try {
-					ss.close();
-				}
-				catch (IOException e) {}
-			}
+			closeConnections(ss, ds);
 		}
 		
 		return false;
+	}
+	
+	private static void closeConnections(ServerSocket ss, DatagramSocket ds) {
+		if (ds != null)
+			ds.close();
+		
+		if (ss != null) {
+			try {
+				ss.close();
+			}
+			catch (IOException e) {}
+		}
 	}
 	
 	/**
