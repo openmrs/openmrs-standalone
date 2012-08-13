@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog/1.9"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog/1.9
+                  http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-1.9.xsd">
+
+	<changeSet id="20120315-1000" author="standalone" dbms="mysql">
+		<comment>Preparing schema for adding mvp data</comment>
+
+		<sql>SET FOREIGN_KEY_CHECKS=0</sql>
+		
+		<!-- avoid the Can't create table 'openmrs.#sql-564_b' (errno: 150) for Migration failed for change set liquibase-update-to-latest.xml::200805281223::bmckown: -->
+        <createTable tableName="concept_complex">
+            <column name="concept_id" type="int">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="handler" type="varchar(255)"/>
+        </createTable>
+        
+        <!-- avoid the Unknown column 'retired_reason' in 'location_tag' for Migration failed for change set liquibase-update-to-latest.xml::20090225-1551::dthomas -->
+        <renameColumn tableName="location_tag"
+   			 oldColumnName="retire_reason" newColumnName="retired_reason" columnDataType="varchar(255)"/>
+
+		<!-- avoid the Unknown column 'voided' in 'where clause' for Migration failed for change set liquibase-update-to-latest.xml::20090316-1008::vanand -->
+		<addColumn tableName="concept_source">
+			<column name="voided" type="smallint" />
+		</addColumn>
+		
+		<!-- avoid the Unknown column 'voided' in 'users' for Migration failed for change set liquibase-update-to-latest.xml::20090316-1008::vanand -->
+		<addColumn tableName="users">
+			<column name="voided" type="tinyint" />
+		</addColumn>
+		
+		<sql>SET FOREIGN_KEY_CHECKS=1</sql>
+	</changeSet>
+	
+</databaseChangeLog>
