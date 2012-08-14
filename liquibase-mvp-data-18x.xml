@@ -16,8 +16,56 @@
             </column>
             <column name="handler" type="varchar(255)"/>
         </createTable>
-        		
+		
 		<sql>SET FOREIGN_KEY_CHECKS=1</sql>
+	</changeSet>
+	
+	<changeSet id="20120315-1100" author="standalone" dbms="mysql">
+		<comment>Adding mvp data</comment>
+		<sqlFile path="mvp-data.sql" encoding="UTF-8" />
+		
+		<!-- avoid the Unknown column 'voided' in 'where clause' for Migration failed for change set liquibase-update-to-latest.xml::20090316-1008::vanand -->
+		<addColumn tableName="concept_source">
+			<column name="voided" type="smallint" />
+		</addColumn>
+		
+		<!-- avoid Incorrect table definition; there can be only one auto column and it must be defined as a key for Migration failed for change set liquibase-update-to-latest.xml::20090414-0805::bwolfe -->
+		<modifyColumn tableName="concept_set">
+	        <column name="concept_set_id" type="INT"/>
+	    </modifyColumn>
+	    
+	    <!-- avoid Duplicate column name 'concept_set_id' for Migration failed for change set liquibase-update-to-latest.xml::20090414-0806::bwolfe -->
+	    <sql>
+			insert into DATABASECHANGELOG values('20090414-0806', 'bwolfe',
+			'liquibase-update-to-latest.xml', '2012-03-15 11:00:00',
+			'3c192287a93261df2ef571d55d91a5e', 'Custom SQL',
+			'Deleting duplicate concept word keys', NULL, '1.9.4')
+		</sql>
+		
+		<!-- avoid Duplicate key name 'idx_concept_set_concept' for  Migration failed for change set liquibase-update-to-latest.xml::20090414-0807::bwolfe -->
+		<sql>
+			insert into DATABASECHANGELOG values('20090414-0807', 'bwolfe',
+			'liquibase-update-to-latest.xml', '2012-03-15 11:00:00',
+			'548ba564f1cf1a5e4353bade7d0a71f', 'Custom SQL',
+			'Deleting duplicate concept word keys', NULL, '1.9.4')
+		</sql>
+		
+		<!-- Skip this changeset since it is unnecessary and takes too long -->
+		<sql>
+			insert into DATABASECHANGELOG values('200905150821', 'bwolfe',
+			'liquibase-update-to-latest.xml', '2012-03-15 11:00:00',
+			'd6dedef195a69f62fd1c73adcfd93146', 'Custom SQL',
+			'Deleting duplicate concept word keys', NULL, '1.9.4')
+		</sql>
+		
+		<!-- avoid Duplicate column name 'retired' Migration failed for change set liquibase-update-to-latest.xml::20090907-3::Knoll_Frank -->
+		<sql>
+			insert into DATABASECHANGELOG values('20090907-3', 'Knoll_Frank',
+			'liquibase-update-to-latest.xml', '2012-03-15 11:00:00',
+			'627e3e7cc7d9a2aece268fa93bf88', 'Custom SQL',
+			'Deleting duplicate concept word keys', NULL, '1.9.4')
+		</sql>
+		
 	</changeSet>
 	
 </databaseChangeLog>
