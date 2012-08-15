@@ -66,6 +66,7 @@
 				<liquibaseDemoDataFileName>liquibase-demo-data.xml</liquibaseDemoDataFileName>
 				<liquibaseMVPDataFileName>liquibase-mvp-data.xml</liquibaseMVPDataFileName>
 				<liquibaseDemoDataFollowupFileName>liquibase-empty-changelog.xml</liquibaseDemoDataFollowupFileName>
+				<liquibaseEmptyDbFollowupFileName>liquibase-empty-changelog.xml</liquibaseEmptyDbFollowupFileName>
 			</properties>
 		</profile>
 		<profile>
@@ -82,6 +83,7 @@
 				<liquibaseDemoDataFileName>liquibase-demo-data-18x.xml</liquibaseDemoDataFileName>
 				<liquibaseMVPDataFileName>liquibase-mvp-data-18x.xml</liquibaseMVPDataFileName>
 				<liquibaseDemoDataFollowupFileName>liquibase-rename-helper-tables-18x.xml</liquibaseDemoDataFollowupFileName>
+				<liquibaseEmptyDbFollowupFileName>liquibase-rename-helper-tables-18x.xml</liquibaseEmptyDbFollowupFileName>
 			</properties>
 		</profile>
 	</profiles>
@@ -258,6 +260,34 @@
 							<goal>update</goal>
 						</goals>
 					</execution>
+					
+					<execution>
+						<id>empty-db-followup</id>
+						<phase>generate-resources</phase>
+						<configuration>
+							<driver>com.mysql.jdbc.Driver</driver>
+							<changeLogFile>${liquibaseEmptyDbFollowupFileName}</changeLogFile>
+							<url><![CDATA[jdbc:mysql:mxj://127.0.0.1:33326/openmrs?autoReconnect=true&sessionVariables=storage_engine=InnoDB&useUnicode=true&characterEncoding=UTF-8&server.initialize-user=true&createDatabaseIfNotExist=true&server.basedir=target/emptydatabase&server.datadir=target/emptydatabase/data&server.collation-server=utf8_general_ci&server.character-set-server=utf8&server.max_allowed_packet=32M]]></url>
+							<username>openmrs</username>
+							<password>test</password>
+							<verbose>true</verbose>
+							<dropFirst>false</dropFirst>
+							<systemProperties>
+								<property>
+									<name>liquibase.databaseChangeLogTableName</name>
+									<value>liquibasechangelog</value>
+								</property>
+								<property>
+									<name>liquibase.databaseChangeLogLockTableName</name>
+									<value>liquibasechangeloglock</value>
+								</property>
+							</systemProperties>
+						</configuration>
+						<goals>
+							<goal>update</goal>
+						</goals>
+					</execution>
+					
 					<execution>
 						<id>demo-db-add-data</id>
 						<phase>generate-resources</phase>
