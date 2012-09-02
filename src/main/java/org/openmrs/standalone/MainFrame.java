@@ -476,21 +476,21 @@ public class MainFrame extends javax.swing.JFrame implements ActionListener, Use
 		        "<html><b>Welcome to OpenMRS! OpenMRS can be configured in one of " + buttonList.size() + " ways, depending on your needs. Please click on the configuration that best meets your needs.</b><br/>(You will not see this next time you run OpenMRS)</html>");
 		instructions.setFont(font);
 		
-		JButton cancelButton = new JButton("Cancel");
-		cancelButton.addActionListener(new ActionListener() {
+		JButton exitButton = new JButton("Exit");
+		exitButton.addActionListener(new ActionListener() {
 			
 			public void actionPerformed(ActionEvent e) {
 				appController.exit();
 			}
 		});
-		JPanel cancelPanel = new JPanel();
-		cancelPanel.add(cancelButton);
+		JPanel exitPanel = new JPanel();
+		exitPanel.add(exitButton);
 		
 		content.add(instructions, BorderLayout.NORTH);
 		
 		content.add(buttons, BorderLayout.CENTER);
 		
-		content.add(cancelPanel, BorderLayout.SOUTH);
+		content.add(exitPanel, BorderLayout.SOUTH);
 		
 		configDialog.setPreferredSize(new Dimension(750, 600));
 		configDialog.pack();
