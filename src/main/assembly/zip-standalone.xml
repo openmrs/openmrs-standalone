@@ -32,5 +32,9 @@
 			<directory>src/main/config</directory>
 			<outputDirectory>${project.build.finalName}</outputDirectory>
 		</fileSet>
+		<fileSet>
+			<directory>${project.build.directory}/appdata</directory>
+			<outputDirectory>${project.build.finalName}/appdata</outputDirectory>
+		</fileSet>
 	</fileSets>
 </assembly>
