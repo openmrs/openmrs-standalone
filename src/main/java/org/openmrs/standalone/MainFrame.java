@@ -58,6 +58,8 @@ import org.openmrs.standalone.ApplicationController.DatabaseMode;
  */
 public class MainFrame extends javax.swing.JFrame implements ActionListener, UserInterface {
 	
+    private static final long serialVersionUID = 1L;
+
 	private ApplicationController appController;
 	
 	private int tomcatPort = UserInterface.DEFAULT_TOMCAT_PORT;
@@ -418,7 +420,7 @@ public class MainFrame extends javax.swing.JFrame implements ActionListener, Use
 	 * @see org.openmrs.standalone.UserInterface#showInitialConfig()
 	 */
 	public void showInitialConfig() {
-		final JDialog configDialog = new JDialog(this, "Configure your OpenMRS Installation", true);
+		final JDialog configDialog = new JDialog(this, "Configure your OpenMRS EMR 2.0 Installation", true);
 		JPanel content = new JPanel();
 		content.setBorder(BorderFactory.createEmptyBorder(15, 15, 15, 15));
 		content.setLayout(new BorderLayout(10, 10)); //10,10 = hgap, vgap
@@ -429,19 +431,14 @@ public class MainFrame extends javax.swing.JFrame implements ActionListener, Use
 		final JButton useCurrent = new JButton("Do Not Modify the Database");
 		
 		final JButton demoDatabase = new JButton(
-		        "<html><h3>Demonstration mode</h3>Configures OpenMRS with a demonstration database. This is the quickest way to start up OpenMRS with some sample data to evaluate the system or experiment with features</html>",
+		        "<html><h3>Demonstration mode</h3>Configures OpenMRS EMR 2.0 with a demonstration database. This is the quickest way to start up OpenMRS EMR 2.0 with some sample data to evaluate the system or experiment with features</html>",
 		        new ImageIcon(getClass().getResource("demonstration_mode.png")));
 		colorHelper(demoDatabase, new Color(136, 235, 148));
 		
 		final JButton emptyDatabase = new JButton(
-		        "<html><h3>Starter Implementation</h3>Configures OpenMRS with the MVP/CIEL dictionary, but without any patient data. If you are familiar with OpenMRS and want to start a new system, this is a good place to start.</html>",
+		        "<html><h3>Starter Implementation</h3>Configures OpenMRS EMR 2.0 without any patient data. If you are familiar with OpenMRS EMR 2.0 and want to start a new system, this is a good place to start.</html>",
 		        new ImageIcon(getClass().getResource("starter_impl.png")));
 		colorHelper(emptyDatabase, new Color(255, 243, 136));
-		
-		final JButton expertMode = new JButton(
-		        "<html><h3>Expert Mode</h3>Go through the initial setup wizard yourself. You will add all content, including dictionary concepts, to the system after it is running.</html>",
-		        new ImageIcon(getClass().getResource("expert.png")));
-		colorHelper(expertMode, new Color(255, 138, 138));
 		
 		ActionListener listener = new ActionListener() {
 			
@@ -450,8 +447,6 @@ public class MainFrame extends javax.swing.JFrame implements ActionListener, Use
 					appController.setApplyDatabaseChange(DatabaseMode.EMPTY_DATABASE);
 				} else if (e.getSource() == useCurrent) {
 					appController.setApplyDatabaseChange(DatabaseMode.NO_CHANGES);
-				} else if (e.getSource() == expertMode) {
-					appController.setApplyDatabaseChange(DatabaseMode.USE_INITIALIZATION_WIZARD);
 				} else if (e.getSource() == demoDatabase) {
 					appController.setApplyDatabaseChange(DatabaseMode.DEMO_DATABASE);
 				}
@@ -461,7 +456,7 @@ public class MainFrame extends javax.swing.JFrame implements ActionListener, Use
 		
 		JPanel buttons = new JPanel();
 		buttons.setLayout(new GridLayout(0, 1, 10, 20)); // 0,1 -> vertical, 10,20=hgap,vgap
-		List<JButton> buttonList = Arrays.asList(demoDatabase, emptyDatabase, expertMode);
+		List<JButton> buttonList = Arrays.asList(demoDatabase, emptyDatabase);
 		for (JButton b : buttonList) {
 			b.setFont(font);
 			b.addActionListener(listener);
@@ -473,7 +468,7 @@ public class MainFrame extends javax.swing.JFrame implements ActionListener, Use
 		}
 		
 		JLabel instructions = new JLabel(
-		        "<html><b>Welcome to OpenMRS! OpenMRS can be configured in one of " + buttonList.size() + " ways, depending on your needs. Please click on the configuration that best meets your needs.</b><br/>(You will not see this next time you run OpenMRS)</html>");
+		        "<html><b>Welcome to OpenMRS EMR 2.0! OpenMRS EMR 2.0 can be configured in one of " + buttonList.size() + " ways, depending on your needs. Please click on the configuration that best meets your needs.</b><br/>(You will not see this next time you run OpenMRS EMR 2.0)</html>");
 		instructions.setFont(font);
 		
 		JButton exitButton = new JButton("Exit");
@@ -492,7 +487,7 @@ public class MainFrame extends javax.swing.JFrame implements ActionListener, Use
 		
 		content.add(exitPanel, BorderLayout.SOUTH);
 		
-		configDialog.setPreferredSize(new Dimension(750, 600));
+		configDialog.setPreferredSize(new Dimension(600, 400));
 		configDialog.pack();
 		configDialog.setLocationRelativeTo(this);
 		configDialog.setVisible(true);
