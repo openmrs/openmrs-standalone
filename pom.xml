@@ -63,8 +63,6 @@
 			<properties>
 				<liquibasePluginArtifactId>liquibase-maven-plugin</liquibasePluginArtifactId>
 				<liquibasePluginVersion>2.0.1</liquibasePluginVersion>
-				<liquibaseDemoDataFollowupFileName>liquibase-empty-changelog.xml</liquibaseDemoDataFollowupFileName>
-				<liquibaseEmptyDbFollowupFileName>liquibase-empty-changelog.xml</liquibaseEmptyDbFollowupFileName>
 			</properties>
 		</profile>
 	</profiles>
@@ -86,9 +84,8 @@
 								<requireProperty>
 									<property>openmrs.version</property>
 									<message>openmrs.version property is missing. This should be
-										something like 1.9.0, 1.8.3, or 1.10-alpha. Add
-										-Dopenmrs.version=1.9.1. NOTE: If building for 1.8.x, also add
-										-P1.8.x</message>
+										something like 1.9.4, 1.10.0 Add
+										-Dopenmrs.version=1.9.4</message>
 								</requireProperty>
 							</rules>
 							<fail>true</fail>
@@ -217,64 +214,11 @@
 					</execution>
 					
 					<execution>
-						<id>empty-db-followup</id>
-						<phase>generate-resources</phase>
-						<configuration>
-							<driver>com.mysql.jdbc.Driver</driver>
-							<changeLogFile>${liquibaseEmptyDbFollowupFileName}</changeLogFile>
-							<url><![CDATA[jdbc:mysql:mxj://127.0.0.1:33326/openmrs?autoReconnect=true&sessionVariables=storage_engine=InnoDB&useUnicode=true&characterEncoding=UTF-8&server.initialize-user=true&createDatabaseIfNotExist=true&server.basedir=target/emptydatabase&server.datadir=target/emptydatabase/data&server.collation-server=utf8_general_ci&server.character-set-server=utf8&server.max_allowed_packet=32M]]></url>
-							<username>openmrs</username>
-							<password>test</password>
-							<verbose>true</verbose>
-							<dropFirst>false</dropFirst>
-							<systemProperties>
-								<property>
-									<name>liquibase.databaseChangeLogTableName</name>
-									<value>liquibasechangelog</value>
-								</property>
-								<property>
-									<name>liquibase.databaseChangeLogLockTableName</name>
-									<value>liquibasechangeloglock</value>
-								</property>
-							</systemProperties>
-						</configuration>
-						<goals>
-							<goal>update</goal>
-						</goals>
-					</execution>
-					
-					<execution>
 						<id>demo-db-update-to-latest</id>
 						<phase>generate-resources</phase>
 						<configuration>
 							<driver>com.mysql.jdbc.Driver</driver>
 							<changeLogFile>liquibase-update-to-latest.xml</changeLogFile>
-							<url><![CDATA[jdbc:mysql:mxj://127.0.0.1:33328/openmrs?autoReconnect=true&sessionVariables=storage_engine=InnoDB&useUnicode=true&characterEncoding=UTF-8&server.initialize-user=true&createDatabaseIfNotExist=true&server.basedir=target/demodatabase&server.datadir=target/demodatabase/data&server.collation-server=utf8_general_ci&server.character-set-server=utf8&server.max_allowed_packet=32M]]></url>
-							<username>openmrs</username>
-							<password>test</password>
-							<verbose>true</verbose>
-							<dropFirst>false</dropFirst>
-							<systemProperties>
-								<property>
-									<name>liquibase.databaseChangeLogTableName</name>
-									<value>liquibasechangelog</value>
-								</property>
-								<property>
-									<name>liquibase.databaseChangeLogLockTableName</name>
-									<value>liquibasechangeloglock</value>
-								</property>
-							</systemProperties>
-						</configuration>
-						<goals>
-							<goal>update</goal>
-						</goals>
-					</execution>
-					<execution>
-						<id>demo-db-followup</id>
-						<phase>generate-resources</phase>
-						<configuration>
-							<driver>com.mysql.jdbc.Driver</driver>
-							<changeLogFile>${liquibaseDemoDataFollowupFileName}</changeLogFile>
 							<url><![CDATA[jdbc:mysql:mxj://127.0.0.1:33328/openmrs?autoReconnect=true&sessionVariables=storage_engine=InnoDB&useUnicode=true&characterEncoding=UTF-8&server.initialize-user=true&createDatabaseIfNotExist=true&server.basedir=target/demodatabase&server.datadir=target/demodatabase/data&server.collation-server=utf8_general_ci&server.character-set-server=utf8&server.max_allowed_packet=32M]]></url>
 							<username>openmrs</username>
 							<password>test</password>
