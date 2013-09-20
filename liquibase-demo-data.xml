@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns:ext="http://www.liquibase.org/xml/ns/dbchangelog-ext"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-2.0.xsd
+    http://www.liquibase.org/xml/ns/dbchangelog-ext http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-ext.xsd">
+
+	<!-- 
+		See http://www.liquibase.org/manual/home#available_database_refactorings 
+		for a list of supported elements and attributes 
+	-->
+	
+	<changeSet id="id-referenceapp-insert-demo-data-gp" author="dkayiwa">
+        <insert tableName="global_property">
+            <column name="property" value="referencedemodata.createDemoPatientsOnNextStartup"/>
+            <column name="property_value" value="1"/>
+            <column name="description" value="Set to a positive integer if you want to generate demo patients on startup"/>
+        </insert>
+    </changeSet>
+
+</databaseChangeLog>

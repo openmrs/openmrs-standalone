@@ -365,7 +365,7 @@
 				<artifactId>${liquibasePluginArtifactId}</artifactId>
 				<executions>
 					<execution>
-						<id>empty-db-create-schema</id>
+						<id>empty-database-create-schema</id>
 						<phase>generate-resources</phase>
 						<configuration>
 							<driver>com.mysql.jdbc.Driver</driver>
@@ -391,7 +391,7 @@
 						</goals>
 					</execution>
 					<execution>
-						<id>empty-db-add-core-data</id>
+						<id>empty-database-add-core-data</id>
 						<phase>generate-resources</phase>
 						<configuration>
 							<driver>com.mysql.jdbc.Driver</driver>
@@ -417,12 +417,69 @@
 						</goals>
 					</execution>
 					<execution>
-						<id>empty-db-update-to-latest</id>
+						<id>empty-database-update-to-latest</id>
 						<phase>generate-resources</phase>
 						<configuration>
 							<driver>com.mysql.jdbc.Driver</driver>
 							<changeLogFile>liquibase-update-to-latest.xml</changeLogFile>
 							<url><![CDATA[jdbc:mysql:mxj://127.0.0.1:33326/openmrs?autoReconnect=true&sessionVariables=storage_engine=InnoDB&useUnicode=true&characterEncoding=UTF-8&server.initialize-user=true&createDatabaseIfNotExist=true&server.basedir=target/emptydatabase&server.datadir=target/emptydatabase/data&server.collation-server=utf8_general_ci&server.character-set-server=utf8&server.max_allowed_packet=32M]]></url>
+							<username>openmrs</username>
+							<password>test</password>
+							<verbose>true</verbose>
+							<dropFirst>false</dropFirst>
+							<systemProperties>
+								<property>
+									<name>liquibase.databaseChangeLogTableName</name>
+									<value>liquibasechangelog</value>
+								</property>
+								<property>
+									<name>liquibase.databaseChangeLogLockTableName</name>
+									<value>liquibasechangeloglock</value>
+								</property>
+							</systemProperties>
+						</configuration>
+						<goals>
+							<goal>update</goal>
+						</goals>
+					</execution>
+				</executions>
+			</plugin>
+			
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+		    	<artifactId>maven-resources-plugin</artifactId>
+		        <version>2.6</version>
+		        <executions>
+		        	<execution>
+			        	<id>copy-empty-database-for-demo</id>
+			            <phase>generate-resources</phase>
+			            <goals>
+			             	<goal>copy-resources</goal>
+			            </goals>
+			            <configuration>
+			            	<overwrite>true</overwrite>
+			                <outputDirectory>${project.build.directory}/demodatabase</outputDirectory>
+			                <resources>          
+			                	<resource>
+			                	<directory>${project.build.directory}/emptydatabase</directory>
+			                </resource>
+			              </resources>              
+			            </configuration>            
+			       </execution>
+		        </executions>
+		    </plugin>
+      
+      		<plugin>
+				<groupId>org.liquibase</groupId>
+				<artifactId>${liquibasePluginArtifactId}</artifactId>
+				<executions>
+					<execution>
+						<id>demo-database-add-data</id>
+						<phase>generate-resources</phase>
+						<configuration>
+							<driver>com.mysql.jdbc.Driver</driver>
+							<changeLogFile>liquibase-demo-data.xml</changeLogFile>
+							<url><![CDATA[jdbc:mysql:mxj://127.0.0.1:33326/openmrs?autoReconnect=true&sessionVariables=storage_engine=InnoDB&useUnicode=true&characterEncoding=UTF-8&server.initialize-user=true&createDatabaseIfNotExist=true&server.basedir=target/demodatabase&server.datadir=target/demodatabase/data&server.collation-server=utf8_general_ci&server.character-set-server=utf8&server.max_allowed_packet=32M]]></url>
 							<username>openmrs</username>
 							<password>test</password>
 							<verbose>true</verbose>
@@ -489,7 +546,7 @@
 						</configuration>
 					</execution>
 					<execution>
-						<id>zip-demo-data</id>
+						<id>zip-demo-database</id>
 						<phase>package</phase>
 						<goals>
 							<goal>single</goal>
@@ -498,12 +555,12 @@
 							<finalName>demodatabase</finalName>
 							<appendAssemblyId>false</appendAssemblyId>
 							<descriptors>
-								<descriptor>src/main/assembly/zip-demo-data.xml</descriptor>
+								<descriptor>src/main/assembly/zip-demo-database.xml</descriptor>
 							</descriptors>
 						</configuration>
 					</execution>
 					<execution>
-						<id>zip-mvp-data</id>
+						<id>zip-empty-database</id>
 						<phase>package</phase>
 						<goals>
 							<goal>single</goal>
@@ -512,7 +569,7 @@
 							<finalName>emptydatabase</finalName>
 							<appendAssemblyId>false</appendAssemblyId>
 							<descriptors>
-								<descriptor>src/main/assembly/zip-mvp-data.xml</descriptor>
+								<descriptor>src/main/assembly/zip-empty-database.xml</descriptor>
 							</descriptors>
 						</configuration>
 					</execution>
