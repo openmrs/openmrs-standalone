@@ -16,8 +16,10 @@ package org.openmrs.standalone;
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.File;
+import java.io.FileFilter;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.Enumeration;
 import java.util.Properties;
 import java.util.zip.ZipEntry;
@@ -225,6 +227,7 @@ public class ApplicationController {
 			} else if (applyDatabaseChange == DatabaseMode.EMPTY_DATABASE) {
 				deleteActiveDatabase();
 				unzipDatabase(new File("emptydatabase.zip"));
+				deleteDemoDataModule();
 				StandaloneUtil.resetConnectionPassword();
 				StandaloneUtil.startupDatabaseToCreateDefaultUser();
 			} else if (applyDatabaseChange == DatabaseMode.DEMO_DATABASE) {
@@ -436,4 +439,23 @@ public class ApplicationController {
 	public void setApplyDatabaseChange(DatabaseMode modeToApply) {
 		this.applyDatabaseChange = modeToApply;
 	}
-};
+	
+	private void deleteDemoDataModule() {
+		File directory = new File("appdata/modules");  
+		   
+		File[] toBeDeleted = directory.listFiles(new FileFilter() {  
+			public boolean accept(File theFile) {  
+				if (theFile.isFile()) {  
+					return (theFile.getName().startsWith("referencedemodata") ||
+							theFile.getName().startsWith("openmrs-webapp"));  
+				}  
+				
+				return false;  
+			}  
+		});  
+		     
+		for (File deletableFile : toBeDeleted) {  
+			deletableFile.delete();  
+		}
+	}
+}

@@ -212,39 +212,89 @@
 							<goal>update</goal>
 						</goals>
 					</execution>
-				</executions>
-			</plugin>
-			
-			<plugin>
-				<groupId>org.apache.maven.plugins</groupId>
-		    	<artifactId>maven-resources-plugin</artifactId>
-		        <version>2.6</version>
-		        <executions>
-		        	<execution>
-			        	<id>copy-empty-database-for-demo</id>
-			            <phase>generate-resources</phase>
-			            <goals>
-			             	<goal>copy-resources</goal>
-			            </goals>
-			            <configuration>
-			            	<overwrite>true</overwrite>
-			                <outputDirectory>${project.build.directory}/demodatabase</outputDirectory>
-			                <resources>          
-			                	<resource>
-			                	<directory>${project.build.directory}/emptydatabase</directory>
-			                </resource>
-			              </resources>              
-			            </configuration>            
-			       </execution>
-		        </executions>
-		    </plugin>
-      
-      		<plugin>
-				<groupId>org.liquibase</groupId>
-				<artifactId>${liquibasePluginArtifactId}</artifactId>
-				<executions>
+					
+					
+					
 					<execution>
-						<id>demo-database-add-data</id>
+						<id>demo-database-create-schema</id>
+						<phase>generate-resources</phase>
+						<configuration>
+							<driver>com.mysql.jdbc.Driver</driver>
+							<changeLogFile>liquibase-schema-only.xml</changeLogFile>
+							<url><![CDATA[jdbc:mysql:mxj://127.0.0.1:33328/openmrs?autoReconnect=true&sessionVariables=storage_engine=InnoDB&useUnicode=true&characterEncoding=UTF-8&server.initialize-user=true&createDatabaseIfNotExist=true&server.basedir=target/demodatabase&server.datadir=target/demodatabase/data&server.collation-server=utf8_general_ci&server.character-set-server=utf8&server.max_allowed_packet=32M]]></url>
+							<username>openmrs</username>
+							<password>test</password>
+							<verbose>true</verbose>
+							<dropFirst>false</dropFirst>
+							<systemProperties>
+								<property>
+									<name>liquibase.databaseChangeLogTableName</name>
+									<value>liquibasechangelog</value>
+								</property>
+								<property>
+									<name>liquibase.databaseChangeLogLockTableName</name>
+									<value>liquibasechangeloglock</value>
+								</property>
+							</systemProperties>
+						</configuration>
+						<goals>
+							<goal>update</goal>
+						</goals>
+					</execution>
+					<execution>
+						<id>demo-database-add-core-data</id>
+						<phase>generate-resources</phase>
+						<configuration>
+							<driver>com.mysql.jdbc.Driver</driver>
+							<changeLogFile>liquibase-core-data.xml</changeLogFile>
+							<url><![CDATA[jdbc:mysql:mxj://127.0.0.1:33328/openmrs?autoReconnect=true&sessionVariables=storage_engine=InnoDB&useUnicode=true&characterEncoding=UTF-8&server.initialize-user=true&createDatabaseIfNotExist=true&server.basedir=target/demodatabase&server.datadir=target/demodatabase/data&server.collation-server=utf8_general_ci&server.character-set-server=utf8&server.max_allowed_packet=32M]]></url>
+							<username>openmrs</username>
+							<password>test</password>
+							<verbose>true</verbose>
+							<dropFirst>false</dropFirst>
+							<systemProperties>
+								<property>
+									<name>liquibase.databaseChangeLogTableName</name>
+									<value>liquibasechangelog</value>
+								</property>
+								<property>
+									<name>liquibase.databaseChangeLogLockTableName</name>
+									<value>liquibasechangeloglock</value>
+								</property>
+							</systemProperties>
+						</configuration>
+						<goals>
+							<goal>update</goal>
+						</goals>
+					</execution>
+					<execution>
+						<id>demo-database-update-to-latest</id>
+						<phase>generate-resources</phase>
+						<configuration>
+							<driver>com.mysql.jdbc.Driver</driver>
+							<changeLogFile>liquibase-update-to-latest.xml</changeLogFile>
+							<url><![CDATA[jdbc:mysql:mxj://127.0.0.1:33328/openmrs?autoReconnect=true&sessionVariables=storage_engine=InnoDB&useUnicode=true&characterEncoding=UTF-8&server.initialize-user=true&createDatabaseIfNotExist=true&server.basedir=target/demodatabase&server.datadir=target/demodatabase/data&server.collation-server=utf8_general_ci&server.character-set-server=utf8&server.max_allowed_packet=32M]]></url>
+							<username>openmrs</username>
+							<password>test</password>
+							<verbose>true</verbose>
+							<dropFirst>false</dropFirst>
+							<systemProperties>
+								<property>
+									<name>liquibase.databaseChangeLogTableName</name>
+									<value>liquibasechangelog</value>
+								</property>
+								<property>
+									<name>liquibase.databaseChangeLogLockTableName</name>
+									<value>liquibasechangeloglock</value>
+								</property>
+							</systemProperties>
+						</configuration>
+						<goals>
+							<goal>update</goal>
+						</goals>
+					</execution>
+					<execution>
+						<id>demo-database-add-demo-data</id>
 						<phase>generate-resources</phase>
 						<configuration>
 							<driver>com.mysql.jdbc.Driver</driver>
@@ -291,6 +341,30 @@
 					</execution>
 				</executions>
 			</plugin>
+			
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+		    	<artifactId>maven-resources-plugin</artifactId>
+		        <version>2.6</version>
+		        <executions>
+		        	<execution>
+			        	<id>copy-distro-modules</id>
+			            <phase>process-resources</phase>
+			            <goals>
+			             	<goal>copy-resources</goal>
+			            </goals>
+			            <configuration>
+			            	<overwrite>true</overwrite>
+			                <outputDirectory>${project.build.directory}/appdata/modules</outputDirectory>
+			                <resources>          
+			                	<resource>
+			                		<directory>${distro.directory}</directory>
+			                	</resource>
+			              </resources>              
+			            </configuration>            
+			         </execution>
+		        </executions>
+		    </plugin>
 
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
