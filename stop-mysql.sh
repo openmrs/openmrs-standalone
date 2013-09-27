@@ -5,4 +5,4 @@ stopMysql() {
     fuser -k 33328/tcp
 }
 
-stopMysql()
+stopMysql
