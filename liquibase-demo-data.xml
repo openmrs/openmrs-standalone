@@ -14,7 +14,7 @@
 	<changeSet id="id-referenceapp-insert-demo-data-gp" author="dkayiwa">
         <insert tableName="global_property">
             <column name="property" value="referencedemodata.createDemoPatientsOnNextStartup"/>
-            <column name="property_value" value="1"/>
+            <column name="property_value" value="100"/>
             <column name="description" value="Set to a positive integer if you want to generate demo patients on startup"/>
         </insert>
     </changeSet>
