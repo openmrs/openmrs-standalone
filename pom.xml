@@ -49,7 +49,7 @@
 		<dependency>
 			<groupId>mysql</groupId>
 			<artifactId>mysql-connector-mxj-db-files-fixed</artifactId>
-			<version>5.0.12</version>
+			<version>5.0.12-20131016</version>
 			<scope>compile</scope>
 		</dependency>
 	</dependencies>
