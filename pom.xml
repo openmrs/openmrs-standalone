@@ -212,6 +212,32 @@
 							<goal>update</goal>
 						</goals>
 					</execution>
+					<execution>
+						<id>empty-database-add-standalone-data</id>
+						<phase>generate-resources</phase>
+						<configuration>
+							<driver>com.mysql.jdbc.Driver</driver>
+							<changeLogFile>liquibase-standalone-data.xml</changeLogFile>
+							<url><![CDATA[jdbc:mysql:mxj://127.0.0.1:33326/openmrs?autoReconnect=true&sessionVariables=storage_engine=InnoDB&useUnicode=true&characterEncoding=UTF-8&server.initialize-user=true&createDatabaseIfNotExist=true&server.basedir=target/emptydatabase&server.datadir=target/emptydatabase/data&server.collation-server=utf8_general_ci&server.character-set-server=utf8&server.max_allowed_packet=32M]]></url>
+							<username>openmrs</username>
+							<password>test</password>
+							<verbose>true</verbose>
+							<dropFirst>false</dropFirst>
+							<systemProperties>
+								<property>
+									<name>liquibase.databaseChangeLogTableName</name>
+									<value>liquibasechangelog</value>
+								</property>
+								<property>
+									<name>liquibase.databaseChangeLogLockTableName</name>
+									<value>liquibasechangeloglock</value>
+								</property>
+							</systemProperties>
+						</configuration>
+						<goals>
+							<goal>update</goal>
+						</goals>
+					</execution>
 					
 					
 					
@@ -299,6 +325,32 @@
 						<configuration>
 							<driver>com.mysql.jdbc.Driver</driver>
 							<changeLogFile>liquibase-demo-data.xml</changeLogFile>
+							<url><![CDATA[jdbc:mysql:mxj://127.0.0.1:33328/openmrs?autoReconnect=true&sessionVariables=storage_engine=InnoDB&useUnicode=true&characterEncoding=UTF-8&server.initialize-user=true&createDatabaseIfNotExist=true&server.basedir=target/demodatabase&server.datadir=target/demodatabase/data&server.collation-server=utf8_general_ci&server.character-set-server=utf8&server.max_allowed_packet=32M]]></url>
+							<username>openmrs</username>
+							<password>test</password>
+							<verbose>true</verbose>
+							<dropFirst>false</dropFirst>
+							<systemProperties>
+								<property>
+									<name>liquibase.databaseChangeLogTableName</name>
+									<value>liquibasechangelog</value>
+								</property>
+								<property>
+									<name>liquibase.databaseChangeLogLockTableName</name>
+									<value>liquibasechangeloglock</value>
+								</property>
+							</systemProperties>
+						</configuration>
+						<goals>
+							<goal>update</goal>
+						</goals>
+					</execution>
+					<execution>
+						<id>demo-database-add-standalone-data</id>
+						<phase>generate-resources</phase>
+						<configuration>
+							<driver>com.mysql.jdbc.Driver</driver>
+							<changeLogFile>liquibase-standalone-data.xml</changeLogFile>
 							<url><![CDATA[jdbc:mysql:mxj://127.0.0.1:33328/openmrs?autoReconnect=true&sessionVariables=storage_engine=InnoDB&useUnicode=true&characterEncoding=UTF-8&server.initialize-user=true&createDatabaseIfNotExist=true&server.basedir=target/demodatabase&server.datadir=target/demodatabase/data&server.collation-server=utf8_general_ci&server.character-set-server=utf8&server.max_allowed_packet=32M]]></url>
 							<username>openmrs</username>
 							<password>test</password>
