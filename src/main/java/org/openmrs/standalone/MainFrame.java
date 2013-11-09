@@ -282,6 +282,9 @@ public class MainFrame extends javax.swing.JFrame implements ActionListener, Use
 				btnStart.setEnabled(false);
 				btnStop.setEnabled(true);
 				
+				txtTomcatPort.setEditable(false);
+				txtMySqlPort.setEditable(false);
+				
 				setStatus(UserInterface.STATUS_MESSAGE_STARTING);
 				
 				appController.start();
@@ -295,6 +298,11 @@ public class MainFrame extends javax.swing.JFrame implements ActionListener, Use
 				btnStop.setEnabled(false);
 				
 				appController.stop();
+				
+				btnStart.setEnabled(true);
+				
+				txtTomcatPort.setEditable(true);
+				txtMySqlPort.setEditable(true);
 			}
 		}
 		catch (Exception ex) {
