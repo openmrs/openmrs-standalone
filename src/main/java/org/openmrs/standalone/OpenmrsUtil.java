@@ -36,6 +36,8 @@ public class OpenmrsUtil {
 	
 	private static final String OPERATING_SYSTEM_OSX = "Mac OS X";
 	
+	private static final String OPERATING_SYSTEM_WINDOWS_DEFAULT = "Windows 7";
+	
 	private static String runtimePropertiesPathName;
 	
 	/**
@@ -65,6 +67,12 @@ public class OpenmrsUtil {
 	 * @since 1.8
 	 */
 	public static Properties getRuntimeProperties(String applicationName) {
+		
+		if(!UNIX_BASED_OPERATING_SYSTEM){
+			System.setProperty(OPERATING_SYSTEM_KEY,OPERATING_SYSTEM_WINDOWS_DEFAULT);
+		}
+		
+		//System.out.println(System.getProperty(OPERATING_SYSTEM_KEY));
 		if (applicationName == null)
 			applicationName = "openmrs";
 		
