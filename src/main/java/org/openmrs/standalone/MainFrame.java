@@ -162,8 +162,12 @@ public class MainFrame extends javax.swing.JFrame implements ActionListener, Use
 		
 		lblTomcatPort = new JLabel("Tomcat Port");
 		txtTomcatPort = new JTextField(tomcatPort + "", 5);
+		txtTomcatPort.addActionListener(this);
+		txtTomcatPort.setEnabled(false);
 		lblMySqlPort = new JLabel("MySQL Port");
 		txtMySqlPort = new JTextField(mysqlPort, 5);
+		txtMySqlPort.addActionListener(this);
+		txtMySqlPort.setEnabled(false);
 		txtLog = new JTextArea();
 		
 		btnStart = new JButton("Start");
@@ -280,10 +284,11 @@ public class MainFrame extends javax.swing.JFrame implements ActionListener, Use
 				tomcatPort = StandaloneUtil.fromStringToInt(txtTomcatPort.getText());
 				
 				btnStart.setEnabled(false);
-				btnStop.setEnabled(true);
 				
-				txtTomcatPort.setEditable(false);
-				txtMySqlPort.setEditable(false);
+				btnStop.setEnabled(true);
+
+				txtTomcatPort.setEnabled(false);
+				txtMySqlPort.setEnabled(false);
 				
 				setStatus(UserInterface.STATUS_MESSAGE_STARTING);
 				
@@ -300,9 +305,9 @@ public class MainFrame extends javax.swing.JFrame implements ActionListener, Use
 				appController.stop();
 				
 				btnStart.setEnabled(true);
-				
-				txtTomcatPort.setEditable(true);
-				txtMySqlPort.setEditable(true);
+
+				txtTomcatPort.setEnabled(true);
+				txtMySqlPort.setEnabled(true);
 			}
 		}
 		catch (Exception ex) {
