@@ -254,6 +254,8 @@ public class StandaloneUtil {
 	}
 	
 	public static boolean launchBrowser(int port, String contextName) {
+		//Reset the default os value just before Invoking the browser
+    	OpenmrsUtil.setDefaultOS();
 		try {
 			// Before more Desktop API is used, first check 
 			// whether the API is supported by this particular 
@@ -412,6 +414,8 @@ public class StandaloneUtil {
     	} catch (ClassNotFoundException ex) {
     		throw new RuntimeException("cannot find mysql driver class");
     	}
+    	//Changed Default OS to Windows 7 for Windows, a workaround for Ticket STAND-65
+    	OpenmrsUtil.setDummyOS();
     	Properties props = OpenmrsUtil.getRuntimeProperties(getContextName());
     	String url = props.getProperty("connection.url");
     	if (!url.contains("server.initialize-user=true"))
