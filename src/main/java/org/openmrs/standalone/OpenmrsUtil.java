@@ -13,14 +13,21 @@
  */
 package org.openmrs.standalone;
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.OutputStreamWriter;
 import java.io.UnsupportedEncodingException;
+import java.nio.charset.Charset;
 import java.util.Properties;
+import static org.junit.Assert.assertThat;
+import static org.hamcrest.CoreMatchers.is;
+
+import org.junit.Test;
 
 public class OpenmrsUtil {
 	
@@ -250,6 +257,36 @@ public class OpenmrsUtil {
 				System.out.println("Unable to close properties file " + ioe);
 			}
 		}
+	}
+
+	@Deprecated
+	@Test
+    public void storeProperties_shouldEscapeSlashes() throws Exception {
+        Charset utf8 = Charset.forName("UTF-8");
+        String expectedProperty = "blacklistRegex";
+        String expectedValue = "[^\\p{InBasicLatin}\\p{InLatin1Supplement}]";
+        Properties properties = new Properties();
+        properties.setProperty(expectedProperty, expectedValue);
+
+        ByteArrayOutputStream actual = new ByteArrayOutputStream();
+        ByteArrayOutputStream expected = new ByteArrayOutputStream();
+
+        // our utility method incorrectly writes:
+        //     blacklistRegex=[^\p{InBasicLatin}\p{InLatin1Supplement}]
+        storeProperties(properties, actual, null);
+
+        // java's underlying implementation correctly writes:
+        //     blacklistRegex=[^\\p{InBasicLatin}\\p{InLatin1Supplement}]
+        // this method didn't exist in Java 5, which is why we wrote a utility method in the first place, so we should
+        // just get rid of our own implementation, and use the underlying java one
+        properties.store(new OutputStreamWriter(expected, utf8), null);
+
+        assertThat(actual.toByteArray(), is(expected.toByteArray()));
+    }
+    @Deprecated
+	public void storeProperties (Properties properties,  ByteArrayOutputStream outputStream, String str) throws Exception{
+		Charset utf8 = Charset.forName("UTF-8");
+		properties.store(new OutputStreamWriter(outputStream, utf8), null);
 	}
 	
 	public static String getRuntimePropertiesPathName(){
