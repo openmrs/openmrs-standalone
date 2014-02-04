@@ -13,5 +13,19 @@
             <where>system_id = 'admin'</where>
         </update>
     </changeSet>
+	
+	<changeSet id="referenceapp-set-scheduler-username" author="raff">
+        <update tableName="global_property">
+            <column name="property_value" value="admin"/>
+            <where>property = 'scheduler.username'</where>
+        </update>
+    </changeSet>
+	
+	<changeSet id="referenceapp-set-scheduler-password" author="raff">
+        <update tableName="global_property">
+            <column name="property_value" value="Admin123"/>
+            <where>property = 'scheduler.password'</where>
+        </update>
+    </changeSet>
 
 </databaseChangeLog>
