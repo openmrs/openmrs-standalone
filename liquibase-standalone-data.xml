@@ -15,17 +15,19 @@
     </changeSet>
 	
 	<changeSet id="referenceapp-set-scheduler-username" author="raff">
-        <update tableName="global_property">
+		<insert tableName="global_property">
+            <column name="property" value="scheduler.username"/>
             <column name="property_value" value="admin"/>
-            <where>property = 'scheduler.username'</where>
-        </update>
+            <column name="description" value="Username for the OpenMRS user that will perform the scheduler activities"/>
+        </insert>
     </changeSet>
 	
 	<changeSet id="referenceapp-set-scheduler-password" author="raff">
-        <update tableName="global_property">
+        <insert tableName="global_property">
+            <column name="property" value="scheduler.password"/>
             <column name="property_value" value="Admin123"/>
-            <where>property = 'scheduler.password'</where>
-        </update>
+            <column name="description" value="Password for the OpenMRS user that will perform the scheduler activities"/>
+        </insert>
     </changeSet>
 
 </databaseChangeLog>
