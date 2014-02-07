@@ -254,6 +254,7 @@ public class StandaloneUtil {
 	}
 	
 	public static boolean launchBrowser(int port, String contextName) {
+		//Reset the default os value just before Invoking the browser
 		try {
 			// Before more Desktop API is used, first check 
 			// whether the API is supported by this particular 
@@ -421,6 +422,7 @@ public class StandaloneUtil {
 		System.out.println("Opening MySQL connection to create openmrs/test users");
     	Connection conn = DriverManager.getConnection(url, "openmrs", "test");
     	conn.close();
+    	OpenmrsUtil.setDefaultOS();
     	System.out.println("closed MySQL connection");
     	stopMySqlServer();
     }
