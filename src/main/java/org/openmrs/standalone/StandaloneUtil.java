@@ -412,6 +412,7 @@ public class StandaloneUtil {
     	} catch (ClassNotFoundException ex) {
     		throw new RuntimeException("cannot find mysql driver class");
     	}
+
     	Properties props = OpenmrsUtil.getRuntimeProperties(getContextName());
     	String url = props.getProperty("connection.url");
     	if (!url.contains("server.initialize-user=true"))
@@ -421,6 +422,7 @@ public class StandaloneUtil {
 		System.out.println("Opening MySQL connection to create openmrs/test users");
     	Connection conn = DriverManager.getConnection(url, "openmrs", "test");
     	conn.close();
+		OpenmrsUtil.setDefaultOS();
     	System.out.println("closed MySQL connection");
     	stopMySqlServer();
     }
