@@ -13,6 +13,7 @@
  */
 package org.openmrs.standalone;
 
+import java.awt.AWTException;
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Cursor;
@@ -21,12 +22,20 @@ import java.awt.Font;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.GridLayout;
+import java.awt.Image;
+import java.awt.MenuItem;
+import java.awt.PopupMenu;
+import java.awt.SystemTray;
 import java.awt.Toolkit;
+import java.awt.TrayIcon;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.KeyEvent;
+import java.awt.event.WindowEvent;
+import java.awt.event.WindowStateListener;
 import java.io.IOException;
 import java.io.PrintStream;
+import java.net.URL;
 import java.util.Arrays;
 import java.util.List;
 
@@ -35,6 +44,7 @@ import javax.swing.BorderFactory;
 import javax.swing.ImageIcon;
 import javax.swing.JButton;
 import javax.swing.JDialog;
+import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JMenu;
 import javax.swing.JMenuBar;
@@ -93,6 +103,7 @@ public class MainFrame extends javax.swing.JFrame implements ActionListener, Use
 		browserMenuItem = new JMenuItem();
 		fileMenuSep = new JSeparator();
 		quitMenuItem = new JMenuItem();
+		trayMenuItem = new JMenuItem();
 		
 		setTitle(TITLE);
 		setDefaultCloseOperation(WindowConstants.DO_NOTHING_ON_CLOSE);
@@ -138,6 +149,49 @@ public class MainFrame extends javax.swing.JFrame implements ActionListener, Use
 		fileMenu.add(clearMenuItem);
 		
 		fileMenu.add(new JSeparator());
+		//Tray Initialization
+		if(SystemTray.isSupported()){
+	        tray=SystemTray.getSystemTray();
+	        trayImage= Toolkit.getDefaultToolkit().getImage("src/main/resources/org/openmrs/standalone/openmrs_logo_white.gif");
+	        ActionListener exitListener=new ActionListener() {
+	            public void actionPerformed(ActionEvent e) {
+	                System.out.println("Exiting....");
+	                System.exit(0);
+	            }
+	        };
+	        popup=new PopupMenu();
+	        exitTrayItem=new MenuItem("Exit");
+	        exitTrayItem.addActionListener(exitListener);
+	        popup.add(exitTrayItem);
+	        maximizeTrayItem=new MenuItem("Maximize");
+	        maximizeTrayItem.addActionListener(new ActionListener() {
+	        	public void actionPerformed(ActionEvent e) {
+	        		setVisible(true);
+	        		setExtendedState(JFrame.NORMAL);
+                    tray.remove(trayIcon);
+                    setVisible(true);
+	        	}
+	        });
+	        popup.add(maximizeTrayItem);
+	        trayIcon=new TrayIcon(trayImage, "OpenMRS Server", popup);
+	        trayIcon.setImageAutoSize(true);
+	    }else{
+	         trayMenuItem.setEnabled(false);
+	    }
+
+		trayMenuItem.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_M, preferredMetaKey));
+		trayMenuItem.setMnemonic('M');
+		trayMenuItem.setText("Minimize to Tray");
+		trayMenuItem.addActionListener(new java.awt.event.ActionListener() {
+			
+			public void actionPerformed(java.awt.event.ActionEvent evt) {
+				trayMenuItemActionPerformed(evt);
+			}
+		});
+		
+		fileMenu.add(trayMenuItem);
+		
+		fileMenu.add(new JSeparator());
 		
 		quitMenuItem.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_Q, preferredMetaKey));
 		quitMenuItem.setMnemonic('K');
@@ -159,6 +213,7 @@ public class MainFrame extends javax.swing.JFrame implements ActionListener, Use
 		portPanel = new JPanel();
 		
 		mainPanel.setLayout(new GridBagLayout());
+	
 		
 		lblTomcatPort = new JLabel("Tomcat Port");
 		txtTomcatPort = new JTextField(tomcatPort + "", 5);
@@ -246,6 +301,9 @@ public class MainFrame extends javax.swing.JFrame implements ActionListener, Use
 	private void clearMenuItemActionPerformed(java.awt.event.ActionEvent evt) {
 		textAreaWriter.clear();
 	}
+	private void trayMenuItemActionPerformed(java.awt.event.ActionEvent evt) {
+		minimizeToTray();
+	}
 	
 	/** Exit the Application */
 	private void exitForm(java.awt.event.WindowEvent evt) {
@@ -285,7 +343,7 @@ public class MainFrame extends javax.swing.JFrame implements ActionListener, Use
 				
 				btnStart.setEnabled(false);
 				btnStop.setEnabled(true);
-				
+
 				txtTomcatPort.setEnabled(false);
 				txtMySqlPort.setEnabled(false);
 				
@@ -408,6 +466,8 @@ public class MainFrame extends javax.swing.JFrame implements ActionListener, Use
 	
 	private JMenuItem quitMenuItem;
 	
+	private JMenuItem trayMenuItem;
+	
 	private JPanel mainPanel;
 	
 	private JPanel portPanel;
@@ -426,6 +486,17 @@ public class MainFrame extends javax.swing.JFrame implements ActionListener, Use
 	
 	private JTextArea txtLog;
 	
+	private TrayIcon trayIcon;
+    
+	private SystemTray tray;
+	
+    private PopupMenu popup;
+    
+    private MenuItem exitTrayItem;
+    
+    private MenuItem maximizeTrayItem;
+    
+    Image trayImage;
 	/**
 	 * @see org.openmrs.standalone.UserInterface#showInitialConfig()
 	 */
@@ -525,5 +596,13 @@ public class MainFrame extends javax.swing.JFrame implements ActionListener, Use
 	
 	public void onFinishedInitialConfigCheck(){
 		
+	}
+	public void minimizeToTray(){
+        try {
+            tray.add(trayIcon);
+            setVisible(false);
+        } catch (AWTException ex) {
+	        trayMenuItem.setEnabled(false);
+        }
 	}
 }
