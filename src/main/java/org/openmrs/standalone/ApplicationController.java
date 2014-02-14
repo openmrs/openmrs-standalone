@@ -161,6 +161,7 @@ public class ApplicationController {
 			}
 			
 			public void finished() {
+				OpenmrsUtil.setDefaultOS();
 				userInterface.enableStart(true);
 				userInterface.enableStop(false);
 				

@@ -36,7 +36,7 @@ public class OpenmrsUtil {
 	
 	private static final String OPERATING_SYSTEM_OSX = "Mac OS X";
 	
-	private static final String OPERATING_SYSTEM_WINDOWS_DEFAULT = "Windows 7";
+	private static final String OPERATING_SYSTEM_WINDOWS_DUMMY = "Windows 7";
 	
 	private static String runtimePropertiesPathName;
 	
@@ -66,13 +66,10 @@ public class OpenmrsUtil {
 	 * @return runtime properties, or null if none can be found
 	 * @since 1.8
 	 */
+
 	public static Properties getRuntimeProperties(String applicationName) {
 		
-		if(!UNIX_BASED_OPERATING_SYSTEM){
-			System.setProperty(OPERATING_SYSTEM_KEY,OPERATING_SYSTEM_WINDOWS_DEFAULT);
-		}
-		
-		//System.out.println(System.getProperty(OPERATING_SYSTEM_KEY));
+		setDummyOS();
 		if (applicationName == null)
 			applicationName = "openmrs";
 		
@@ -262,4 +259,14 @@ public class OpenmrsUtil {
 	public static String getMysqlPort(){
 		return "3316";
 	}
+	public static void setDummyOS(){
+		if(!UNIX_BASED_OPERATING_SYSTEM){
+			System.setProperty(OPERATING_SYSTEM_KEY,OPERATING_SYSTEM_WINDOWS_DUMMY);
+		}
+	}
+	
+	public static void setDefaultOS(){
+		System.setProperty(OPERATING_SYSTEM_KEY,OPERATING_SYSTEM);
+	}
+	
 }
