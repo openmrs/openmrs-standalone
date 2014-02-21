@@ -19,7 +19,7 @@ package org.openmrs.standalone;
  */
 public interface UserInterface {
 	
-	public static final String TITLE = "OpenMRS EMR 2.0 Standalone";
+	public static final String TITLE = "OpenMRS 2.0 Standalone";
 	
 	public static final int DEFAULT_TOMCAT_PORT = 8088;
 	
