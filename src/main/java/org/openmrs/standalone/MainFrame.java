@@ -35,6 +35,7 @@ import java.awt.event.WindowEvent;
 import java.awt.event.WindowStateListener;
 import java.io.IOException;
 import java.io.PrintStream;
+import java.lang.reflect.Method;
 import java.net.URL;
 import java.util.Arrays;
 import java.util.List;
@@ -274,9 +275,24 @@ public class MainFrame extends javax.swing.JFrame implements ActionListener, Use
 		add(mainPanel);
 		
 		try {
-			setIconImage(ImageIO.read(getClass().getResource("openmrs_logo_white.gif")));
+			if (System.getProperty("os.name").startsWith("Mac OS X")) {
+				Class noparams[] = {};
+				Class[] paramImage = new Class[1];	
+				paramImage[0] = Image.class;	
+				Class Application = Class.forName("com.apple.eawt.Application");
+				Object application = Application.newInstance();
+				Method getApplication = Application.getDeclaredMethod("getApplication", noparams);
+				application = getApplication.invoke(null, null);
+				Method setDockIconImage = Application.getDeclaredMethod("setDockIconImage", paramImage);
+				Image image = Toolkit.getDefaultToolkit().getImage("src/main/resources/org/openmrs/standalone/openmrs_logo_white.gif");
+				setDockIconImage.invoke(application, image);
+			}
+			else setIconImage(ImageIO.read(getClass().getResource("openmrs_logo_white.gif")));
 		}
 		catch (IOException e) {
+			e.printStackTrace();
+		}
+		catch (Exception e) {
 			e.printStackTrace();
 		}
 		
