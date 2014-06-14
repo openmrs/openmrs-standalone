@@ -71,7 +71,7 @@ or
 LOGIN DETAILS (remember to change the password immediately after installation in a production environment)
 =============
 username - admin
-password - test
+password - Admin123
 
 
 CHANGING THE USERNAME AND PASSWORD
