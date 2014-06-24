@@ -22,11 +22,12 @@
 			<outputDirectory>${project.build.finalName}/tomcat</outputDirectory>
 		</fileSet>
 		<fileSet>
-			<directory>${project.build.directory}</directory>
+			<directory>${openmrs.war.path}</directory>
 			<includes>
-				<include>*.war</include>
+				<include>openmrs.war</include>
 			</includes>
 			<outputDirectory>${project.build.finalName}/tomcat/webapps</outputDirectory>
+			<destName>openmrs-standalone.war</destName>
 		</fileSet>
 		<fileSet>
 			<directory>src/main/config</directory>
