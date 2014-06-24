@@ -127,32 +127,6 @@
 			</plugin>
 
 			<plugin>
-				<groupId>org.apache.maven.plugins</groupId>
-				<artifactId>maven-dependency-plugin</artifactId>
-				<executions>
-					<execution>
-						<id>copy</id>
-						<phase>process-resources</phase>
-						<goals>
-							<goal>copy</goal>
-						</goals>
-					</execution>
-				</executions>
-				<configuration>
-					<artifactItems>
-						<artifactItem>
-							<groupId>org.openmrs.web</groupId>
-							<artifactId>openmrs-webapp</artifactId>
-							<version>${openmrs.version}</version>
-							<type>war</type>
-							<outputDirectory>target</outputDirectory>
-							<destFileName>openmrs-standalone.war</destFileName>
-						</artifactItem>
-					</artifactItems>
-				</configuration>
-			</plugin>
-
-			<plugin>
 				<groupId>org.liquibase</groupId>
 				<artifactId>${liquibasePluginArtifactId}</artifactId>
 				<executions>
