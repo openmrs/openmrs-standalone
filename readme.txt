@@ -2,7 +2,7 @@
 ...............QUICK SUMMARY FOR BUILDING THE STANDALONE.....................
 * Increase the maven memory: e.g. export MAVEN_OPTS="-Xms1012m -Xmx2024m -XX:PermSize=556m -XX:MaxPermSize=1012m"
 * mvn clean
-* mvn package -Dopenmrs.version=1.9.0
+* mvn package -Dopenmrs.version=1.9.0 -Dopenmrs.war.path=war/openmrs.war
 * If you are building standalone for OpenMRS 1.8.x you need to append the above command with -P1.8.x 
 and put in the main directory the Demo-1.8.0.sql file from https://wiki.openmrs.org/display/RES/Demo+Data
 * If running a second time, ALWAYS check to make sure mysql processes on port 3326 and 3328 are stopped. 

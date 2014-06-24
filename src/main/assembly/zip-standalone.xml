@@ -7,6 +7,13 @@
 	<formats>
 		<format>zip</format>
 	</formats>
+	<files>
+		<file>
+			<source>${openmrs.war.path}</source>
+			<outputDirectory>${project.build.finalName}/tomcat/webapps</outputDirectory>
+			<destName>openmrs-standalone.war</destName>
+		</file>
+	</files>
 	<fileSets>
 		<fileSet>
 			<directory>${project.build.directory}</directory>
@@ -21,11 +28,6 @@
 			<directory>src/main/config/tomcat</directory>
 			<outputDirectory>${project.build.finalName}/tomcat</outputDirectory>
 		</fileSet>
-		<file>
-			<source>${openmrs.war.path}</source>
-			<outputDirectory>${project.build.finalName}/tomcat/webapps</outputDirectory>
-			<destName>openmrs-standalone.war</destName>
-		</file>
 		<fileSet>
 			<directory>src/main/config</directory>
 			<outputDirectory>${project.build.finalName}</outputDirectory>
