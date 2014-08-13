@@ -1,3 +1,5 @@
+#### Note that the master branch is used for building the standalone for OpenMRS Plantform 1.8.x - 1.12.x and the openmrs-emr branch is used for OpenMRS 2.0.
+
 ## QUICK SUMMARY FOR BUILDING THE STANDALONE
 
 * Increase the maven memory: e.g. export MAVEN_OPTS="-Xms1012m -Xmx2024m -XX:PermSize=556m -XX:MaxPermSize=1012m"
