@@ -17,7 +17,9 @@ import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
+import java.io.FileWriter;
 import java.io.IOException;
+import java.lang.management.ManagementFactory;
 import java.util.Enumeration;
 import java.util.Properties;
 import java.util.zip.ZipEntry;
@@ -52,8 +54,9 @@ public class ApplicationController {
 	/** The web app context name. */
 	private String contextName;
 	
-	public ApplicationController(boolean commandLineMode, String tomcatPort, String mysqlPort) throws Exception {
-		init(commandLineMode, tomcatPort, mysqlPort);
+	public ApplicationController(boolean commandLineMode, String tomcatPort, String mysqlPort, boolean autoLaunchBrowser)
+	    throws Exception {
+		init(commandLineMode, tomcatPort, mysqlPort, autoLaunchBrowser);
 	}
 	
 	/**
@@ -65,6 +68,7 @@ public class ApplicationController {
 		
 		String tomcatPort = null;
 		String mySqlPort = null;
+		boolean isTestRun = false;
 		
 		Properties properties = OpenmrsUtil.getRuntimeProperties(StandaloneUtil.getContextName()); //StandaloneUtil.getRuntimeProperties(); //OpenmrsUtil.getRuntimeProperties(StandaloneUtil.getContextName());
 		if (properties != null) {
@@ -90,10 +94,16 @@ public class ApplicationController {
 				tomcatPortArg = true;
 			} else if (arg.contains("mysqlport")) {
 				mySqlPortArg = true;
+			} else if (arg.contains("test")) {
+				isTestRun = true;
 			} else {
 				System.out.println("Exited because of unknown argument: " + arg);
 				System.exit(0);
 			}
+		}
+		
+		if (isTestRun) {
+			reportProcessId();
 		}
 		
 		//Update the runtime properties file with the mysql and tomcat port numbers
@@ -107,15 +117,15 @@ public class ApplicationController {
 		
 		if (tomcatPort == null)
 			tomcatPort = UserInterface.DEFAULT_TOMCAT_PORT + "";
-		
-		new ApplicationController(commandLine, tomcatPort, mySqlPort);
+
+		new ApplicationController(commandLine, tomcatPort, mySqlPort, !isTestRun);
 	}
 	
 	/**
 	 * Starts running the server.
 	 */
-	public void start() {
-		
+	public void start(final boolean autoLaunchBrowser) {
+
 		/* Invoking start() on the SwingWorker causes a new Thread
 		 * to be created that will call construct(), and then
 		 * finished().  Note that finished() is called even if
@@ -136,7 +146,9 @@ public class ApplicationController {
 				
 				if (value != null) {
 					userInterface.setStatus(getRunningStatusMessage());
-					StandaloneUtil.launchBrowser(userInterface.getTomcatPort(), contextName);
+					if (autoLaunchBrowser) {
+						StandaloneUtil.launchBrowser(userInterface.getTomcatPort(), contextName);
+					}
 				} else {
 					userInterface.setStatus(UserInterface.STATUS_MESSAGE_STOPPED);
 				}
@@ -196,7 +208,8 @@ public class ApplicationController {
 	/**
 	 * Creates the application user interface and automatically runs the server
 	 */
-	private void init(boolean commandLineMode, String tomcatPort, String mySqlPort) throws Exception {
+	private void init(boolean commandLineMode, String tomcatPort, String mySqlPort, boolean autoLaunchBrowser)
+	    throws Exception {
 		if (commandLineMode) {
 			userInterface = new CommandLine(this, tomcatPort, mySqlPort);
 		} else {
@@ -245,7 +258,7 @@ public class ApplicationController {
 		userInterface.setStatus(UserInterface.STATUS_MESSAGE_STARTING);
 		userInterface.onFinishedInitialConfigCheck();
 		
-		start();
+		start(autoLaunchBrowser);
 	}
 	
 	/**
@@ -437,4 +450,29 @@ public class ApplicationController {
 	public void setApplyDatabaseChange(DatabaseMode modeToApply) {
 		this.applyDatabaseChange = modeToApply;
 	}
-};
+	
+	private static void reportProcessId() throws Exception {
+		String processId = ManagementFactory.getRuntimeMXBean().getName().split("@")[0];
+		System.out.println("OpenMRS Standalone process id:" + processId);
+		File pidFile = new File(".standalone.pid");
+		if (pidFile.exists()) {
+			throw new Exception("There is already an instance of this standalone running, "
+			        + "please make sure all previous instances have been stopped");
+		}
+		pidFile.createNewFile();
+		pidFile.deleteOnExit();
+		System.out.println("Pid file:" + pidFile.getAbsolutePath());
+		
+		FileWriter fw = null;
+		try {
+			fw = new FileWriter(pidFile);
+			fw.write(processId);
+			fw.flush();
+		}
+		finally {
+			if (fw != null) {
+				fw.close();
+			}
+		}
+	}
+}

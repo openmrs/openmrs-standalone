@@ -139,14 +139,14 @@ public class CommandLine implements UserInterface {
 			} else if (CMD_DEMO.equalsIgnoreCase(line)) {
 				appController.setApplyDatabaseChange(ApplicationController.DatabaseMode.DEMO_DATABASE);
 			} else if (CMD_EXPERT.equalsIgnoreCase(line)) {
-				appController.setApplyDatabaseChange(ApplicationController.DatabaseMode.USE_INITIALIZATION_WIZARD);	
+				appController.setApplyDatabaseChange(ApplicationController.DatabaseMode.USE_INITIALIZATION_WIZARD);
 			} else {
 				displayMessage("Unknown command: " + line);
 			}
 		}
 		catch (IOException ex) {
 			ex.printStackTrace();
-		}	
+		}
 	}
 	
 	private void startServer(String[] args) {
@@ -170,7 +170,7 @@ public class CommandLine implements UserInterface {
 				}
 			}
 			
-			appController.start();
+			appController.start(true);
 		}
 	}
 	

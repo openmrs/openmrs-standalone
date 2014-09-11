@@ -349,7 +349,7 @@ public class MainFrame extends javax.swing.JFrame implements ActionListener, Use
 				
 				setStatus(UserInterface.STATUS_MESSAGE_STARTING);
 				
-				appController.start();
+				appController.start(true);
 			} else if (event.getSource() == btnStop) {
 				
 				if (JOptionPane.showConfirmDialog(this, UserInterface.PROMPT_STOPSERVER, getTitle(),
