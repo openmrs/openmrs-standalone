@@ -51,8 +51,14 @@ public class CommandLine implements UserInterface {
 	
 	private SwingWorker workerThread;
 	
-	public CommandLine(ApplicationController appController, String tomcatPort, String mySqlPort) {
+	private boolean nonInteractive = false;
+	
+	private boolean demo = true;
+	
+	public CommandLine(ApplicationController appController, String tomcatPort, String mySqlPort, boolean nonInteractive, boolean demo) {
 		this.appController = appController;
+		this.nonInteractive = nonInteractive;
+		this.demo = demo;
 		
 		if (mySqlPort != null)
 			this.mySqlPort = mySqlPort;
@@ -92,18 +98,23 @@ public class CommandLine implements UserInterface {
 	}
 	
 	public void onFinishedInitialConfigCheck() {
-		workerThread = new SwingWorker() {
-			
-			public Object construct() {
-				while (!exiting) {
-					processUserInput();
-				}
+		if (nonInteractive) {
+			displayStatusMessage();
+		}
+		else {
+			workerThread = new SwingWorker() {
 				
-				return null;
-			}
-		};
-		
-		workerThread.start();
+				public Object construct() {
+					while (!exiting) {
+						processUserInput();
+					}
+					
+					return null;
+				}
+			};
+			
+			workerThread.start();
+		}
 	}
 	
 	private void displayMessage(String message) {
@@ -111,12 +122,17 @@ public class CommandLine implements UserInterface {
 	}
 	
 	private void displayStatusMessage() {
-		String message = "browser - to launch a new browser instance.";
-		if (!running)
-			message = "to change the tomcat or mysql port, use -tomcatport and -mysqlport respectively.";
-		
-		displayMessage("[" + status + "] Type: exit - to quit, "
-		        + (running ? "stop - to stop the server, " : "start - to start the server, ") + message);
+		if (nonInteractive) {
+			displayMessage(status);
+		}
+		else {
+			String message = "browser - to launch a new browser instance.";
+			if (!running)
+				message = "to change the tomcat or mysql port, use -tomcatport and -mysqlport respectively.";
+			
+			displayMessage("[" + status + "] Type: exit - to quit, "
+			        + (running ? "stop - to stop the server, " : "start - to start the server, ") + message);
+		}
 	}
 	
 	private void processUserInput() {
@@ -208,7 +224,17 @@ public class CommandLine implements UserInterface {
      * @see org.openmrs.standalone.UserInterface#showInitialConfig()
      */
     public void showInitialConfig() {
-		System.out.println(UserInterface.PROMPT_CHOOSE_DEMO_OR_EXPERT_MODE + " Type: " + CMD_DEMO + " or " + CMD_EXPERT);
-		processCommadLine();
+    	if (nonInteractive) {
+    		if (demo) {
+    			appController.setApplyDatabaseChange(ApplicationController.DatabaseMode.DEMO_DATABASE);
+    		}
+    		else {
+    			appController.setApplyDatabaseChange(ApplicationController.DatabaseMode.USE_INITIALIZATION_WIZARD);
+    		}
+    	}
+    	else {
+			System.out.println(UserInterface.PROMPT_CHOOSE_DEMO_OR_EXPERT_MODE + " Type: " + CMD_DEMO + " or " + CMD_EXPERT);
+			processCommadLine();
+    	}
     }
 }
