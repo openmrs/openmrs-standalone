@@ -54,8 +54,8 @@ public class ApplicationController {
 	/** The web app context name. */
 	private String contextName;
 	
-	public ApplicationController(boolean commandLineMode, String tomcatPort, String mysqlPort) throws Exception {
-		init(commandLineMode, tomcatPort, mysqlPort);
+	public ApplicationController(boolean commandLineMode, boolean nonInteractive, boolean demo, String tomcatPort, String mysqlPort) throws Exception {
+		init(commandLineMode, nonInteractive, demo, tomcatPort, mysqlPort);
 	}
 	
 	/**
@@ -78,6 +78,8 @@ public class ApplicationController {
 		boolean commandLine = false;
 		boolean mySqlPortArg = false;
 		boolean tomcatPortArg = false;
+		boolean nonInteractive = false;
+		boolean demo = true;
 		for (String arg : args) {
 			arg = arg.toLowerCase();
 			if (mySqlPortArg) {
@@ -88,6 +90,10 @@ public class ApplicationController {
 				tomcatPortArg = false;
 			} else if (arg.contains("commandline")) {
 				commandLine = true;
+			} else if (arg.contains("noninteractive")) {
+				nonInteractive = true;
+			} else if (arg.contains("expert")) {
+				demo = false;
 			} else if (arg.contains("tomcatport")) {
 				tomcatPortArg = true;
 			} else if (arg.contains("mysqlport")) {
@@ -110,7 +116,7 @@ public class ApplicationController {
 		if (tomcatPort == null)
 			tomcatPort = UserInterface.DEFAULT_TOMCAT_PORT + "";
 		
-		new ApplicationController(commandLine, tomcatPort, mySqlPort);
+		new ApplicationController(commandLine, nonInteractive, demo, tomcatPort, mySqlPort);
 	}
 	
 	/**
@@ -198,9 +204,9 @@ public class ApplicationController {
 	/**
 	 * Creates the application user interface and automatically runs the server
 	 */
-	private void init(boolean commandLineMode, String tomcatPort, String mySqlPort) throws Exception {
+	private void init(boolean commandLineMode, boolean nonInteractive, boolean demo, String tomcatPort, String mySqlPort) throws Exception {
 		if (commandLineMode) {
-			userInterface = new CommandLine(this, tomcatPort, mySqlPort);
+			userInterface = new CommandLine(this, tomcatPort, mySqlPort, nonInteractive, demo);
 		} else {
 			userInterface = new MainFrame(this, tomcatPort, mySqlPort);
 		}
