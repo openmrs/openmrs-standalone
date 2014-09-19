@@ -31,6 +31,8 @@ public class CommandLine implements UserInterface {
 	
 	private static final String CMD_DEMO = "demo";
 	
+	private static final String CMD_EMPTY = "empty";
+	
 	private static final String CMD_EXPERT = "expert";
 	
 	private static final String CMD_EXIT = "exit";
@@ -53,12 +55,12 @@ public class CommandLine implements UserInterface {
 	
 	private boolean nonInteractive = false;
 	
-	private boolean demo = true;
+	private DatabaseMode mode = DatabaseMode.DEMO_DATABASE;
 	
-	public CommandLine(ApplicationController appController, String tomcatPort, String mySqlPort, boolean nonInteractive, boolean demo) {
+	public CommandLine(ApplicationController appController, String tomcatPort, String mySqlPort, boolean nonInteractive, DatabaseMode mode) {
 		this.appController = appController;
 		this.nonInteractive = nonInteractive;
-		this.demo = demo;
+		this.mode = mode;
 		
 		if (mySqlPort != null)
 			this.mySqlPort = mySqlPort;
@@ -153,9 +155,11 @@ public class CommandLine implements UserInterface {
 			} else if (CMD_EXIT.equalsIgnoreCase(line)) {
 				exit();
 			} else if (CMD_DEMO.equalsIgnoreCase(line)) {
-				appController.setApplyDatabaseChange(ApplicationController.DatabaseMode.DEMO_DATABASE);
+				appController.setApplyDatabaseChange(DatabaseMode.DEMO_DATABASE);
+			} else if (CMD_EMPTY.equalsIgnoreCase(line)) {
+				appController.setApplyDatabaseChange(DatabaseMode.EMPTY_DATABASE);
 			} else if (CMD_EXPERT.equalsIgnoreCase(line)) {
-				appController.setApplyDatabaseChange(ApplicationController.DatabaseMode.USE_INITIALIZATION_WIZARD);	
+				appController.setApplyDatabaseChange(DatabaseMode.USE_INITIALIZATION_WIZARD);	
 			} else {
 				displayMessage("Unknown command: " + line);
 			}
@@ -225,15 +229,10 @@ public class CommandLine implements UserInterface {
      */
     public void showInitialConfig() {
     	if (nonInteractive) {
-    		if (demo) {
-    			appController.setApplyDatabaseChange(ApplicationController.DatabaseMode.DEMO_DATABASE);
-    		}
-    		else {
-    			appController.setApplyDatabaseChange(ApplicationController.DatabaseMode.USE_INITIALIZATION_WIZARD);
-    		}
+    		appController.setApplyDatabaseChange(mode);
     	}
     	else {
-			System.out.println(UserInterface.PROMPT_CHOOSE_DEMO_OR_EXPERT_MODE + " Type: " + CMD_DEMO + " or " + CMD_EXPERT);
+			System.out.println(UserInterface.PROMPT_CHOOSE_DEMO_EMPTY_OR_EXPERT_MODE + " Type: " + CMD_DEMO + " or " + CMD_EMPTY + " or " + CMD_EXPERT);
 			processCommadLine();
     	}
     }

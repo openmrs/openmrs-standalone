@@ -19,7 +19,6 @@ import java.io.File;
 import java.io.FileFilter;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.util.Arrays;
 import java.util.Enumeration;
 import java.util.Properties;
 import java.util.zip.ZipEntry;
@@ -29,16 +28,6 @@ import java.util.zip.ZipFile;
  * Manages the application workflow.
  */
 public class ApplicationController {
-	
-	/**
-	 * List of the different settings the user can choose for the database
-	 */
-	public enum DatabaseMode {
-		NO_CHANGES, // just use whatever database is set up, and don't do anything.
-		USE_INITIALIZATION_WIZARD, // clear the database and invoke the initialization wizard
-		EMPTY_DATABASE, // use the empty database
-		DEMO_DATABASE// Use the demo database
-	}
 	
 	private DatabaseMode applyDatabaseChange = null;
 	
@@ -54,8 +43,8 @@ public class ApplicationController {
 	/** The web app context name. */
 	private String contextName;
 	
-	public ApplicationController(boolean commandLineMode, boolean nonInteractive, boolean demo, String tomcatPort, String mysqlPort) throws Exception {
-		init(commandLineMode, nonInteractive, demo, tomcatPort, mysqlPort);
+	public ApplicationController(boolean commandLineMode, boolean nonInteractive, DatabaseMode mode, String tomcatPort, String mysqlPort) throws Exception {
+		init(commandLineMode, nonInteractive, mode, tomcatPort, mysqlPort);
 	}
 	
 	/**
@@ -79,7 +68,7 @@ public class ApplicationController {
 		boolean mySqlPortArg = false;
 		boolean tomcatPortArg = false;
 		boolean nonInteractive = false;
-		boolean demo = true;
+		DatabaseMode mode = DatabaseMode.DEMO_DATABASE;
 		for (String arg : args) {
 			arg = arg.toLowerCase();
 			if (mySqlPortArg) {
@@ -92,8 +81,10 @@ public class ApplicationController {
 				commandLine = true;
 			} else if (arg.contains("noninteractive")) {
 				nonInteractive = true;
+			} else if (arg.contains("empty")) {
+				mode = DatabaseMode.EMPTY_DATABASE;
 			} else if (arg.contains("expert")) {
-				demo = false;
+				mode = DatabaseMode.USE_INITIALIZATION_WIZARD;
 			} else if (arg.contains("tomcatport")) {
 				tomcatPortArg = true;
 			} else if (arg.contains("mysqlport")) {
@@ -116,7 +107,7 @@ public class ApplicationController {
 		if (tomcatPort == null)
 			tomcatPort = UserInterface.DEFAULT_TOMCAT_PORT + "";
 		
-		new ApplicationController(commandLine, nonInteractive, demo, tomcatPort, mySqlPort);
+		new ApplicationController(commandLine, nonInteractive, mode, tomcatPort, mySqlPort);
 	}
 	
 	/**
@@ -204,9 +195,9 @@ public class ApplicationController {
 	/**
 	 * Creates the application user interface and automatically runs the server
 	 */
-	private void init(boolean commandLineMode, boolean nonInteractive, boolean demo, String tomcatPort, String mySqlPort) throws Exception {
+	private void init(boolean commandLineMode, boolean nonInteractive, DatabaseMode mode, String tomcatPort, String mySqlPort) throws Exception {
 		if (commandLineMode) {
-			userInterface = new CommandLine(this, tomcatPort, mySqlPort, nonInteractive, demo);
+			userInterface = new CommandLine(this, tomcatPort, mySqlPort, nonInteractive, mode);
 		} else {
 			userInterface = new MainFrame(this, tomcatPort, mySqlPort);
 		}

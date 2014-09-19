@@ -33,7 +33,7 @@ public interface UserInterface {
 	public static final String PROMPT_STOPSERVER = "Do you really want to stop the server?";
 	public static final String PROMPT_EXIT = "Exiting will stop the server. Do you really want to?";
 	public static final String PROMPT_STOP = "Do you really want to stop the server?";
-	public static final String PROMPT_CHOOSE_DEMO_OR_EXPERT_MODE = "Do you want the demo or expert mode?";
+	public static final String PROMPT_CHOOSE_DEMO_EMPTY_OR_EXPERT_MODE = "Do you want the demo, empty, or expert mode?";
 	
 	void enableStart(boolean enable);
 	
