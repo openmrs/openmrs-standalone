@@ -61,8 +61,6 @@ import javax.swing.SwingUtilities;
 import javax.swing.UIManager;
 import javax.swing.WindowConstants;
 
-import org.openmrs.standalone.ApplicationController.DatabaseMode;
-
 /**
  * Provides non command line (GUI) interface to the standalone launcher..
  */
