@@ -45,8 +45,11 @@ public class ApplicationController {
 	
 	private boolean commandLineMode = false;
 	
+	private boolean nonInteractive = false;
+	
 	public ApplicationController(boolean commandLineMode, boolean nonInteractive, DatabaseMode mode, String tomcatPort, String mysqlPort) throws Exception {
 		this.commandLineMode = commandLineMode;
+		this.nonInteractive = nonInteractive;
 		init(commandLineMode, nonInteractive, mode, tomcatPort, mysqlPort);
 	}
 	
@@ -139,8 +142,14 @@ public class ApplicationController {
 				if (value != null) {
 					userInterface.setStatus(getRunningStatusMessage());
 					//If not command line mode, launch the browser
+					//else block with the await call such that we do not exit tomcat
 					if (!commandLineMode) {
 						StandaloneUtil.launchBrowser(userInterface.getTomcatPort(), contextName);
+					}
+					
+					//if in non interactive mode, block such that tomcat does not exit
+					if (nonInteractive) {
+						tomcatManager.await();
 					}
 				} else {
 					userInterface.setStatus(UserInterface.STATUS_MESSAGE_STOPPED);

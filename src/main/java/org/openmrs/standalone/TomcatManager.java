@@ -13,9 +13,14 @@
  */
 package org.openmrs.standalone;
 
-import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
 import java.net.InetAddress;
 import java.net.MalformedURLException;
+import java.net.ServerSocket;
+import java.net.Socket;
+import java.security.AccessControlException;
+import java.util.Random;
 
 import org.apache.catalina.Context;
 import org.apache.catalina.Engine;
@@ -24,14 +29,33 @@ import org.apache.catalina.LifecycleException;
 import org.apache.catalina.connector.Connector;
 import org.apache.catalina.startup.Embedded;
 
-import com.mysql.management.driverlaunched.ServerLauncherSocketFactory;
-
 /**
  * Manages an embedded tomcat instance.
  */
 public class TomcatManager {
 	
 	private Embedded container = null;
+	
+	/**
+	 * The port number on which we wait for shutdown commands.
+	 */
+	private int port = 8005;
+	
+	/**
+	 * The address on which we wait for shutdown commands.
+	 */
+	private String address = "localhost";
+	
+	/**
+	 * A random number generator that is <strong>only</strong> used if the shutdown command string
+	 * is longer than 1024 characters.
+	 */
+	private Random random = null;
+	
+	/**
+	 * The shutdown command string we are looking for.
+	 */
+	private String shutdown = "SHUTDOWN";
 	
 	/**
 	 * Creates a single webapp configuration to be run in Tomcat.
@@ -98,5 +122,98 @@ public class TomcatManager {
 			StandaloneUtil.stopMySqlServer();
 		
 		return true;
+	}
+	
+	/**
+	 * Wait until a proper shutdown command is received, then return. This keeps the main thread
+	 * alive - the thread pool listening for http connections is daemon threads.
+	 * 
+	 * NOTE: This method has been copied and modified slightly from 
+	 * org.apache.catalina.core.StandardServer.await()
+	 * We should have just called container.getServer().await()
+	 * but it returns null for getServer() and i do not know why :)
+	 */
+	public void await() {
+		// Set up a server socket to wait on
+		ServerSocket serverSocket = null;
+		try {
+			serverSocket = new ServerSocket(port, 1, InetAddress.getByName(address));
+		}
+		catch (IOException e) {
+			System.out.println("TomcatManager.await: create[" + address + ":" + port + "]: " + e.getMessage());
+			System.exit(1);
+		}
+		
+		// Loop waiting for a connection and a valid command
+		while (true) {
+			
+			// Wait for the next connection
+			Socket socket = null;
+			InputStream stream = null;
+			try {
+				socket = serverSocket.accept();
+				socket.setSoTimeout(10 * 1000); // Ten seconds
+				stream = socket.getInputStream();
+			}
+			catch (AccessControlException ace) {
+				System.out.println("TomcatManager.accept security exception: " + ace.getMessage());
+				continue;
+			}
+			catch (IOException e) {
+				System.out.println("TomcatManager.await: accept: " + e.getMessage());
+				System.exit(1);
+			}
+			
+			// Read a set of characters from the socket
+			StringBuilder command = new StringBuilder();
+			int expected = 1024; // Cut off to avoid DoS attack
+			while (expected < shutdown.length()) {
+				if (random == null) {
+					random = new Random();
+				}
+				expected += (random.nextInt() % 1024);
+			}
+			while (expected > 0) {
+				int ch = -1;
+				try {
+					ch = stream.read();
+				}
+				catch (IOException e) {
+					System.out.println("TomcatManager.await: read: " + e.getMessage());
+					ch = -1;
+				}
+				if (ch < 32) { // Control character or EOF terminates loop
+					break;
+				}
+				command.append((char) ch);
+				expected--;
+			}
+			
+			// Close the socket now that we are done with it
+			try {
+				socket.close();
+			}
+			catch (IOException e) {
+				// Ignore
+			}
+			
+			// Match against our command string
+			boolean match = command.toString().equals(shutdown);
+			if (match) {
+				System.out.println("TomcatManager.shutdownViaPort");
+				break;
+			} else {
+				System.out.println("TomcatManager.await: Invalid command '" + command.toString() + "' received");
+			}
+			
+		}
+		
+		// Close the server socket and return
+		try {
+			serverSocket.close();
+		}
+		catch (IOException e) {
+			// Ignore
+		}
 	}
 }
