@@ -42,7 +42,10 @@ public class ApplicationController {
 	/** The web app context name. */
 	private String contextName;
 	
+	private boolean commandLineMode = false;
+	
 	public ApplicationController(boolean commandLineMode, boolean nonInteractive, DatabaseMode mode, String tomcatPort, String mysqlPort) throws Exception {
+		this.commandLineMode = commandLineMode;
 		init(commandLineMode, nonInteractive, mode, tomcatPort, mysqlPort);
 	}
 	
@@ -134,7 +137,10 @@ public class ApplicationController {
 				
 				if (value != null) {
 					userInterface.setStatus(getRunningStatusMessage());
-					StandaloneUtil.launchBrowser(userInterface.getTomcatPort(), contextName);
+					//If not command line mode, launch the browser
+					if (!commandLineMode) {
+						StandaloneUtil.launchBrowser(userInterface.getTomcatPort(), contextName);
+					}
 				} else {
 					userInterface.setStatus(UserInterface.STATUS_MESSAGE_STOPPED);
 				}
