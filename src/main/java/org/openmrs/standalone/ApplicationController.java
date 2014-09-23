@@ -18,7 +18,9 @@ import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.FileFilter;
 import java.io.FileOutputStream;
+import java.io.FileWriter;
 import java.io.IOException;
+import java.lang.management.ManagementFactory;
 import java.util.Enumeration;
 import java.util.Properties;
 import java.util.zip.ZipEntry;
@@ -101,6 +103,12 @@ public class ApplicationController {
 			}
 		}
 		
+		//If running in non interactive mode, write the process id 
+		//to be used with kill -9
+		if (nonInteractive) {
+			writeProcessIdFile();
+		}
+				
 		//Update the runtime properties file with the mysql and tomcat port numbers
 		//which may have been supplied as command line arguments. 
 		//If we have no mysql port number supplied, this method will simply return that
@@ -469,6 +477,37 @@ public class ApplicationController {
 		     
 		for (File deletableFile : toBeDeleted) {  
 			deletableFile.delete();  
+		}
+	}
+	
+	private static void writeProcessIdFile() {
+		FileWriter fw = null;
+		try {
+			String processId = ManagementFactory.getRuntimeMXBean().getName().split("@")[0];
+			System.out.println("OpenMRS Standalone process id:" + processId);
+			File pidFile = new File(".standalone.pid");
+			if (pidFile.exists()) {
+				System.out.println("There is already an instance of this standalone running, "
+				        + "please make sure all previous instances have been stopped");
+			}
+			pidFile.createNewFile();
+			pidFile.deleteOnExit();
+			System.out.println("Pid file:" + pidFile.getAbsolutePath());
+			
+			fw = new FileWriter(pidFile);
+			fw.write(processId);
+			fw.flush();
+		}
+		catch (IOException ex) {
+			ex.printStackTrace();
+		}
+		finally {
+			if (fw != null) {
+				try {
+					fw.close();
+				}
+				catch (IOException ex) {}
+			}
 		}
 	}
 }
