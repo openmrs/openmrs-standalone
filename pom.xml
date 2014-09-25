@@ -373,27 +373,7 @@
 					</execution>
 				</executions>
 			</plugin>
-			
-			<plugin>
-				<groupId>org.codehaus.mojo</groupId>
-				<artifactId>exec-maven-plugin</artifactId>
-				<executions>
-					<execution>
-						<phase>prepare-package</phase>
-						<goals>
-							<goal>java</goal>
-						</goals>
-						<configuration>
-							<mainClass>org.openmrs.standalone.StopEmbeddedMySQL</mainClass>
-							<arguments>
-								<argument>target/emptydatabase</argument>
-								<argument>target/demodatabase</argument>
-							</arguments>
-						</configuration>
-					</execution>
-				</executions>
-			</plugin>
-			
+
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 		    	<artifactId>maven-resources-plugin</artifactId>
@@ -401,7 +381,7 @@
 		        <executions>
 		        	<execution>
 			        	<id>copy-distro-modules</id>
-			            <phase>process-resources</phase>
+			            <phase>prepare-package</phase>
 			            <goals>
 			             	<goal>copy-resources</goal>
 			            </goals>
@@ -415,16 +395,149 @@
 			              </resources>              
 			            </configuration>            
 			         </execution>
+			         <execution>
+			        	<id>copy-packaging-distro-modules</id>
+			            <phase>prepare-package</phase>
+			            <goals>
+			             	<goal>copy-resources</goal>
+			            </goals>
+			            <configuration>
+			            	<overwrite>true</overwrite>
+			                <outputDirectory>${project.build.directory}/standalone/appdata/modules</outputDirectory>
+			                <resources>          
+			                	<resource>
+			                		<directory>${distro.directory}</directory>
+			                	</resource>
+			              </resources>              
+			            </configuration>            
+			         </execution>
+		        	<execution>
+			        	<id>copy-tomcat-conf</id>
+			            <phase>prepare-package</phase>
+			            <goals>
+			             	<goal>copy-resources</goal>
+			            </goals>
+			            <configuration>
+			            	<overwrite>true</overwrite>
+			                <outputDirectory>${project.build.directory}/standalone/tomcat/conf</outputDirectory>
+			                <resources>          
+			                	<resource>
+			                		<directory>src/main/config/tomcat/conf</directory>
+			                	</resource>
+			              </resources>              
+			            </configuration>            
+			         </execution>
+		        	<execution>
+			        	<id>copy-runtime-properties</id>
+			            <phase>prepare-package</phase>
+			            <goals>
+			             	<goal>copy-resources</goal>
+			            </goals>
+			            <configuration>
+			            	<overwrite>true</overwrite>
+			                <outputDirectory>${project.build.directory}/standalone</outputDirectory>
+			                <resources>          
+			                	<resource>
+			                		<directory>src/main/config</directory>
+			                		<includes>
+							        	<include>openmrs-standalone-runtime.properties</include>
+							        </includes>
+			                	</resource>
+			              </resources>              
+			            </configuration>            
+			         </execution>
+			         <execution>
+			        	<id>copy-war-file</id>
+			            <phase>prepare-package</phase>
+			            <goals>
+			             	<goal>copy-resources</goal>
+			            </goals>
+			            <configuration>
+			            	<overwrite>true</overwrite>
+			                <outputDirectory>${project.build.directory}/standalone/tomcat/webapps</outputDirectory>
+			                <resources>          
+			                	<resource>
+			                		<directory>${project.build.directory}</directory>
+			                		<includes>
+							        	<include>openmrs-standalone.war</include>
+							        </includes>
+			                	</resource>
+			              </resources>              
+			            </configuration>            
+			         </execution>
+			         <execution>
+			        	<id>copy-standalone-jar</id>
+			            <phase>prepare-package</phase>
+			            <goals>
+			             	<goal>copy-resources</goal>
+			            </goals>
+			            <configuration>
+			            	<overwrite>true</overwrite>
+			                <outputDirectory>${project.build.directory}/standalone</outputDirectory>
+			                <resources>          
+			                	<resource>
+			                		<directory>${project.build.directory}</directory>
+			                		<includes>
+							        	<include>openmrs-standalone.jar</include>
+							        </includes>
+			                	</resource>
+			              </resources>              
+			            </configuration>            
+			         </execution>
 		        </executions>
 		    </plugin>
-
+		    
+		    <plugin>
+				<groupId>org.codehaus.mojo</groupId>
+				<artifactId>exec-maven-plugin</artifactId>
+				<executions>
+					<execution>
+						<id>stop-mysql1</id>
+						<phase>prepare-package</phase>
+						<goals>
+							<goal>java</goal>
+						</goals>
+						<configuration>
+							<mainClass>org.openmrs.standalone.StopEmbeddedMySQL</mainClass>
+							<arguments>
+								<argument>target/demodatabase</argument>
+                                <argument>target/emptydatabase</argument>
+							</arguments>
+						</configuration>
+					</execution>
+					<execution>
+						<id>run-standalone</id>
+						<phase>prepare-package</phase>
+						<goals>
+							<goal>java</goal>
+						</goals>
+						<configuration>
+							<mainClass>org.openmrs.standalone.StandaloneRunner</mainClass>
+						</configuration>
+					</execution>
+					<execution>
+						<id>stop-mysql2</id>
+						<phase>prepare-package</phase>
+						<goals>
+							<goal>java</goal>
+						</goals>
+						<configuration>
+							<mainClass>org.openmrs.standalone.StopEmbeddedMySQL</mainClass>
+							<arguments>
+								<argument>target/demodatabase</argument>
+							</arguments>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
+			
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-assembly-plugin</artifactId>
 				<executions>
 					<execution>
 						<id>package-jar-with-dependencies</id>
-						<phase>package</phase>
+						<phase>test</phase>
 						<goals>
 							<goal>single</goal>
 						</goals>
@@ -485,6 +598,7 @@
 					</execution>
 				</executions>
 			</plugin>
+			
 		</plugins>
 
 		<pluginManagement>

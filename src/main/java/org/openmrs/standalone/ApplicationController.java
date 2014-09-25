@@ -277,7 +277,21 @@ public class ApplicationController {
 	 * @return whether or not initial configuration is needed
 	 */
 	private boolean needsInitialConfiguration() {
-		return !(new File("database").exists()) || new File("needsconfig.txt").exists();
+		return !(databaseFolderExists()) || new File("needsconfig.txt").exists();
+	}
+	
+	private boolean databaseFolderExists() {
+		if (new File("database").exists()) {
+			return true;
+		}
+		
+		Properties properties = OpenmrsUtil.getRuntimeProperties(StandaloneUtil.getContextName());
+		String databaseDir = properties.getProperty("server.basedir");
+		if (databaseDir == null || databaseDir.trim().length() == 0) {
+			return false;
+		}
+		
+		return new File(databaseDir).exists();
 	}
 	
 	/**

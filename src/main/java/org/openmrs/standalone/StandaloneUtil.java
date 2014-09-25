@@ -44,6 +44,12 @@ import com.mysql.management.driverlaunched.ServerLauncherSocketFactory;
  */
 public class StandaloneUtil {
 	
+	public static final String KEY_CONNECTION_USERNAME = "connection.username";
+	public static final String KEY_CONNECTION_PASSWORD = "connection.password";
+	public static final String KEY_CONNECTION_URL = "connection.url";
+	public static final String KEY_TOMCAT_PORT = "tomcatport";
+	public static final String KEY_RESET_CONNECTION_PASSWORD = "reset_connection_password";
+	
 	/**
 	 * The minimum number of server port number.
 	 */
@@ -117,11 +123,6 @@ public class StandaloneUtil {
 	 *         one in the connection string.
 	 */
 	public static String setPortsAndMySqlPassword(String mySqlPort, String tomcatPort) {
-		final String KEY_CONNECTION_USERNAME = "connection.username";
-		final String KEY_CONNECTION_PASSWORD = "connection.password";
-		final String KEY_CONNECTION_URL = "connection.url";
-		final String KEY_TOMCAT_PORT = "tomcatport";
-		final String KEY_RESET_CONNECTION_PASSWORD = "reset_connection_password";
 		
 		InputStream input = null;
 		boolean propertiesFileChanged = false;
@@ -213,7 +214,7 @@ public class StandaloneUtil {
      * 
      * @param properties
      */
-    private static void writeRuntimeProperties(Properties properties) {
+    public static void writeRuntimeProperties(Properties properties) {
     	//I just do not like the extra characters that the store() method puts in the properties file.
 		//properties.store(output, null);
     	OutputStreamWriter output = null;
@@ -435,8 +436,6 @@ public class StandaloneUtil {
 	 *         one in the connection string.
 	 */
 	public static String setRuntimePropertiesFileMysqlAndTomcatPorts(String mySqlPort, String tomcatPort) {
-		final String KEY_CONNECTION_URL = "connection.url";
-		final String KEY_TOMCAT_PORT = "tomcatport";
 		
 		InputStream input = null;
 		boolean propertiesFileChanged = false;
