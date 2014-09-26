@@ -1,8 +1,9 @@
 
 ...............QUICK SUMMARY FOR BUILDING THE STANDALONE.....................
 * Increase the maven memory: e.g. export MAVEN_OPTS="-Xms1012m -Xmx2024m -XX:PermSize=556m -XX:MaxPermSize=1012m"
-* mvn clean package -Dopenmrs.version=1.10.0 -Ddistro.directory=/Projects/openmrs/openmrs-distro-referenceapplication/package/target/distro
+* mvn clean package -Dopenmrs.version=1.10.0 -Drefapp.version=2.1 -Ddistro.directory=/Projects/openmrs/openmrs-distro-referenceapplication/package/target/distro
 Remember to replace the above path for -Ddistro.directory to match the one with your reference application modules.
+-Drefapp.version points to the version of the reference application that is to be released.
 * If you are building standalone for OpenMRS 1.8.x you need to append the above command with -P1.8.x 
 and put in the main directory the Demo-1.8.0.sql file from https://wiki.openmrs.org/display/RES/Demo+Data
 * If running a second time, ALWAYS check to make sure mysql processes on port 3326 and 3328 are stopped. 

@@ -589,7 +589,7 @@
 							<goal>single</goal>
 						</goals>
 						<configuration>
-							<finalName>openmrs-standalone-${openmrs.version}</finalName>
+							<finalName>openmrs-standalone-${refapp.version}</finalName>
 							<appendAssemblyId>false</appendAssemblyId>
 							<descriptors>
 								<descriptor>src/main/assembly/zip-standalone.xml</descriptor>
