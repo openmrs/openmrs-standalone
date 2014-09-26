@@ -11,12 +11,20 @@
 		for a list of supported elements and attributes 
 	-->
 	
-	<changeSet id="id-referenceapp-insert-demo-data-gp" author="dkayiwa">
-        <insert tableName="global_property">
-            <column name="property" value="referencedemodata.createDemoPatientsOnNextStartup"/>
-            <column name="property_value" value="25"/>
-            <column name="description" value="Set to a positive integer if you want to generate demo patients on startup"/>
-        </insert>
-    </changeSet>
+	<changeSet id="20111202-1601" author="standalone" dbms="mysql">
+		<comment>Adding demo data and updating the 'liquibasechangelog' table to work with version 2.0.x</comment>
+		<sqlFile path="demodata.sql" encoding="UTF-8" />
+
+		<!-- 
+			We need to make the liquibasechangelog table modifications to 2.0.x within this changeset because
+			the one in demo data was created with version 1.9.x, so that liquibase doesn't fail when entering
+			this changeset into table because of the missing columns that are required.
+			See http://www.liquibase.org/download for more details.
+		 -->
+
+		<ext:modifyColumn tableName="liquibasechangelog">
+			<column name="MD5SUM" type="varchar(35)" />
+		</ext:modifyColumn>
+	</changeSet>
 
 </databaseChangeLog>
