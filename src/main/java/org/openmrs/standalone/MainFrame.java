@@ -99,10 +99,12 @@ public class MainFrame extends javax.swing.JFrame implements ActionListener, Use
 		
 		menuBar = new JMenuBar();
 		fileMenu = new JMenu();
+		settingsMenu = new JMenu();
 		browserMenuItem = new JMenuItem();
 		fileMenuSep = new JSeparator();
 		quitMenuItem = new JMenuItem();
 		trayMenuItem = new JMenuItem();
+		configlogMenuItem = new JMenuItem();
 		
 		setTitle(TITLE);
 		setDefaultCloseOperation(WindowConstants.DO_NOTHING_ON_CLOSE);
@@ -205,6 +207,21 @@ public class MainFrame extends javax.swing.JFrame implements ActionListener, Use
 		fileMenu.add(quitMenuItem);
 		
 		menuBar.add(fileMenu);
+		
+		settingsMenu.setText("Settings");
+		configlogMenuItem.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_L, preferredMetaKey));
+		configlogMenuItem.setMnemonic('L');
+		configlogMenuItem.setText("Configure Logs");
+		configlogMenuItem.addActionListener(new java.awt.event.ActionListener() {
+			
+			public void actionPerformed(java.awt.event.ActionEvent evt) {
+				configlogMenuItemActionPerformed(evt);
+			}
+		});
+		
+		settingsMenu.add(configlogMenuItem);
+		
+		menuBar.add(settingsMenu);
 		
 		setJMenuBar(menuBar);
 		
@@ -320,6 +337,9 @@ public class MainFrame extends javax.swing.JFrame implements ActionListener, Use
 	}
 	private void trayMenuItemActionPerformed(java.awt.event.ActionEvent evt) {
 		minimizeToTray();
+	}
+	private void configlogMenuItemActionPerformed(java.awt.event.ActionEvent evt) {
+		setLogThresholdValue();
 	}
 	
 	/** Exit the Application */
@@ -477,6 +497,8 @@ public class MainFrame extends javax.swing.JFrame implements ActionListener, Use
 	
 	private JMenu fileMenu;
 	
+	private JMenu settingsMenu;
+	
 	private JSeparator fileMenuSep;
 	
 	private JMenuBar menuBar;
@@ -484,6 +506,8 @@ public class MainFrame extends javax.swing.JFrame implements ActionListener, Use
 	private JMenuItem quitMenuItem;
 	
 	private JMenuItem trayMenuItem;
+	
+	private JMenuItem configlogMenuItem;
 	
 	private JPanel mainPanel;
 	
@@ -621,5 +645,14 @@ public class MainFrame extends javax.swing.JFrame implements ActionListener, Use
         } catch (AWTException ex) {
 	        trayMenuItem.setEnabled(false);
         }
+	}
+	public void setLogThresholdValue(){
+		TextAreaWriter.LOG_LENGTH = Integer.parseInt((String) JOptionPane.showInputDialog(this,
+		        "Maximum Characters in Console Log ",
+		        "Configure Logs", JOptionPane.INFORMATION_MESSAGE,
+		        null,
+		        null,
+		        TextAreaWriter.LOG_LENGTH));
+		textAreaWriter.clear();
 	}
 }

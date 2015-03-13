@@ -28,6 +28,7 @@ public class TextAreaWriter extends FilterOutputStream {
 	
 	private JTextArea text;
 	private int length;
+	public static long LOG_LENGTH = 10000;
 	
 	public TextAreaWriter(JTextArea text) {
 		super(new ByteArrayOutputStream());
@@ -50,7 +51,7 @@ public class TextAreaWriter extends FilterOutputStream {
 			
 			//Not to run out memory, start trimming the oldest characters whenever we reach
 			//a particular threshold.
-			if (length > 10000) {
+			if (length > LOG_LENGTH) {
 				text.setText(text.getText().substring(len));
 				length = length - len;
 			}
