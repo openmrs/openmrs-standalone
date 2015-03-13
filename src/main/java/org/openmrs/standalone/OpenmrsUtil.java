@@ -123,6 +123,7 @@ public class OpenmrsUtil {
 			ex.printStackTrace();
 		}
 		
+		setDefaultOS();
 		System.out.println("Failed to get runtime properties file.");
 		
 		return null;
