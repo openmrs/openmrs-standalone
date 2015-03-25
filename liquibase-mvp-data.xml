@@ -32,7 +32,6 @@
 		<dropTable tableName="concept_state_conversion" />
 		<!-- <dropTable tableName="concept_stop_word" /> not contained in the mvp 
 			dict -->
-		<dropTable tableName="concept_word" />
 
 		<delete tableName="liquibasechangelog">
 			<where>id="20110919-0638" or id="20110301-1030c-fix"</where>
@@ -63,5 +62,76 @@
 			<column name="MD5SUM" type="varchar(35)" />
 		</ext:modifyColumn>
 	</changeSet>
+	
+	<changeSet id="20120315-1200" author="standalone" dbms="mysql">
+		<sql>
+			<!-- Skip these changesets because the concept_word table does not exist in mvp data -->
+			insert into liquibasechangelog values('200905150814', 'bwolfe',
+			'liquibase-update-to-latest.xml', '2012-03-15 11:00:00', 10069,
+			'EXECUTED', '3:44c729b393232d702553e0768cf94994', 'Delete Data',
+			'Deleting invalid concept words', NULL, '2.0.1');
+			
+			insert into liquibasechangelog values('200905071626', 'bwolfe',
+			'liquibase-update-to-latest.xml', '2012-03-15 11:00:00', 10070,
+			'EXECUTED', '3:d29884c3ef8fd867c3c2ffbd557c14c2', 'Create Index',
+			'Add an index to the concept_word.concept_id column (This update may fail if it already exists)', NULL, '2.0.1');
+			
+			insert into liquibasechangelog values('20090414-0811a', 'bwolfe',
+			'liquibase-update-to-latest.xml', '2012-03-15 11:00:00', 10234,
+			'EXECUTED', '3:f027a0ad38c0f6302def391da78aaaee', 'Drop Foreign Key Constraint',
+			'Dropping foreign key on concept_word.concept_id column', NULL, '2.0.1');
+			
+			insert into liquibasechangelog values('20090428-0811aa', 'bwolfe',
+			'liquibase-update-to-latest.xml', '2012-03-15 11:00:00', 10235,
+			'EXECUTED', '3:58d8f3df1fe704714a7b4957a6c0e7f7', 'Drop Foreign Key Constraint',
+			'Removing concept_word.concept_name_id foreign key so that primary key can be changed to concept_word_id', NULL, '2.0.1');
 
+			insert into liquibasechangelog values('20090414-0811b', 'bwolfe',
+			'liquibase-update-to-latest.xml', '2012-03-15 11:00:00', 10236,
+			'EXECUTED', '3:982d502e56854922542286cead4c09ce', 'Drop Primary Key',
+			'Dropping non-integer primary key on concept word table before adding new integer one', NULL, '2.0.1');
+			
+			insert into liquibasechangelog values('20090414-0812', 'bwolfe',
+			'liquibase-update-to-latest.xml', '2012-03-15 11:00:00', 10237,
+			'EXECUTED', '3:948e635fe3f63122856ca9b8a174352b', 'Add Column',
+			'Adding integer primary key to concept word table', NULL, '2.0.1');
+
+			insert into liquibasechangelog values('20090414-0812b', 'bwolfe',
+			'liquibase-update-to-latest.xml', '2012-03-15 11:00:00', 10238,
+			'EXECUTED', '3:bd7731e58f3db9b944905597a08eb6cb', 'Add Foreign Key Constraint',
+			'Re-adding foreign key for concept_word.concept_name_id', NULL, '2.0.1');
+
+			insert into liquibasechangelog values('20090428-0854', 'bwolfe',
+			'liquibase-update-to-latest.xml', '2012-03-15 11:00:00', 10239,
+			'EXECUTED', '3:11086a37155507c0238c9532f66b172b', 'Add Foreign Key Constraint',
+			'Adding foreign key for concept_word.concept_id column', NULL, '2.0.1');
+
+			insert into liquibasechangelog values('200904271042', 'bwolfe',
+			'liquibase-update-to-latest.xml', '2012-03-15 11:00:00', 10241,
+			'EXECUTED', '3:db63ce704aff4741c52181d1c825ab62', 'Drop Column',
+			'Remove the now unused synonym column', NULL, '2.0.1');
+			
+			insert into liquibasechangelog values('20101209-1721', 'bwolfe',
+			'liquibase-update-to-latest.xml', '2012-03-15 11:00:00', 10357,
+			'EXECUTED', '3:351460e0f822555b77acff1a89bec267', 'Add Column',
+			'Add weight column to concept_word table', NULL, '2.0.1');	
+			
+			insert into liquibasechangelog values('20101209-1722', 'bwolfe',
+			'liquibase-update-to-latest.xml', '2012-03-15 11:00:00', 10358,
+			'EXECUTED', '3:d63107017bdcef0e28d7ad5e4df21ae5', 'Create Index',
+			'Adding index to concept_word.weight column', NULL, '2.0.1');
+			
+			insert into liquibasechangelog values('20121025-TRUNK-213', 'bwolfe',
+			'liquibase-update-to-latest.xml', '2012-03-15 11:00:00', 10496,
+			'EXECUTED', '3:65536ae335b0a6cb23619d6ef7ea3274', 'Modify Column (x2)',
+			'Normalize varchar length of locale columns', NULL, '2.0.1');
+			
+			<!-- Skip this changeset because the concept_set_derived table does not exist in mvp data -->
+			insert into liquibasechangelog values('200907161638-4', 'bwolfe',
+			'liquibase-update-to-latest.xml', '2012-03-15 11:00:00', 10248,
+			'EXECUTED', '3:3ffccaa291298fea317eb7025c058492', 'Modify Column',
+			'Change concept_set_derived.sort_weight from a double(22,0) to a double', NULL, '2.0.1');			
+		</sql>
+	</changeSet>
+	
 </databaseChangeLog>
