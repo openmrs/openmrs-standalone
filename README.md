@@ -10,6 +10,7 @@ and put in the main directory the Demo-1.8.0.sql file from https://wiki.openmrs.
 * If running a second time, ALWAYS check to make sure mysql processes on port 3326 and 3328 are stopped. 
   If you DON'T do that, then the "mvn clean" will not really clean. 
   A good command to use is: "pkill -f standalone"  (kills anything with "standalone" in the path) 
+* If compiling the standalone on a linux running machine like on ubuntu 12.04 LTS, move your clone of this standalone project into an ext file system for-example under your home directory; running it on for-example an NTFS file system will result into permission failures since by default linux may fail to modify privileges on non ext file systems.
 
 -> output is in the target folder, as openmrs-standalone-(openmrs.version).zip
 -> the contents of that zip are in the similarly-named folder under /target, if you want to test in-place
