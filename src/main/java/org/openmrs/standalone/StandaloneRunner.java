@@ -23,6 +23,10 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.io.Writer;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
 import java.util.Date;
 import java.util.Map;
 import java.util.Properties;
@@ -70,6 +74,7 @@ public class StandaloneRunner {
 			while ((output = normalStream.readLine()) != null) {
 				if (output.indexOf(SUCCESS_START_MESSAGE) > -1) {
 					System.out.println("Successfully started the standalone");
+					resetLuceneIndex(properties);
 					stop();
 					break;
 				}
@@ -82,6 +87,40 @@ public class StandaloneRunner {
 			close(normalStream, errorStream);
 		}
 	}
+
+	private static void resetLuceneIndex(Properties properties) throws SQLException {
+		String connectionString = properties.getProperty(StandaloneUtil.KEY_CONNECTION_URL);
+	    Connection connection = null;
+	    PreparedStatement statement = null;
+	    Properties dbProperties = new Properties();
+	    dbProperties.put("user", properties.get("connection.username"));
+	    dbProperties.put("password", properties.get("connection.password"));
+	    try {
+	    	connection = DriverManager.getConnection(connectionString, dbProperties);
+	    	
+	    	statement = connection.prepareStatement("delete from global_property where property = 'search.indexVersion'");
+	    	
+	    	statement.execute();
+	    	
+	    	statement.close();
+	    	connection.close();
+	    } finally {
+	    	if (statement != null) {
+	    		try {
+	    			statement.close();
+	    		} catch (Exception e) {
+	    			//close quietly
+	    		}
+	    	}
+	    	if (connection != null) {
+	    		try {
+	    			connection.close();
+	    		} catch (Exception e) {
+	    			//close quietly
+	    		}
+	    	}
+	    }
+    }
 	
 	private static void stop() throws Exception {
 		System.out.println("......................Shutting down standalone...................");
