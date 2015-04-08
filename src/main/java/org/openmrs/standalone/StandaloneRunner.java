@@ -88,7 +88,7 @@ public class StandaloneRunner {
 		}
 	}
 
-	private static void resetLuceneIndex(Properties properties) throws SQLException {
+	private static void resetLuceneIndex(Properties properties) throws SQLException, ClassNotFoundException {
 		String connectionString = properties.getProperty(StandaloneUtil.KEY_CONNECTION_URL);
 	    Connection connection = null;
 	    PreparedStatement statement = null;
@@ -96,6 +96,7 @@ public class StandaloneRunner {
 	    dbProperties.put("user", properties.get("connection.username"));
 	    dbProperties.put("password", properties.get("connection.password"));
 	    try {
+	    	Class.forName("com.mysql.jdbc.Driver");
 	    	connection = DriverManager.getConnection(connectionString, dbProperties);
 	    	
 	    	statement = connection.prepareStatement("delete from global_property where property = 'search.indexVersion'");
