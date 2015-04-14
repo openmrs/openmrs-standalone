@@ -68,6 +68,7 @@ public class ApplicationController {
 		Properties properties = OpenmrsUtil.getRuntimeProperties(StandaloneUtil.getContextName()); //StandaloneUtil.getRuntimeProperties(); //OpenmrsUtil.getRuntimeProperties(StandaloneUtil.getContextName());
 		if (properties != null) {
 			tomcatPort = properties.getProperty("tomcatport");
+			OpenmrsUtil.REFAPP_VERSION = properties.getProperty("refapp.version");
 		}
 		
 		//Some users may prefer command line to having the GUI, by providing the -commandline switch.

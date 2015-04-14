@@ -94,7 +94,7 @@ public class MainFrame extends javax.swing.JFrame implements ActionListener, Use
 		fileMenuSep = new JSeparator();
 		quitMenuItem = new JMenuItem();
 		
-		setTitle(TITLE);
+		setTitle(OpenmrsUtil.getTitle());
 		setDefaultCloseOperation(WindowConstants.DO_NOTHING_ON_CLOSE);
 		
 		addWindowListener(new java.awt.event.WindowAdapter() {
@@ -266,7 +266,7 @@ public class MainFrame extends javax.swing.JFrame implements ActionListener, Use
 	}
 	
 	public void setStatus(String status) {
-		setTitle(TITLE + " - [" + status + "]");
+		setTitle(OpenmrsUtil.getTitle() + " - [" + status + "]");
 	}
 	
 	public void actionPerformed(ActionEvent event) {
@@ -418,7 +418,7 @@ public class MainFrame extends javax.swing.JFrame implements ActionListener, Use
 	 * @see org.openmrs.standalone.UserInterface#showInitialConfig()
 	 */
 	public void showInitialConfig() {
-		final JDialog configDialog = new JDialog(this, "Configure your OpenMRS 2.0 Installation", true);
+		final JDialog configDialog = new JDialog(this, "Configure your OpenMRS " + OpenmrsUtil.REFAPP_VERSION + " Installation", true);
 		JPanel content = new JPanel();
 		content.setBorder(BorderFactory.createEmptyBorder(15, 15, 15, 15));
 		content.setLayout(new BorderLayout(10, 10)); //10,10 = hgap, vgap
@@ -429,12 +429,12 @@ public class MainFrame extends javax.swing.JFrame implements ActionListener, Use
 		final JButton useCurrent = new JButton("Do Not Modify the Database");
 		
 		final JButton demoDatabase = new JButton(
-		        "<html><h3>Demonstration mode</h3>Configures OpenMRS 2.0 with a demonstration database. This is the quickest way to start up OpenMRS 2.0 with some sample data to evaluate the system or experiment with features</html>",
+		        "<html><h3>Demonstration mode</h3>Configures OpenMRS " + OpenmrsUtil.REFAPP_VERSION + " with a demonstration database. This is the quickest way to start up OpenMRS " + OpenmrsUtil.REFAPP_VERSION + " with some sample data to evaluate the system or experiment with features</html>",
 		        new ImageIcon(getClass().getResource("demonstration_mode.png")));
 		colorHelper(demoDatabase, new Color(136, 235, 148));
 		
 		final JButton emptyDatabase = new JButton(
-		        "<html><h3>Starter Implementation</h3>Configures OpenMRS 2.0 without any patient data. If you are familiar with OpenMRS 2.0 and want to start a new system, this is a good place to start.</html>",
+		        "<html><h3>Starter Implementation</h3>Configures OpenMRS " + OpenmrsUtil.REFAPP_VERSION + " without any patient data. If you are familiar with OpenMRS " + OpenmrsUtil.REFAPP_VERSION + " and want to start a new system, this is a good place to start.</html>",
 		        new ImageIcon(getClass().getResource("starter_impl.png")));
 		colorHelper(emptyDatabase, new Color(255, 243, 136));
 		
@@ -466,7 +466,7 @@ public class MainFrame extends javax.swing.JFrame implements ActionListener, Use
 		}
 		
 		JLabel instructions = new JLabel(
-		        "<html><b>Welcome to OpenMRS 2.0! OpenMRS 2.0 can be configured in one of " + buttonList.size() + " ways, depending on your needs. Please click on the configuration that best meets your needs.</b><br/>(You will not see this next time you run OpenMRS 2.0)</html>");
+		        "<html><b>Welcome to OpenMRS " + OpenmrsUtil.REFAPP_VERSION + "! OpenMRS " + OpenmrsUtil.REFAPP_VERSION + " can be configured in one of " + buttonList.size() + " ways, depending on your needs. Please click on the configuration that best meets your needs.</b><br/>(You will not see this next time you run OpenMRS " + OpenmrsUtil.REFAPP_VERSION + ")</html>");
 		instructions.setFont(font);
 		
 		JButton exitButton = new JButton("Exit");

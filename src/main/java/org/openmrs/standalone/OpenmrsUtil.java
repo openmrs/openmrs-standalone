@@ -24,6 +24,8 @@ import java.util.Properties;
 
 public class OpenmrsUtil {
 	
+	public static String REFAPP_VERSION;
+			
 	private static final String OPERATING_SYSTEM_KEY = "os.name";
 	
 	private static final String OPERATING_SYSTEM = System.getProperty(OPERATING_SYSTEM_KEY);
@@ -269,4 +271,7 @@ public class OpenmrsUtil {
 		System.setProperty(OPERATING_SYSTEM_KEY,OPERATING_SYSTEM);
 	}
 	
+	public static String getTitle() {
+		return "OpenMRS " + REFAPP_VERSION + " Standalone";
+	}
 }

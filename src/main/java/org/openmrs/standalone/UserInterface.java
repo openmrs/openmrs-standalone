@@ -18,9 +18,7 @@ package org.openmrs.standalone;
  * user interface.
  */
 public interface UserInterface {
-	
-	public static final String TITLE = "OpenMRS 2.0 Standalone";
-	
+
 	public static final int DEFAULT_TOMCAT_PORT = 8088;
 	
 	public static final String DEFAULT_MYSQL_PORT = "3316";

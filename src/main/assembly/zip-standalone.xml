@@ -29,6 +29,7 @@
 			<outputDirectory>${project.build.finalName}/tomcat/webapps</outputDirectory>
 		</fileSet>
 		<fileSet>
+			<filtered>true</filtered>
 			<directory>src/main/config</directory>
 			<outputDirectory>${project.build.finalName}</outputDirectory>
 		</fileSet>
