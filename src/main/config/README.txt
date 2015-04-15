@@ -65,7 +65,7 @@ Option 1: Using a graphical shell such as KDE, GNOME, etc., open the folder that
 Option 2: From the command line, navigate to the directory created when expanding the ZIP file. Run either of the commands below: 
 java -jar openmrs-standalone.jar
 or
-./run-on-linux.sh
+./run-on-unix.sh
 
 
 LOGIN DETAILS (remember to change the password immediately after installation in a production environment)
