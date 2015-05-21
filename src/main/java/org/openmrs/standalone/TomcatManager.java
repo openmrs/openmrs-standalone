@@ -29,6 +29,8 @@ import org.apache.catalina.LifecycleException;
 import org.apache.catalina.connector.Connector;
 import org.apache.catalina.startup.Embedded;
 
+import ch.vorburger.exec.ManagedProcessException;
+
 /**
  * Manages an embedded tomcat instance.
  */
@@ -118,8 +120,14 @@ public class TomcatManager {
 		}
 		
 		//stop mysql.
-		if(stopMySql)
-			StandaloneUtil.stopMySqlServer();
+		if(stopMySql) {
+			try {
+				DatabaseManager.getInstance().stop();
+			}
+			catch (ManagedProcessException ex) {
+				ex.printStackTrace();
+			}
+		}
 		
 		return true;
 	}

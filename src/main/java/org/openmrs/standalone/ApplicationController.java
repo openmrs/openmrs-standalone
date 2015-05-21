@@ -25,6 +25,8 @@ import java.util.Properties;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
+import ch.vorburger.exec.ManagedProcessException;
+
 /**
  * Manages the application workflow.
  */
@@ -61,6 +63,113 @@ public class ApplicationController {
 	 */
 	public static void main(String[] args) throws Exception {
 		
+		/*Model model = null;
+		FileReader reader = null;
+		MavenXpp3Reader mavenreader = new MavenXpp3Reader();
+		try {
+		    reader = new FileReader("pom.xml");
+		    model = mavenreader.read(reader);
+		}catch(Exception ex){ex.printStackTrace();}
+		MavenProject project = new MavenProject(model);*/
+		
+		//DefaultPlexusContainer container = new DefaultPlexusContainer();
+		//container.initialize();
+		//container.start();
+				
+		//repositoryFactory.createArtifactRepository(id, url, repositoryLayout, snapshots, releases)
+		
+		//String mavenRepoLocal = "file://" + System.getProperty("user.home") + System.getProperty("file.separator")+ ".m2"+ System.getProperty("file.separator")+ "repository";
+		//ArtifactRepository artifactRepository = new DefaultArtifactRepository("local", mavenRepoLocal, new DefaultRepositoryLayout()); // (ArtifactRepository)container.lookup(ArtifactRepository.class.getName());
+		//container.getContext().put(ArtifactRepositoryLayout.ROLE, new DefaultRepositoryLayout() );
+		
+		//ProfileManager profileManager = null; //new DefaultProfileManager(container);
+		
+		//DefaultMavenProjectBuilder builder = new DefaultMavenProjectBuilder();
+		
+		/*DefaultArtifactRepositoryFactory repositoryFactory = new DefaultArtifactRepositoryFactory();
+		Field field = builder.getClass().getDeclaredField("artifactRepositoryFactory");
+        field.setAccessible(true);
+        field.set(builder, repositoryFactory);
+        
+        MavenProfilesBuilder profilesBuilder = new DefaultMavenProfilesBuilder();
+        field = builder.getClass().getDeclaredField("profilesBuilder");
+        field.setAccessible(true);
+        field.set(builder, profilesBuilder);*/
+        
+        /*ProfileInjector profileInjector = new DefaultProfileInjector();
+        field = builder.getClass().getDeclaredField("profileInjector");
+        field.setAccessible(true);
+        field.set(builder, profileInjector);
+        
+        ModelInheritanceAssembler modelInheritanceAssembler = new DefaultModelInheritanceAssembler();
+        field = builder.getClass().getDeclaredField("modelInheritanceAssembler");
+        field.setAccessible(true);
+        field.set(builder, modelInheritanceAssembler);
+        
+        ArtifactFactory artifactFactory = new DefaultArtifactFactory();
+        field = builder.getClass().getDeclaredField("artifactFactory");
+        field.setAccessible(true);
+        field.set(builder, artifactFactory);*/
+        
+        /*ArtifactHandlerManager artifactHandlerManager = new DefaultArtifactHandlerManager();
+        field = artifactFactory.getClass().getDeclaredField("artifactHandlerManager");
+        field.setAccessible(true);
+        field.set(artifactFactory, artifactHandlerManager);
+        
+        field = artifactHandlerManager.getClass().getDeclaredField("artifactHandlers");
+        field.setAccessible(true);
+        field.set(artifactHandlerManager, new HashMap());
+        field.setAccessible(false);*/
+        
+        /*PathTranslator pathTranslator = new DefaultPathTranslator();
+        field = builder.getClass().getDeclaredField("pathTranslator");
+        field.setAccessible(true);
+        field.set(builder, pathTranslator);
+        
+        ModelValidator validator = new DefaultModelValidator();
+        field = builder.getClass().getDeclaredField("validator");
+        field.setAccessible(true);
+        field.set(builder, validator);
+        
+        ArtifactResolver artifactResolver = new DefaultArtifactResolver();
+        field = builder.getClass().getDeclaredField("artifactResolver");
+        field.setAccessible(true);
+        field.set(builder, artifactResolver);
+        
+        Logger logger = new ConsoleLogger(Logger.LEVEL_DEBUG, "some-log-name");
+        field = artifactResolver.getClass().getSuperclass().getDeclaredField("logger");
+        field.setAccessible(true);
+        field.set(artifactResolver, logger);*/
+        
+        /*ArtifactCollector artifactCollector = new DefaultArtifactCollector();
+        field = artifactResolver.getClass().getDeclaredField("artifactCollector");
+        field.setAccessible(true);
+        field.set(artifactResolver, artifactCollector);*/
+        
+        //ModelInterpolator modelInterpolator = new RegexBasedModelInterpolator(); //AbstractStringBasedModelInterpolator();
+        /*field = builder.getClass().getDeclaredField("modelInterpolator");
+        field.setAccessible(true);
+        field.set(builder, modelInterpolator);*/
+        
+        /*ModelDefaultsInjector modelDefaultsInjector = new DefaultModelDefaultsInjector();
+        field = builder.getClass().getDeclaredField("modelDefaultsInjector");
+        field.setAccessible(true);
+        field.set(builder, modelDefaultsInjector);*/
+        
+		//builder.contextualize(container.getContext());
+		//builder.initialize();
+		//MavenProject project = builder.buildWithDependencies(new File("pom.xml"), artifactRepository, profileManager);
+		
+		//Log log = new DefaultLog( container.getLogger() );
+		
+		//ClassLoader cl = MavenUtils.getArtifactClassloader(project, true, true, MavenUtils.class, null, false);
+		//cl.toString();
+		/*ResourceAccessor openmrsFO = new ClassLoaderResourceAccessor();
+		ResourceAccessor fsFO = new FileSystemResourceAccessor();
+		
+		DatabaseChangeLog changeLog = new XMLChangeLogSAXParser().parse("liquibase-schema-only.xml", new ChangeLogParameters(),
+			    new CompositeResourceAccessor(openmrsFO, fsFO, new ClassLoaderResourceAccessor(Thread.currentThread().getContextClassLoader())));*/
+
 		String tomcatPort = null;
 		String mySqlPort = null;
 		
@@ -126,7 +235,7 @@ public class ApplicationController {
 	/**
 	 * Starts running the server.
 	 */
-	public void start() {
+	public void start(final String mySqlPort) {
 		
 		/* Invoking start() on the SwingWorker causes a new Thread
 		 * to be created that will call construct(), and then
@@ -137,7 +246,7 @@ public class ApplicationController {
 		workerThread = new SwingWorker() {
 			
 			public Object construct() {
-				return startServer();
+				return startServer(mySqlPort);
 			}
 			
 			public void finished() {
@@ -240,17 +349,21 @@ public class ApplicationController {
 		}
 		
 		if (applyDatabaseChange != null) {
+			
+			deleteActiveDatabase();
+			DatabaseManager.getInstance().startNewDB(mySqlPort);
+			
 			if (applyDatabaseChange == DatabaseMode.USE_INITIALIZATION_WIZARD) {
-				deleteActiveDatabase();
+				//deleteActiveDatabase();
 				StandaloneUtil.resetConnectionPassword();
 				StandaloneUtil.startupDatabaseToCreateDefaultUser();
 			} else if (applyDatabaseChange == DatabaseMode.EMPTY_DATABASE) {
-				deleteActiveDatabase();
+				//deleteActiveDatabase();
 				unzipDatabase(new File("emptydatabase.zip"));
 				StandaloneUtil.resetConnectionPassword();
 				StandaloneUtil.startupDatabaseToCreateDefaultUser();
 			} else if (applyDatabaseChange == DatabaseMode.DEMO_DATABASE) {
-				deleteActiveDatabase();
+				//deleteActiveDatabase();
 				unzipDatabase(new File("demodatabase.zip"));
 				StandaloneUtil.resetConnectionPassword();
 				StandaloneUtil.startupDatabaseToCreateDefaultUser();
@@ -266,7 +379,7 @@ public class ApplicationController {
 		userInterface.setStatus(UserInterface.STATUS_MESSAGE_STARTING);
 		userInterface.onFinishedInitialConfigCheck();
 		
-		start();
+		start(mySqlPort);
 	}
 	
 	/**
@@ -389,8 +502,11 @@ public class ApplicationController {
 	 * 
 	 * @return "Running" status message if started successfully, else returns an error message.
 	 */
-	private String startServer() {
+	private String startServer(String mySqlPort) {
 		try {
+
+			DatabaseManager.getInstance().start(mySqlPort);
+			
 			//This is an attempt to prevent some of the bad behavior caused by tomcat caching
 			//some stuff in this directory.
 			deleteTomcatWorkDir();
@@ -418,6 +534,13 @@ public class ApplicationController {
 	private String stopServer() {
 		if (tomcatManager != null)
 			tomcatManager.stop();
+		
+		try {
+			DatabaseManager.getInstance().stop();
+		}
+		catch (ManagedProcessException ex) {
+			ex.printStackTrace();
+		}
 		
 		return null;
 	}

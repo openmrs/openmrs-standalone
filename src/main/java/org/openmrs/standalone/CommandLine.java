@@ -190,7 +190,7 @@ public class CommandLine implements UserInterface {
 				}
 			}
 			
-			appController.start();
+			appController.start(mySqlPort);
 		}
 	}
 	

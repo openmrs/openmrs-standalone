@@ -37,8 +37,6 @@ import java.util.Random;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import com.mysql.management.driverlaunched.ServerLauncherSocketFactory;
-
 /**
  * Utility routines used by the standalone application.
  */
@@ -54,7 +52,7 @@ public class StandaloneUtil {
 	 */
 	public static final int MAX_PORT_NUMBER = 49151;
 	
-	private static String CONTEXT_NAME;
+	private static String CONTEXT_NAME = "openmrs";
 	
 	/**
 	 * Checks to see if a specific port is available.
@@ -314,7 +312,7 @@ public class StandaloneUtil {
 			Statement statement = connection.createStatement();
 			statement.executeUpdate(sql);
 			
-			StandaloneUtil.stopMySqlServer();
+			DatabaseManager.getInstance().stop();
 			
 			return true;
 		}
@@ -333,15 +331,6 @@ public class StandaloneUtil {
 		}
 		
 		return false;
-	}
-	
-	public static void stopMySqlServer() {
-		try {
-			ServerLauncherSocketFactory.shutdown(new File("database"), new File("database/data"));
-		}
-		catch (Exception exception) {
-			System.out.println("Cannot Stop MySQL" + exception.getMessage());
-		}
 	}
 	
 	/**
@@ -414,15 +403,25 @@ public class StandaloneUtil {
     	}
     	Properties props = OpenmrsUtil.getRuntimeProperties(getContextName());
     	String url = props.getProperty("connection.url");
-    	if (!url.contains("server.initialize-user=true"))
-    		throw new RuntimeException("connection.url in runtime properties must contain server.initialize-user=true");
 
 		System.out.println("Working directory is " + new File(".").getAbsolutePath());
 		System.out.println("Opening MySQL connection to create openmrs/test users");
-    	Connection conn = DriverManager.getConnection(url, "openmrs", "test");
+    	Connection conn = DriverManager.getConnection(url.replace("openmrs", ""), "root", "");
+    	
+    	String sql = "CREATE USER 'openmrs'@'localhost' IDENTIFIED BY 'test';";
+    	conn.createStatement().executeUpdate(sql);
+    	
+    	sql = "GRANT ALL PRIVILEGES ON *.* TO 'openmrs'@'localhost' WITH GRANT OPTION;";
+    	conn.createStatement().executeUpdate(sql);
+    	
+    	/*String sql = "UPDATE mysql.user SET password=PASSWORD('test') WHERE User='root';";
+    	conn.createStatement().executeUpdate(sql);*/
+    	
+    	sql = "FLUSH PRIVILEGES;";
+    	conn.createStatement().executeUpdate(sql);
+    	
     	conn.close();
     	System.out.println("closed MySQL connection");
-    	stopMySqlServer();
     }
 	
 	

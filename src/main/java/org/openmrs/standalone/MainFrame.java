@@ -70,6 +70,7 @@ public class MainFrame extends javax.swing.JFrame implements ActionListener, Use
 	private ApplicationController appController;
 	
 	private int tomcatPort = UserInterface.DEFAULT_TOMCAT_PORT;
+	private String mySqlPort;
 	
 	private TextAreaWriter textAreaWriter;
 	
@@ -386,7 +387,7 @@ public class MainFrame extends javax.swing.JFrame implements ActionListener, Use
 				
 				setStatus(UserInterface.STATUS_MESSAGE_STARTING);
 				
-				appController.start();
+				appController.start(mySqlPort);
 			} else if (event.getSource() == btnStop) {
 				
 				if (JOptionPane.showConfirmDialog(this, UserInterface.PROMPT_STOPSERVER, getTitle(),
