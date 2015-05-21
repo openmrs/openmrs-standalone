@@ -247,16 +247,13 @@ public class ApplicationController {
 			DatabaseManager.getInstance().startNewDB(mySqlPort);
 			
 			if (applyDatabaseChange == DatabaseMode.USE_INITIALIZATION_WIZARD) {
-				//deleteActiveDatabase();
 				StandaloneUtil.resetConnectionPassword();
 				StandaloneUtil.startupDatabaseToCreateDefaultUser();
 			} else if (applyDatabaseChange == DatabaseMode.EMPTY_DATABASE) {
-				//deleteActiveDatabase();
 				unzipDatabase(new File("emptydatabase.zip"));
 				StandaloneUtil.resetConnectionPassword();
 				StandaloneUtil.startupDatabaseToCreateDefaultUser();
 			} else if (applyDatabaseChange == DatabaseMode.DEMO_DATABASE) {
-				//deleteActiveDatabase();
 				unzipDatabase(new File("demodatabase.zip"));
 				StandaloneUtil.resetConnectionPassword();
 				StandaloneUtil.startupDatabaseToCreateDefaultUser();
