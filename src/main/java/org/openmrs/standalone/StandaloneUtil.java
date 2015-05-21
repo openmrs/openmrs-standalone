@@ -52,7 +52,7 @@ public class StandaloneUtil {
 	 */
 	public static final int MAX_PORT_NUMBER = 49151;
 	
-	private static String CONTEXT_NAME = "openmrs";
+	private static String CONTEXT_NAME;
 	
 	/**
 	 * Checks to see if a specific port is available.
