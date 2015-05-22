@@ -68,7 +68,7 @@ public class DatabaseManager {
 		
 	    System.out.println(".......Starting Database.......");
 	    
-	    if (!new File(dataDir).exists()) {
+	    if (dataDir == null || !new File(dataDir).exists()) {
 	    	db = DB.newEmbeddedDB(getConfiguration(port, baseDir, dataDir));
 	    }
 	    else {
