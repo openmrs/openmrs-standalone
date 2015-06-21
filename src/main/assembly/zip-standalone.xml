@@ -7,13 +7,15 @@
 	<formats>
 		<format>zip</format>
 	</formats>
-	<files>
-		<file>
-			<source>${openmrs.war.path}</source>
-			<outputDirectory>${project.build.finalName}/tomcat/webapps</outputDirectory>
-			<destName>openmrs-standalone.war</destName>
-		</file>
-	</files>
+	<dependencySets>
+    	<dependencySet>
+        	<includes>
+            	<include>*:war</include>
+        	</includes>
+          	<outputDirectory>${project.build.finalName}/tomcat/webapps</outputDirectory>
+          	<outputFileNameMapping>openmrs-standalone.war</outputFileNameMapping>
+      </dependencySet>
+    </dependencySets>
 	<fileSets>
 		<fileSet>
 			<directory>${project.build.directory}</directory>

@@ -65,6 +65,16 @@
 					</exclusion>
 				</exclusions>
 		</dependency>
+		
+		<!-- this war file is here only for zip-standalone to pick it via dependencySet -->
+		<dependency>
+			<groupId>org.openmrs.web</groupId>
+			<artifactId>openmrs-webapp</artifactId>
+			<version>${openmrs.version}</version>
+			<type>war</type>
+			<scope>runtime</scope>
+		</dependency>
+		
 	</dependencies>
 
 	<profiles>
