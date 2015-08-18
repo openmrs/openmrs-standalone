@@ -60,12 +60,12 @@ java -jar openmrs-standalone.jar
 Linux
 -----
 
-Option 1: Using a graphical shell such as KDE, GNOME, etc., open the folder that was created when extracting the ZIP file. Double click on the shell script named 'run-on-linux.sh'. If you a get prompted for how to run it, just select 'run'.
+Option 1: Using a graphical shell such as KDE, GNOME, etc., open the folder that was created when extracting the ZIP file. Double click on the shell script named 'run-on-unix.sh'. If you a get prompted for how to run it, just select 'run'.
 
 Option 2: From the command line, navigate to the directory created when expanding the ZIP file. Run either of the commands below: 
 java -jar openmrs-standalone.jar
 or
-./run-on-linux.sh
+./run-on-unix.sh
 
 
 LOGIN DETAILS (remember to change the password immediately after installation in a production environment)
