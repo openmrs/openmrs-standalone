@@ -21,14 +21,14 @@
 			<artifactId>openmrs-api</artifactId>
 			<version>${openmrs.version}</version>
 			<type>jar</type>
-			<scope>compile</scope>
+			<scope>provided</scope>
 		</dependency>
 		<dependency>
 			<groupId>org.openmrs.web</groupId>
 			<artifactId>openmrs-webapp</artifactId>
 			<version>${openmrs.version}</version>
 			<type>war</type>
-			<scope>compile</scope>
+			<scope>provided</scope>
 		</dependency>
 		<dependency>
 			<groupId>org.apache.tomcat</groupId>
