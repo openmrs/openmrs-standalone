@@ -14,17 +14,6 @@
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<tomcat.version>6.0.26</tomcat.version>
 	</properties>
-	
-	<dependencyManagement>
-		<dependencies>
-			<dependency>
-				<groupId>org.openmrs.api</groupId>
-				<artifactId>openmrs-api</artifactId>
-				<version>${openmrs.version}</version>
-				<type>jar</type>
-			</dependency>
-		</dependencies>
-	</dependencyManagement>
 
 	<dependencies>
 		<dependency>
@@ -501,6 +490,13 @@
 					<version>${liquibasePluginVersion}</version>
 					<dependencies>
 						<dependency>
+							<groupId>org.openmrs.api</groupId>
+							<artifactId>openmrs-api</artifactId>
+							<version>${openmrs.version}</version>
+							<type>jar</type>
+							<scope>compile</scope>
+						</dependency>
+						<dependency>
 							<groupId>org.openmrs.liquibase.ext</groupId>
 							<artifactId>modify-column</artifactId>
 							<version>2.0.2</version>
@@ -608,9 +604,6 @@
 			<id>openmrs-repo</id>
 			<name>OpenMRS Nexus Repository</name>
 			<url>http://mavenrepo.openmrs.org/nexus/content/repositories/public</url>
-			<snapshots>
-				<enabled>false</enabled>
-			</snapshots>
 		</pluginRepository>
 	</pluginRepositories>
 
