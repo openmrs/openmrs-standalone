@@ -396,6 +396,7 @@
 									<version>${openmrs.version}</version>
 									<type>war</type>
 									<destFileName>openmrs.war</destFileName>
+									<outputDirectory>target</outputDirectory>
 								</artifactItem>
 							</artifactItems>
 						</configuration>
