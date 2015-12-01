@@ -6,7 +6,8 @@
 * mvn clean
 * mvn package -Dopenmrs.version=1.9.0
 * If you are building standalone for OpenMRS 1.8.x you need to append the above command with -P1.8.x 
-and put in the main directory the Demo-1.8.0.sql file from https://wiki.openmrs.org/display/RES/Demo+Data
+and put in the main directory the Demo-1.8.0.sql file from https://wiki.openmrs.org/display/RES/Demo+Data 
+* Update the value of the path attribute of the sqlPath tag in liquibase-demo-data.xml file to match the file name of the demo data you just downloaded
 * If running a second time, ALWAYS check to make sure mysql processes on port 3326 and 3328 are stopped. 
   If you DON'T do that, then the "mvn clean" will not really clean. 
   A good command to use is: "pkill -f standalone"  (kills anything with "standalone" in the path) 
