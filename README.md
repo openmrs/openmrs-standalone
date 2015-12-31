@@ -1,4 +1,4 @@
-#### Note that the master branch is used for building the standalone for OpenMRS Plantform 1.8.x - 1.12.x and the openmrs-emr branch is used for OpenMRS 2.0.
+#### Note that the master branch is used for building the standalone for OpenMRS Plantform 2.x and later, the pre_platform2 branch is used for building the standalone for OpenMRS Platform 1.8.x - 1.12.x, the openmrs-emr branch is used for OpenMRS 2.0 (Reference Application) where the underlying Platform version is 1.12.x or eariler and the openmrs-emr2 branch should be used for building the OpenMRS 2.0 standalones where the platform version is 2.x or later.
 
 ## QUICK SUMMARY FOR BUILDING THE STANDALONE
 
