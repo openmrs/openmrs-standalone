@@ -6,7 +6,9 @@
 * mvn clean
 * mvn package -Dopenmrs.version=1.9.0
 * If you are building standalone for OpenMRS 1.8.x you need to append the above command with -P1.8.x 
-and put in the main directory the Demo-1.8.0.sql file from https://wiki.openmrs.org/x/GwRN, be sure to download the appropriate demo date file for the release line
+and put in the main directory the Demo-1.8.0.sql file from https://wiki.openmrs.org/x/GwRN, be sure to download the appropriate demo data file for the release line.
+If you do not see the one for your release, you can create it by loading the latest existing demo data file in its version of openmrs and then upgrade this version of
+openmrs to the one you are releasing. After the upgrade, you can then dump an sql file to serve as the demo data file for the new release.
 * Update the value of the path attribute of the sqlPath tag in liquibase-demo-data.xml file to match the name of the demo data you just downloaded
 * Download the latest version of MVP CIEL dictionary (see [the wiki](https://wiki.openmrs.org/x/ww4JAg) for instructions on obtaining it) 
 * Update the value of the path attribute of the sqlPath tag in liquibase-mvp-data.xml file to match the name of the mvp data file just downloaded
