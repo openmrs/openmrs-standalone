@@ -3,16 +3,14 @@
 ## QUICK SUMMARY FOR BUILDING THE STANDALONE
 
 * Increase the maven memory: e.g. export MAVEN_OPTS="-Xms1012m -Xmx2024m -XX:PermSize=556m -XX:MaxPermSize=1012m"
-* mvn clean
-* mvn package -Dopenmrs.version=1.9.0
+* mvn clean package -Dopenmrs.version=1.9.0
 * If you are building standalone for OpenMRS 1.8.x you need to append the above command with -P1.8.x 
 and put in the main directory the Demo-1.8.0.sql file from https://wiki.openmrs.org/x/GwRN, be sure to download the appropriate demo data file for the release line.
 If you do not see the one for your release, you can create it by loading the latest existing demo data file in its version of openmrs and then upgrade this version of
-openmrs to the one you are releasing. After the upgrade, you can then dump a sql file to serve as the demo data file for the new release.
-* Update the value of the path attribute of the sqlPath tag in liquibase-demo-data.xml file to match the name of the demo data you just downloaded
-* Download the latest version of MVP CIEL dictionary (see [the wiki](https://wiki.openmrs.org/x/ww4JAg) for instructions on obtaining it) 
+openmrs to the one you are releasing. After the upgrade, you can then dump a sql file to serve as the demo data file for the new release. Then, update the value of the path attribute of the sqlPath tag in liquibase-demo-data.xml file to match the name of the demo data you just downloaded
+* Download the latest version of MVP CIEL dictionary (see [the wiki](https://wiki.openmrs.org/x/ww4JAg) for instructions on obtaining it)
 * Update the value of the path attribute of the sqlPath tag in liquibase-mvp-data.xml file to match the name of the mvp data file just downloaded
-* If running a second time, ALWAYS check to make sure mysql processes on port 3326 and 3328 are stopped. 
+* If running "mvn clean package" second time, ALWAYS check to make sure mysql processes on port 3326 and 3328 are stopped. 
   If you DON'T do that, then the "mvn clean" will not really clean. 
   A good command to use is: "pkill -f standalone"  (kills anything with "standalone" in the path) 
 * If compiling the standalone on a linux running machine like on ubuntu 12.04 LTS, move your clone of this standalone project into an ext file system for-example under your home directory; running it on for-example an NTFS file system will result into permission failures since by default linux may fail to modify privileges on non ext file systems.
