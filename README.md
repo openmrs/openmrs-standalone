@@ -1,4 +1,12 @@
-#### Note that the master branch is used for building the standalone for OpenMRS Platform 2.x and later, the pre_platform2 branch is used for building the standalone for OpenMRS Platform 1.8.x - 1.12.x, the openmrs-emr branch is used for OpenMRS 2.0 (Reference Application) where the underlying Platform version is 1.12.x or earlier and the openmrs-emr2 branch should be used for building the OpenMRS 2.0 standalones where the platform version is 2.x or later.
+## Which Branch to use?
+
+Depending on what OpenMRS software artifact you are releasing, you may need to check out a different branch of this code:
+
+* If you are building OpenMRS Platform 2.0+ => use the `master` branch
+* If you are building OpenMRS Platform 1.x => use the `pre_platform2` branch
+* If you are building OpenMRS Reference Application 2.x...
+ * ... on top of Platform 1.x => use the `openmrs-emr` branch
+ * ... on top of Platform 2.x => use the `openmrs-emr2` branch
 
 ## QUICK SUMMARY FOR BUILDING THE STANDALONE
 
