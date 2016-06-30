@@ -86,6 +86,7 @@ public class TomcatManager {
 		
 		// create http connector
 		Connector httpConnector = container.createConnector((InetAddress) null, port, false);
+		httpConnector.setURIEncoding("UTF-8");
 		container.addConnector(httpConnector);
 	}
 	
