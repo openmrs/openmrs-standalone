@@ -16,6 +16,7 @@
             <column name="property" value="referencedemodata.createDemoPatientsOnNextStartup"/>
             <column name="property_value" value="100"/>
             <column name="description" value="Set to a positive integer if you want to generate demo patients on startup"/>
+            <column name="uuid" value="ef6a6eba-47ac-11e6-beb8-9e71128cae77"/>
         </insert>
     </changeSet>
 
