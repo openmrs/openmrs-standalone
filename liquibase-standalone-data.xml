@@ -19,6 +19,7 @@
             <column name="property" value="scheduler.username"/>
             <column name="property_value" value="admin"/>
             <column name="description" value="Username for the OpenMRS user that will perform the scheduler activities"/>
+            <column name="uuid" value="9a11ca60-47a9-11e6-beb8-9e71128cae77"/>
         </insert>
     </changeSet>
 	
@@ -27,6 +28,7 @@
             <column name="property" value="scheduler.password"/>
             <column name="property_value" value="Admin123"/>
             <column name="description" value="Password for the OpenMRS user that will perform the scheduler activities"/>
+            <column name="uuid" value="afff2066-47a9-11e6-beb8-9e71128cae77"/>
         </insert>
     </changeSet>
 
