@@ -1,3 +1,11 @@
+OpenMRS Standalone provides a simplified, all-inclusive installation option with both an embedded database and web server.
+Read more at: https://wiki.openmrs.org/display/docs/OpenMRS+Standalone
+
+## Overview
+The following guide describes how to build and run an OpenMRS standalone jar file for its different artifacts. You can create the standalone jar in two ways i.e. from command line by following "QUICK SUMMARY FOR BUILDING THE STANDALONE" or using eclipse by following "HOW TO RUN FROM ECLIPSE".  Compare your jar build size with the build sizes specified in "SOME ROUGH STATISTICS SO FAR" to verify there is no significant difference.
+
+Make sure your file structure reflects the file structure specified in "DISTRIBUTION FOLDER STRUCTURE (This is a MUST)" before running the jar file. Run your standalone jar either by double clicking the jar to follow "APPLICATION USER INTERFACE" or by following "HOW TO RUN FROM COMMAND LINE". Follow "HOW TO RESPOND TO THE OPENMRS SETUP WIZARD" for the OpenMRS setup in the browser. If you would also like to package a database with the standalone to make it more customized for a usecase please read "HOW TO GENERATE A DATABASE TO INCLUDE WITH A DISTIBUTION" section. 
+
 ## Which Branch to use?
 
 Depending on what OpenMRS software artifact you are releasing, you may need to check out a different branch of this code:
@@ -18,7 +26,7 @@ If you do not see the one for your release, you can create it by loading the lat
 openmrs to the one you are releasing. After the upgrade, you can then dump a sql file to serve as the demo data file for the new release. Then, update the value of the path attribute of the sqlPath tag in liquibase-demo-data.xml file to match the name of the demo data you just downloaded
 * Download the latest version of MVP CIEL dictionary (see [the wiki](https://wiki.openmrs.org/x/ww4JAg) for instructions on obtaining it)
 * Update the value of the path attribute of the sqlPath tag in liquibase-mvp-data.xml file to match the name of the mvp data file just downloaded
-* If running "mvn clean package" second time, ALWAYS check to make sure mysql processes on port 3326 and 3328 are stopped. 
+* If running "mvn clean package" second time, ALWAYS check to make sure mysql processes on port 3326 and/or 3328 and/or 33326 are stopped. 
   If you DON'T do that, then the "mvn clean" will not really clean. 
   A good command to use is: "pkill -f standalone"  (kills anything with "standalone" in the path) 
 * If compiling the standalone on a linux running machine like on ubuntu 12.04 LTS, move your clone of this standalone project into an ext file system for-example under your home directory; running it on for-example an NTFS file system will result into permission failures since by default linux may fail to modify privileges on non ext file systems.
@@ -60,6 +68,39 @@ running setup, subsequent runs will always take you to the openmrs login screen.
 
 NOTE: Using Maven Package will generate the executable jar file in the target folder. How to run directly from eclipse using maven is not yet done.
 
+## APPLICATION USER INTERFACE
+
+Tomcat Port					This is the port at which to run tomcat.
+MySQL Port					This is the port at which to run mysql
+
+File -> Quit				This menu item stops tomcat and mysql and then closes the application.
+File -> Launch Browser		This menu item opens the openmrs login page for the current web application context.
+File -> Clear Output		This clears the output log in the user interface text area. But does not clear the log file
+							written on the file system.
+
+Start						This button runs tomcat, which will automatically start the mysql database engine if it
+							was not already running. For the embedded mysql, the first connection automatically starts
+							the mysql engine.
+							
+Stop						This button stops tomcat and then also stops the mysql database engine, without closing the application.
+
+
+NOTE: Minimizing or Maximizing the application window does not have any effect on the server. The window close icon will stop
+	  the server (behaves as File -> Quit) but will first ask if you really want to, and will only do so when you select
+	  the Yes option.
+	  
+## HOW TO RUN FROM COMMAND LINE
+
+Running from command line requires the -commandline switch.
+e.g. java -jar standalone-0.0.1-SNAPSHOT.jar -commandline
+
+-mysqlport: 	Use to override the mysql port in the runtime properties file.
+-tomcatport: 	Use to override the tomcat port in the runtime properties file.
+start			Use to start the server.
+stop			Use to stop the server.
+browser			Use to launch a new browser instance.
+
+
 ## HOW TO RESPOND TO THE OPENMRS SETUP WIZARD
 
 1. Copy the "connection.url" value from the default-runtime.properties file, located at the project root folder, and paste it into the "Database Connection:" text field of the openmrs setup wizard.
@@ -81,6 +122,24 @@ NOTE: Using Maven Package will generate the executable jar file in the target fo
 9. Click "Continue" to go to the next wizard screen where you will fill whatever you want.
 
 10. Click "Continue" to go to the next wizard screen and click "Finish".
+
+# HOW TO GENERATE A DATABASE TO INCLUDE WITH A DISTIBUTION
+
+1- Make sure you have no runtime properties file that the web application will find.
+2- Make sure you have no extra moduls that the web application will find
+3- Run the standalone-0.0.1-SNAPSHOT.jar. You can just double click it, or run from command line as above.
+4- This will take you through the openmrs setup wizard (because the runtime properties file was not found) and 
+   respond to it as per the instructions above under "HOW TO RESPOND TO THE OPENMRS SETUP WIZARD"
+5- After the wizard completes, copy the generated runtime properties file and put it in the root folder of the distribution
+   as per the above instructions under "DISTRIBUTION FOLDER STRUCTURE"
+6- Run packagezip.sh to create the distributable zip file
+NOTE: The default location of the "database" folder is that where the standalone-0.0.1-SNAPSHOT.jar file is.
+      Also remember to include the runtime properties file in the root folder of the distribution if you want this
+      database to be used.
+      You should also add the application_data_directory key to the runtime properties file. Something like this:
+      application_data_directory=appdata 
+
+
 
 ## DISTRIBUTION FOLDER STRUCTURE (This is a MUST)
 
@@ -143,57 +202,10 @@ NOTE: When creating a new database using the openmrs database setup wizard, reme
 	  GUI query tools like Navicat, EMS MySQL Manager, etc
 
 
-## APPLICATION USER INTERFACE
 
-Tomcat Port					This is the port at which to run tomcat.
-MySQL Port					This is the port at which to run mysql
-
-File -> Quit				This menu item stops tomcat and mysql and then closes the application.
-File -> Launch Browser		This menu item opens the openmrs login page for the current web application context.
-File -> Clear Output		This clears the output log in the user interface text area. But does not clear the log file
-							written on the file system.
-
-Start						This button runs tomcat, which will automatically start the mysql database engine if it
-							was not already running. For the embedded mysql, the first connection automatically starts
-							the mysql engine.
-							
-Stop						This button stops tomcat and then also stops the mysql database engine, without closing the application.
-
-
-NOTE: Minimizing or Maximizing the application window does not have any effect on the server. The window close icon will stop
-	  the server (behaves as File -> Quit) but will first ask if you really want to, and will only do so when you select
-	  the Yes option.
-	  
-	
-	
-## HOW TO RUN FROM COMMAND LINE
-
-Running from command line requires the -commandline switch.
-e.g. java -jar standalone-0.0.1-SNAPSHOT.jar -commandline
-
--mysqlport: 	Use to override the mysql port in the runtime properties file.
--tomcatport: 	Use to override the tomcat port in the runtime properties file.
-start			Use to start the server.
-stop			Use to stop the server.
-browser			Use to launch a new browser instance.
 
  
  
-# HOW TO GENERATE A DATABASE TO INCLUDE WITH A DISTIBUTION
-
-1- Make sure you have no runtime properties file that the web application will find.
-2- Make sure you have no extra moduls that the web application will find
-3- Run the standalone-0.0.1-SNAPSHOT.jar. You can just double click it, or run from command line as above.
-4- This will take you through the openmrs setup wizard (because the runtime properties file was not found) and 
-   respond to it as per the instructions above under "HOW TO RESPOND TO THE OPENMRS SETUP WIZARD"
-5- After the wizard completes, copy the generated runtime properties file and put it in the root folder of the distribution
-   as per the above instructions under "DISTRIBUTION FOLDER STRUCTURE"
-6- Run packagezip.sh to create the distributable zip file
-NOTE: The default location of the "database" folder is that where the standalone-0.0.1-SNAPSHOT.jar file is.
-      Also remember to include the runtime properties file in the root folder of the distribution if you want this
-      database to be used.
-      You should also add the application_data_directory key to the runtime properties file. Something like this:
-      application_data_directory=appdata 
 
 
 	  
