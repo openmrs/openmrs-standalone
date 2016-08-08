@@ -68,7 +68,7 @@
 	</profiles>
 
 	<build>
-		<finalName>openmrs-standalone-${openmrs.version}</finalName>
+		<finalName>openmrs-standalone-${refapp.version}</finalName>
 		<plugins>
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
