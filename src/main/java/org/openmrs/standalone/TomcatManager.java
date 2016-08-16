@@ -79,6 +79,7 @@ public class TomcatManager {
 		
 		// create engine
 		Engine engine = container.createEngine();
+		engine.setService(container);
 		engine.setName("Catalina");
 		engine.addChild(localHost);
 		engine.setDefaultHost(localHost.getName());

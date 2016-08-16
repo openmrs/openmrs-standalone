@@ -53,11 +53,11 @@ public class StandaloneRunner {
 		propertyStream.close();
 		
 		String connectionString = properties.getProperty(StandaloneUtil.KEY_CONNECTION_URL);
-		connectionString = connectionString.replace("=database", "=../demodatabase");
+		connectionString = connectionString.replace("=database", "=target/demodatabase");
 		connectionString = connectionString.replace("3316", "33330");
 		properties.put(StandaloneUtil.KEY_CONNECTION_URL,connectionString);
 		properties.remove(StandaloneUtil.KEY_RESET_CONNECTION_PASSWORD);
-		properties.put("server.basedir", "../demodatabase");
+		properties.put("server.basedir", "target/demodatabase");
 		writeRuntimeProperties(properties);
 		
 		standaloneDirectory = new File("target/standalone");
