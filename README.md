@@ -123,7 +123,7 @@ browser			Use to launch a new browser instance.
 
 10. Click "Continue" to go to the next wizard screen and click "Finish".
 
-# HOW TO GENERATE A DATABASE TO INCLUDE WITH A DISTIBUTION
+# HOW TO GENERATE A DATABASE TO INCLUDE WITH A DISTRIBUTION
 
 1- Make sure you have no runtime properties file that the web application will find.
 2- Make sure you have no extra moduls that the web application will find
