@@ -13,6 +13,8 @@
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<tomcat.version>7.0.50</tomcat.version>
+		<ciel.dictionary.openmrs.version>1.9.9</ciel.dictionary.openmrs.version>
+		<ciel.dictionary.version>20170409</ciel.dictionary.version>
 	</properties>
 
 	<dependencies>
@@ -104,6 +106,7 @@
 
 	<build>
 		<finalName>openmrs-standalone-${openmrs.version}</finalName>
+		
 		<plugins>
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
@@ -139,7 +142,30 @@
 					<target>1.6</target>
 				</configuration>
 			</plugin>
-
+			
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-resources-plugin</artifactId>
+				<executions>
+					<execution>
+						<id>generate-liquibase-resources</id>
+						<phase>validate</phase>
+						<goals>
+							<goal>copy-resources</goal>
+						</goals>
+							<configuration>
+								<outputDirectory>${basedir}/target/liquibase</outputDirectory>
+								<resources>
+									<resource>
+										<directory>src/main/liquibase</directory>
+										<filtering>true</filtering>
+									</resource>
+								</resources>
+							</configuration>
+					</execution>
+				</executions>
+			</plugin>
+			
 			<plugin>
 				<groupId>org.liquibase</groupId>
 				<artifactId>${liquibasePluginArtifactId}</artifactId>
@@ -201,7 +227,7 @@
 						<phase>generate-resources</phase>
 						<configuration>
 							<driver>com.mysql.jdbc.Driver</driver>
-							<changeLogFile>${liquibaseMVPDataFileName}</changeLogFile>
+							<changeLogFile>target/liquibase/${liquibaseMVPDataFileName}</changeLogFile>
 							<url><![CDATA[jdbc:mysql:mxj://127.0.0.1:33326/openmrs?autoReconnect=true&sessionVariables=storage_engine=InnoDB&useUnicode=true&characterEncoding=UTF-8&server.initialize-user=true&createDatabaseIfNotExist=true&server.basedir=target/emptydatabase&server.datadir=target/emptydatabase/data&server.collation-server=utf8_general_ci&server.character-set-server=utf8&server.max_allowed_packet=32M]]></url>
 							<username>openmrs</username>
 							<password>test</password>
@@ -485,6 +511,13 @@
 					<artifactId>maven-compiler-plugin</artifactId>
 					<version>2.3.2</version>
 				</plugin>
+				
+				<plugin>
+					<groupId>org.apache.maven.plugins</groupId>
+					<artifactId>maven-resources-plugin</artifactId>
+					<version>3.0.2</version>
+				</plugin>
+				
 				<plugin>
 					<groupId>org.apache.maven.plugins</groupId>
 					<artifactId>maven-dependency-plugin</artifactId>
@@ -509,7 +542,6 @@
 							<artifactId>openmrs-api</artifactId>
 							<version>${openmrs.version}</version>
 							<type>jar</type>
-							<scope>compile</scope>
 						</dependency>
 						<dependency>
 							<groupId>org.openmrs.liquibase.ext</groupId>
@@ -520,6 +552,12 @@
 							<groupId>org.openmrs.liquibase.ext</groupId>
 							<artifactId>identity-insert</artifactId>
 							<version>1.2.1</version>
+						</dependency>
+						<dependency>
+							<groupId>org.openmrs.contrib</groupId>
+							<artifactId>ciel-dictionary</artifactId>
+							<version>${ciel.dictionary.openmrs.version}-${ciel.dictionary.version}</version>
+							<type>zip</type>
 						</dependency>
 					</dependencies>
 				</plugin>

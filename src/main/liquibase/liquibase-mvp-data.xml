@@ -50,7 +50,7 @@
 
 	<changeSet id="20120315-1100" author="standalone" dbms="mysql">
 		<comment>Adding mvp data</comment>
-		<sqlFile path="mvp-data-19x.sql" encoding="UTF-8" />
+		<sqlFile path="openmrs_concepts_${ciel.dictionary.openmrs.version}_${ciel.dictionary.version}.sql" encoding="UTF-8" />
 
 		<!-- We need to make the liquibasechangelog table modifications to 2.0.x 
 			within this changeset because the one in demo data was created with version 
