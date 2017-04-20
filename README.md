@@ -24,8 +24,11 @@ Depending on what OpenMRS software artifact you are releasing, you may need to c
 and put in the main directory the Demo-1.8.0.sql file from https://wiki.openmrs.org/x/GwRN, be sure to download the appropriate demo data file for the release line.
 If you do not see the one for your release, you can create it by loading the latest existing demo data file in its version of openmrs and then upgrade this version of
 openmrs to the one you are releasing. After the upgrade, you can then dump a sql file to serve as the demo data file for the new release. Then, update the value of the path attribute of the sqlPath tag in liquibase-demo-data.xml file to match the name of the demo data you just downloaded
-* Download the latest version of MVP CIEL dictionary (see [the wiki](https://wiki.openmrs.org/x/ww4JAg) for instructions on obtaining it)
-* Update the value of the path attribute of the sqlPath tag in liquibase-mvp-data.xml file to match the name of the mvp data file just downloaded
+* Download the latest CIEL for OpenMRS 1.9.x (use 1.9.x regardless of the maintenance release version) as described [here](https://wiki.openmrs.org/x/ww4JAg).
+* Upload it to mavenrepo by running:
+`mvn deploy:deploy-file -DgroupId=org.openmrs.contrib -DartifactId=ciel-dictionary -Dversion=1.9.9-20170409 -Dpackaging=zip -Dfile=openmrs_concepts_1.9.9_20170409.sql.zip -DrepositoryId=openmrs-repo-contrib -Durl=https://mavenrepo.openmrs.org/nexus/content/repositories/contrib`
+Adjust the version and the file parameters to match the downloaded version of CIEL.
+* Update the CIEL version in pom.xml.
 * If running "mvn clean package" second time, ALWAYS check to make sure mysql processes on port 3326 and/or 3328 and/or 33326 are stopped. 
   If you DON'T do that, then the "mvn clean" will not really clean. 
   A good command to use is: "pkill -f standalone"  (kills anything with "standalone" in the path) 
