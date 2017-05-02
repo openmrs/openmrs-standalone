@@ -3,18 +3,18 @@
 	<modelVersion>4.0.0</modelVersion>
 
 	<groupId>org.openmrs</groupId>
-	<artifactId>standalone</artifactId>
-	<version>1.1.1</version>
+	<artifactId>referenceapplication-standalone</artifactId>
+	<version>2.6.0-SNAPSHOT</version>
 	<packaging>jar</packaging>
 
-	<name>standalone</name>
-	<url>https://github.com/openmrs/openmrs-standalone</url>
+	<name>referenceapplication-standalone</name>
+	<url>https://github.com/openmrs/openmrs-standalone/</url>
 
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<tomcat.version>7.0.50</tomcat.version>
 	</properties>
-
+	
 	<dependencies>
 		<dependency>
 			<groupId>org.apache.tomcat</groupId>
@@ -49,26 +49,25 @@
 		<dependency>
 			<groupId>mysql</groupId>
 			<artifactId>mysql-connector-mxj-db-files-fixed</artifactId>
-			<version>5.0.12-20140731</version>
+			<version>5.0.12-20170418</version>
 			<scope>compile</scope>
 		</dependency>
 	</dependencies>
 
-	<profiles>
-		<profile>
-			<id>default</id> <!-- for 1.9.x and up -->
-			<activation>
-				<activeByDefault>true</activeByDefault>
-			</activation>
-			<properties>
-				<liquibasePluginArtifactId>liquibase-maven-plugin</liquibasePluginArtifactId>
-				<liquibasePluginVersion>2.0.1</liquibasePluginVersion>
-			</properties>
-		</profile>
-	</profiles>
-
 	<build>
-		<finalName>openmrs-standalone-${refapp.version}</finalName>
+		<finalName>referenceapplication-standalone-${refapp.version}</finalName>
+		
+		<resources>
+			<resource>
+				<directory>src/main/resources</directory>
+				<filtering>false</filtering>
+			</resource>
+			<resource>
+				<directory>src/main/resources-filtered</directory>
+				<filtering>true</filtering>
+			</resource>
+		</resources>
+		
 		<plugins>
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
@@ -82,10 +81,16 @@
 						<configuration>
 							<rules>
 								<requireProperty>
+									<property>refapp.version</property>
+									<message>refapp.version property is missing. This should be
+										something like 2.4, 2.5 Add
+										-Drefapp.version=2.5</message>
+								</requireProperty>
+								<requireProperty>
 									<property>openmrs.version</property>
 									<message>openmrs.version property is missing. This should be
-										something like 1.9.4, 1.10.0 Add
-										-Dopenmrs.version=1.9.4</message>
+										something like 2.0.2, 2.0.5 Add
+										-Dopenmrs.version=2.0.5</message>
 								</requireProperty>
 							</rules>
 							<fail>true</fail>
@@ -103,36 +108,10 @@
 					<target>1.8</target>
 				</configuration>
 			</plugin>
-
-			<plugin>
-				<groupId>org.apache.maven.plugins</groupId>
-				<artifactId>maven-dependency-plugin</artifactId>
-				<executions>
-					<execution>
-						<id>copy</id>
-						<phase>process-resources</phase>
-						<goals>
-							<goal>copy</goal>
-						</goals>
-					</execution>
-				</executions>
-				<configuration>
-					<artifactItems>
-						<artifactItem>
-							<groupId>org.openmrs.web</groupId>
-							<artifactId>openmrs-webapp</artifactId>
-							<version>${openmrs.version}</version>
-							<type>war</type>
-							<outputDirectory>target</outputDirectory>
-							<destFileName>openmrs-standalone.war</destFileName>
-						</artifactItem>
-					</artifactItems>
-				</configuration>
-			</plugin>
-
+			
 			<plugin>
 				<groupId>org.liquibase</groupId>
-				<artifactId>${liquibasePluginArtifactId}</artifactId>
+				<artifactId>liquibase-maven-plugin</artifactId>
 				<executions>
 					<execution>
 						<id>empty-database-create-schema</id>
@@ -140,7 +119,7 @@
 						<configuration>
 							<driver>com.mysql.jdbc.Driver</driver>
 							<changeLogFile>liquibase-schema-only.xml</changeLogFile>
-							<url><![CDATA[jdbc:mysql:mxj://127.0.0.1:33326/openmrs?autoReconnect=true&sessionVariables=storage_engine=InnoDB&useUnicode=true&characterEncoding=UTF-8&server.initialize-user=true&createDatabaseIfNotExist=true&server.basedir=target/emptydatabase&server.datadir=target/emptydatabase/data&server.collation-server=utf8_general_ci&server.character-set-server=utf8&server.max_allowed_packet=32M]]></url>
+							<url><![CDATA[jdbc:mysql:mxj://127.0.0.1:33326/openmrs?autoReconnect=true&sessionVariables=storage_engine=InnoDB&useUnicode=true&characterEncoding=UTF-8&server.initialize-user=true&createDatabaseIfNotExist=true&server.basedir=${project.build.directory}/emptydatabase&server.datadir=${project.build.directory}/emptydatabase/data&server.collation-server=utf8_general_ci&server.character-set-server=utf8&server.max_allowed_packet=32M]]></url>
 							<username>openmrs</username>
 							<password>test</password>
 							<verbose>true</verbose>
@@ -166,7 +145,7 @@
 						<configuration>
 							<driver>com.mysql.jdbc.Driver</driver>
 							<changeLogFile>liquibase-core-data.xml</changeLogFile>
-							<url><![CDATA[jdbc:mysql:mxj://127.0.0.1:33326/openmrs?autoReconnect=true&sessionVariables=storage_engine=InnoDB&useUnicode=true&characterEncoding=UTF-8&server.initialize-user=true&createDatabaseIfNotExist=true&server.basedir=target/emptydatabase&server.datadir=target/emptydatabase/data&server.collation-server=utf8_general_ci&server.character-set-server=utf8&server.max_allowed_packet=32M]]></url>
+							<url><![CDATA[jdbc:mysql:mxj://127.0.0.1:33326/openmrs?autoReconnect=true&sessionVariables=storage_engine=InnoDB&useUnicode=true&characterEncoding=UTF-8&server.initialize-user=true&createDatabaseIfNotExist=true&server.basedir=${project.build.directory}/emptydatabase&server.datadir=${project.build.directory}/emptydatabase/data&server.collation-server=utf8_general_ci&server.character-set-server=utf8&server.max_allowed_packet=32M]]></url>
 							<username>openmrs</username>
 							<password>test</password>
 							<verbose>true</verbose>
@@ -192,7 +171,7 @@
 						<configuration>
 							<driver>com.mysql.jdbc.Driver</driver>
 							<changeLogFile>liquibase-update-to-latest.xml</changeLogFile>
-							<url><![CDATA[jdbc:mysql:mxj://127.0.0.1:33326/openmrs?autoReconnect=true&sessionVariables=storage_engine=InnoDB&useUnicode=true&characterEncoding=UTF-8&server.initialize-user=true&createDatabaseIfNotExist=true&server.basedir=target/emptydatabase&server.datadir=target/emptydatabase/data&server.collation-server=utf8_general_ci&server.character-set-server=utf8&server.max_allowed_packet=32M]]></url>
+							<url><![CDATA[jdbc:mysql:mxj://127.0.0.1:33326/openmrs?autoReconnect=true&sessionVariables=storage_engine=InnoDB&useUnicode=true&characterEncoding=UTF-8&server.initialize-user=true&createDatabaseIfNotExist=true&server.basedir=${project.build.directory}/emptydatabase&server.datadir=${project.build.directory}/emptydatabase/data&server.collation-server=utf8_general_ci&server.character-set-server=utf8&server.max_allowed_packet=32M]]></url>
 							<username>openmrs</username>
 							<password>test</password>
 							<verbose>true</verbose>
@@ -217,8 +196,8 @@
 						<phase>generate-resources</phase>
 						<configuration>
 							<driver>com.mysql.jdbc.Driver</driver>
-							<changeLogFile>liquibase-standalone-data.xml</changeLogFile>
-							<url><![CDATA[jdbc:mysql:mxj://127.0.0.1:33326/openmrs?autoReconnect=true&sessionVariables=storage_engine=InnoDB&useUnicode=true&characterEncoding=UTF-8&server.initialize-user=true&createDatabaseIfNotExist=true&server.basedir=target/emptydatabase&server.datadir=target/emptydatabase/data&server.collation-server=utf8_general_ci&server.character-set-server=utf8&server.max_allowed_packet=32M]]></url>
+							<changeLogFile>src/main/db/liquibase-standalone-data.xml</changeLogFile>
+							<url><![CDATA[jdbc:mysql:mxj://127.0.0.1:33326/openmrs?autoReconnect=true&sessionVariables=storage_engine=InnoDB&useUnicode=true&characterEncoding=UTF-8&server.initialize-user=true&createDatabaseIfNotExist=true&server.basedir=${project.build.directory}/emptydatabase&server.datadir=${project.build.directory}/emptydatabase/data&server.collation-server=utf8_general_ci&server.character-set-server=utf8&server.max_allowed_packet=32M]]></url>
 							<username>openmrs</username>
 							<password>test</password>
 							<verbose>true</verbose>
@@ -238,16 +217,13 @@
 							<goal>update</goal>
 						</goals>
 					</execution>
-					
-					
-					
 					<execution>
 						<id>demo-database-create-schema</id>
 						<phase>generate-resources</phase>
 						<configuration>
 							<driver>com.mysql.jdbc.Driver</driver>
 							<changeLogFile>liquibase-schema-only.xml</changeLogFile>
-							<url><![CDATA[jdbc:mysql:mxj://127.0.0.1:33328/openmrs?autoReconnect=true&sessionVariables=storage_engine=InnoDB&useUnicode=true&characterEncoding=UTF-8&server.initialize-user=true&createDatabaseIfNotExist=true&server.basedir=target/demodatabase&server.datadir=target/demodatabase/data&server.collation-server=utf8_general_ci&server.character-set-server=utf8&server.max_allowed_packet=32M]]></url>
+							<url><![CDATA[jdbc:mysql:mxj://127.0.0.1:33328/openmrs?autoReconnect=true&sessionVariables=storage_engine=InnoDB&useUnicode=true&characterEncoding=UTF-8&server.initialize-user=true&createDatabaseIfNotExist=true&server.basedir=${project.build.directory}/demodatabase&server.datadir=${project.build.directory}/demodatabase/data&server.collation-server=utf8_general_ci&server.character-set-server=utf8&server.max_allowed_packet=32M]]></url>
 							<username>openmrs</username>
 							<password>test</password>
 							<verbose>true</verbose>
@@ -273,7 +249,33 @@
 						<configuration>
 							<driver>com.mysql.jdbc.Driver</driver>
 							<changeLogFile>liquibase-core-data.xml</changeLogFile>
-							<url><![CDATA[jdbc:mysql:mxj://127.0.0.1:33328/openmrs?autoReconnect=true&sessionVariables=storage_engine=InnoDB&useUnicode=true&characterEncoding=UTF-8&server.initialize-user=true&createDatabaseIfNotExist=true&server.basedir=target/demodatabase&server.datadir=target/demodatabase/data&server.collation-server=utf8_general_ci&server.character-set-server=utf8&server.max_allowed_packet=32M]]></url>
+							<url><![CDATA[jdbc:mysql:mxj://127.0.0.1:33328/openmrs?autoReconnect=true&sessionVariables=storage_engine=InnoDB&useUnicode=true&characterEncoding=UTF-8&server.initialize-user=true&createDatabaseIfNotExist=true&server.basedir=${project.build.directory}/demodatabase&server.datadir=${project.build.directory}/demodatabase/data&server.collation-server=utf8_general_ci&server.character-set-server=utf8&server.max_allowed_packet=32M]]></url>
+							<username>openmrs</username>
+							<password>test</password>
+							<verbose>true</verbose>
+							<dropFirst>false</dropFirst>
+							<systemProperties>
+								<property>
+									<name>liquibase.databaseChangeLogTableName</name>
+									<value>liquibasechangelog</value>
+								</property>
+								<property>
+									<name>liquibase.databaseChangeLogLockTableName</name>
+									<value>liquibasechangeloglock</value>
+								</property>
+							</systemProperties>
+						</configuration>
+						<goals>
+							<goal>update</goal>
+						</goals>
+					</execution>
+					<execution>
+						<id>demo-database-add-demo-data</id>
+						<phase>generate-resources</phase>
+						<configuration>
+							<driver>com.mysql.jdbc.Driver</driver>
+							<changeLogFile>src/main/db/liquibase-demo-data.xml</changeLogFile>
+							<url><![CDATA[jdbc:mysql:mxj://127.0.0.1:33328/openmrs?autoReconnect=true&sessionVariables=storage_engine=InnoDB&useUnicode=true&characterEncoding=UTF-8&server.initialize-user=true&createDatabaseIfNotExist=true&server.basedir=${project.build.directory}/demodatabase&server.datadir=${project.build.directory}/demodatabase/data&server.collation-server=utf8_general_ci&server.character-set-server=utf8&server.max_allowed_packet=32M]]></url>
 							<username>openmrs</username>
 							<password>test</password>
 							<verbose>true</verbose>
@@ -299,33 +301,7 @@
 						<configuration>
 							<driver>com.mysql.jdbc.Driver</driver>
 							<changeLogFile>liquibase-update-to-latest.xml</changeLogFile>
-							<url><![CDATA[jdbc:mysql:mxj://127.0.0.1:33328/openmrs?autoReconnect=true&sessionVariables=storage_engine=InnoDB&useUnicode=true&characterEncoding=UTF-8&server.initialize-user=true&createDatabaseIfNotExist=true&server.basedir=target/demodatabase&server.datadir=target/demodatabase/data&server.collation-server=utf8_general_ci&server.character-set-server=utf8&server.max_allowed_packet=32M]]></url>
-							<username>openmrs</username>
-							<password>test</password>
-							<verbose>true</verbose>
-							<dropFirst>false</dropFirst>
-							<systemProperties>
-								<property>
-									<name>liquibase.databaseChangeLogTableName</name>
-									<value>liquibasechangelog</value>
-								</property>
-								<property>
-									<name>liquibase.databaseChangeLogLockTableName</name>
-									<value>liquibasechangeloglock</value>
-								</property>
-							</systemProperties>
-						</configuration>
-						<goals>
-							<goal>update</goal>
-						</goals>
-					</execution>
-					<execution>
-						<id>demo-database-add-demo-data</id>
-						<phase>generate-resources</phase>
-						<configuration>
-							<driver>com.mysql.jdbc.Driver</driver>
-							<changeLogFile>liquibase-demo-data.xml</changeLogFile>
-							<url><![CDATA[jdbc:mysql:mxj://127.0.0.1:33328/openmrs?autoReconnect=true&sessionVariables=storage_engine=InnoDB&useUnicode=true&characterEncoding=UTF-8&server.initialize-user=true&createDatabaseIfNotExist=true&server.basedir=target/demodatabase&server.datadir=target/demodatabase/data&server.collation-server=utf8_general_ci&server.character-set-server=utf8&server.max_allowed_packet=32M]]></url>
+							<url><![CDATA[jdbc:mysql:mxj://127.0.0.1:33328/openmrs?autoReconnect=true&sessionVariables=storage_engine=InnoDB&useUnicode=true&characterEncoding=UTF-8&server.initialize-user=true&createDatabaseIfNotExist=true&server.basedir=${project.build.directory}/demodatabase&server.datadir=${project.build.directory}/demodatabase/data&server.collation-server=utf8_general_ci&server.character-set-server=utf8&server.max_allowed_packet=32M]]></url>
 							<username>openmrs</username>
 							<password>test</password>
 							<verbose>true</verbose>
@@ -350,8 +326,8 @@
 						<phase>generate-resources</phase>
 						<configuration>
 							<driver>com.mysql.jdbc.Driver</driver>
-							<changeLogFile>liquibase-standalone-data.xml</changeLogFile>
-							<url><![CDATA[jdbc:mysql:mxj://127.0.0.1:33328/openmrs?autoReconnect=true&sessionVariables=storage_engine=InnoDB&useUnicode=true&characterEncoding=UTF-8&server.initialize-user=true&createDatabaseIfNotExist=true&server.basedir=target/demodatabase&server.datadir=target/demodatabase/data&server.collation-server=utf8_general_ci&server.character-set-server=utf8&server.max_allowed_packet=32M]]></url>
+							<changeLogFile>src/main/db/liquibase-standalone-data.xml</changeLogFile>
+							<url><![CDATA[jdbc:mysql:mxj://127.0.0.1:33328/openmrs?autoReconnect=true&sessionVariables=storage_engine=InnoDB&useUnicode=true&characterEncoding=UTF-8&server.initialize-user=true&createDatabaseIfNotExist=true&server.basedir=${project.build.directory}/demodatabase&server.datadir=${project.build.directory}/demodatabase/data&server.collation-server=utf8_general_ci&server.character-set-server=utf8&server.max_allowed_packet=32M]]></url>
 							<username>openmrs</username>
 							<password>test</password>
 							<verbose>true</verbose>
@@ -373,158 +349,41 @@
 					</execution>
 				</executions>
 			</plugin>
-
+			
 			<plugin>
-				<groupId>org.apache.maven.plugins</groupId>
-		    	<artifactId>maven-resources-plugin</artifactId>
-		        <version>2.6</version>
-		        <executions>
-		        	<execution>
-			        	<id>copy-distro-modules</id>
-			            <phase>prepare-package</phase>
-			            <goals>
-			             	<goal>copy-resources</goal>
-			            </goals>
-			            <configuration>
-			            	<overwrite>true</overwrite>
-			                <outputDirectory>${project.build.directory}/appdata/modules</outputDirectory>
-			                <resources>          
-			                	<resource>
-			                		<directory>${distro.directory}</directory>
-			                	</resource>
-			              </resources>              
-			            </configuration>            
-			         </execution>
-			         <execution>
-			        	<id>copy-packaging-distro-modules</id>
-			            <phase>prepare-package</phase>
-			            <goals>
-			             	<goal>copy-resources</goal>
-			            </goals>
-			            <configuration>
-			            	<overwrite>true</overwrite>
-			                <outputDirectory>${project.build.directory}/standalone/appdata/modules</outputDirectory>
-			                <resources>          
-			                	<resource>
-			                		<directory>${distro.directory}</directory>
-			                	</resource>
-			              </resources>              
-			            </configuration>            
-			         </execution>
-		        	<execution>
-			        	<id>copy-tomcat-conf</id>
-			            <phase>prepare-package</phase>
-			            <goals>
-			             	<goal>copy-resources</goal>
-			            </goals>
-			            <configuration>
-			            	<overwrite>true</overwrite>
-			                <outputDirectory>${project.build.directory}/standalone/tomcat/conf</outputDirectory>
-			                <resources>          
-			                	<resource>
-			                		<directory>src/main/config/tomcat/conf</directory>
-			                	</resource>
-			              </resources>              
-			            </configuration>            
-			         </execution>
-		        	<execution>
-			        	<id>copy-runtime-properties</id>
-			            <phase>prepare-package</phase>
-			            <goals>
-			             	<goal>copy-resources</goal>
-			            </goals>
-			            <configuration>
-			            	<overwrite>true</overwrite>
-			                <outputDirectory>${project.build.directory}/standalone</outputDirectory>
-			                <resources>          
-			                	<resource>
-			                		<directory>src/main/config</directory>
-			                		<includes>
-							        	<include>openmrs-standalone-runtime.properties</include>
-							        </includes>
-			                	</resource>
-			              </resources>              
-			            </configuration>            
-			         </execution>
-			         <execution>
-			        	<id>copy-war-file</id>
-			            <phase>prepare-package</phase>
-			            <goals>
-			             	<goal>copy-resources</goal>
-			            </goals>
-			            <configuration>
-			            	<overwrite>true</overwrite>
-			                <outputDirectory>${project.build.directory}/standalone/tomcat/webapps</outputDirectory>
-			                <resources>          
-			                	<resource>
-			                		<directory>${project.build.directory}</directory>
-			                		<includes>
-							        	<include>openmrs-standalone.war</include>
-							        </includes>
-			                	</resource>
-			              </resources>              
-			            </configuration>            
-			         </execution>
-			         <execution>
-			        	<id>copy-standalone-jar</id>
-			            <phase>prepare-package</phase>
-			            <goals>
-			             	<goal>copy-resources</goal>
-			            </goals>
-			            <configuration>
-			            	<overwrite>true</overwrite>
-			                <outputDirectory>${project.build.directory}/standalone</outputDirectory>
-			                <resources>          
-			                	<resource>
-			                		<directory>${project.build.directory}</directory>
-			                		<includes>
-							        	<include>openmrs-standalone.jar</include>
-							        </includes>
-			                	</resource>
-			              </resources>              
-			            </configuration>            
-			         </execution>
-		        </executions>
-		    </plugin>
-		    
-		    <plugin>
+				<groupId>org.openmrs.maven.plugins</groupId>
+				<artifactId>openmrs-sdk-maven-plugin</artifactId>
+				<version>3.9.0</version>
+				<executions>
+					<execution>
+						<id>build-distro</id>
+						<phase>generate-resources</phase>
+						<goals>
+							<goal>build-distro</goal>
+						</goals>
+						<configuration>
+							<distro>referenceapplication:${refapp.version}</distro>
+							<dir>${project.build.directory}/distro</dir>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
+			
+			<plugin>
 				<groupId>org.codehaus.mojo</groupId>
 				<artifactId>exec-maven-plugin</artifactId>
 				<executions>
 					<execution>
-						<id>stop-mysql1</id>
-						<phase>prepare-package</phase>
+						<id>stop-liquibase-mysql</id>
+						<phase>process-classes</phase>
 						<goals>
 							<goal>java</goal>
 						</goals>
 						<configuration>
 							<mainClass>org.openmrs.standalone.StopEmbeddedMySQL</mainClass>
 							<arguments>
-								<argument>target/demodatabase</argument>
-                                <argument>target/emptydatabase</argument>
-							</arguments>
-						</configuration>
-					</execution>
-					<execution>
-						<id>run-standalone</id>
-						<phase>prepare-package</phase>
-						<goals>
-							<goal>java</goal>
-						</goals>
-						<configuration>
-							<mainClass>org.openmrs.standalone.StandaloneRunner</mainClass>
-						</configuration>
-					</execution>
-					<execution>
-						<id>stop-mysql2</id>
-						<phase>prepare-package</phase>
-						<goals>
-							<goal>java</goal>
-						</goals>
-						<configuration>
-							<mainClass>org.openmrs.standalone.StopEmbeddedMySQL</mainClass>
-							<arguments>
-								<argument>target/demodatabase</argument>
+								<argument>${project.build.directory}/demodatabase</argument>
+                                <argument>${project.build.directory}/emptydatabase</argument>
 							</arguments>
 						</configuration>
 					</execution>
@@ -537,13 +396,14 @@
 				<executions>
 					<execution>
 						<id>package-jar-with-dependencies</id>
-						<phase>test</phase>
+						<phase>prepare-package</phase>
 						<goals>
 							<goal>single</goal>
 						</goals>
 						<configuration>
 							<finalName>openmrs-standalone</finalName>
 							<appendAssemblyId>false</appendAssemblyId>
+							<outputDirectory>${project.build.directory}</outputDirectory>
 							<descriptorRefs>
 								<descriptorRef>jar-with-dependencies</descriptorRef>
 							</descriptorRefs>
@@ -556,13 +416,14 @@
 					</execution>
 					<execution>
 						<id>zip-demo-database</id>
-						<phase>package</phase>
+						<phase>prepare-package</phase>
 						<goals>
 							<goal>single</goal>
 						</goals>
 						<configuration>
 							<finalName>demodatabase</finalName>
 							<appendAssemblyId>false</appendAssemblyId>
+							<attach>false</attach>
 							<descriptors>
 								<descriptor>src/main/assembly/zip-demo-database.xml</descriptor>
 							</descriptors>
@@ -570,13 +431,14 @@
 					</execution>
 					<execution>
 						<id>zip-empty-database</id>
-						<phase>package</phase>
+						<phase>prepare-package</phase>
 						<goals>
 							<goal>single</goal>
 						</goals>
 						<configuration>
 							<finalName>emptydatabase</finalName>
 							<appendAssemblyId>false</appendAssemblyId>
+							<attach>false</attach>
 							<descriptors>
 								<descriptor>src/main/assembly/zip-empty-database.xml</descriptor>
 							</descriptors>
@@ -589,7 +451,7 @@
 							<goal>single</goal>
 						</goals>
 						<configuration>
-							<finalName>openmrs-standalone-${refapp.version}</finalName>
+							<finalName>referenceapplication-standalone-${refapp.version}</finalName>
 							<appendAssemblyId>false</appendAssemblyId>
 							<descriptors>
 								<descriptor>src/main/assembly/zip-standalone.xml</descriptor>
@@ -610,6 +472,11 @@
 				</plugin>
 				<plugin>
 					<groupId>org.apache.maven.plugins</groupId>
+					<artifactId>maven-resources-plugin</artifactId>
+					<version>2.7</version>
+				</plugin>
+				<plugin>
+					<groupId>org.apache.maven.plugins</groupId>
 					<artifactId>maven-compiler-plugin</artifactId>
 					<version>2.3.2</version>
 				</plugin>
@@ -617,27 +484,16 @@
 					<groupId>org.apache.maven.plugins</groupId>
 					<artifactId>maven-dependency-plugin</artifactId>
 					<version>2.3</version>
-					<dependencies>
-						<dependency>
-							<groupId>org.openmrs.web</groupId>
-							<artifactId>openmrs-webapp</artifactId>
-							<version>${openmrs.version}</version>
-							<type>war</type>
-							<scope>compile</scope>
-						</dependency>
-					</dependencies>
 				</plugin>
 				<plugin>
 					<groupId>org.liquibase</groupId>
-					<artifactId>${liquibasePluginArtifactId}</artifactId>
-					<version>${liquibasePluginVersion}</version>
+					<artifactId>liquibase-maven-plugin</artifactId>
+					<version>2.0.5</version>
 					<dependencies>
 						<dependency>
 							<groupId>org.openmrs.api</groupId>
 							<artifactId>openmrs-api</artifactId>
 							<version>${openmrs.version}</version>
-							<type>jar</type>
-							<scope>compile</scope>
 						</dependency>
 						<dependency>
 							<groupId>org.openmrs.liquibase.ext</groupId>

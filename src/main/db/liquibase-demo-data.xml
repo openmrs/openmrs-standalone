@@ -11,13 +11,9 @@
 		for a list of supported elements and attributes 
 	-->
 	
-	<changeSet id="id-referenceapp-insert-demo-data-gp" author="dkayiwa">
-        <insert tableName="global_property">
-            <column name="property" value="referencedemodata.createDemoPatientsOnNextStartup"/>
-            <column name="property_value" value="100"/>
-            <column name="description" value="Set to a positive integer if you want to generate demo patients on startup"/>
-            <column name="uuid" value="ef6a6eba-47ac-11e6-beb8-9e71128cae77"/>
-        </insert>
-    </changeSet>
+	<changeSet id="20170502-1600" author="standalone" dbms="mysql">
+		<comment>Adding static demo data</comment>
+		<sqlFile path="src/main/db/demo-db-2.6.0.sql" encoding="UTF-8" />
+	</changeSet>
 
 </databaseChangeLog>

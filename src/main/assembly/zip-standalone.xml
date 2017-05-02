@@ -7,35 +7,30 @@
 	<formats>
 		<format>zip</format>
 	</formats>
+	<files>
+		<file>
+			<source>${project.build.directory}/distro/web/openmrs.war</source>
+			<outputDirectory>${project.build.finalName}/tomcat/webapps</outputDirectory>
+			<destName>openmrs-standalone.war</destName>
+		</file>
+	</files>
 	<fileSets>
 		<fileSet>
 			<directory>${project.build.directory}</directory>
 			<includes>
-				<include>openmrs-standalone.jar</include>
 				<include>demodatabase.zip</include>
 				<include>emptydatabase.zip</include>
+				<include>openmrs-standalone.jar</include>
 			</includes>
 			<outputDirectory>${project.build.finalName}</outputDirectory>
 		</fileSet>
 		<fileSet>
-			<directory>src/main/config/tomcat</directory>
-			<outputDirectory>${project.build.finalName}/tomcat</outputDirectory>
-		</fileSet>
-		<fileSet>
-			<directory>${project.build.directory}</directory>
-			<includes>
-				<include>*.war</include>
-			</includes>
-			<outputDirectory>${project.build.finalName}/tomcat/webapps</outputDirectory>
-		</fileSet>
-		<fileSet>
-			<filtered>true</filtered>
 			<directory>src/main/config</directory>
 			<outputDirectory>${project.build.finalName}</outputDirectory>
 		</fileSet>
 		<fileSet>
-			<directory>${project.build.directory}/appdata</directory>
-			<outputDirectory>${project.build.finalName}/appdata</outputDirectory>
+			<directory>${project.build.directory}/distro/web/modules</directory>
+			<outputDirectory>${project.build.finalName}/appdata/modules</outputDirectory>
 		</fileSet>
 	</fileSets>
 </assembly>

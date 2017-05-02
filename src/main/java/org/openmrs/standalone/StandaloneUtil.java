@@ -494,4 +494,15 @@ public class StandaloneUtil {
 		
 		return mySqlPort;
 	}
+
+	public static String getRefappVersion() {
+		Properties properties = new Properties();
+		try (InputStream in = StandaloneUtil.class.getResourceAsStream("/org/openmrs/standalone/standalone.properties")) {
+			properties.load(in);
+		} catch (IOException e) {
+			throw new RuntimeException(e);
+		}
+
+		return (String) properties.get("refapp.version");
+	}
 }
