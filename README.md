@@ -1,4 +1,4 @@
-# Note that this branch is deprecated. We used it for building Reference Application based on pre 2.x Platform, but it is no longer needed. Please use the openmrs-emr2 branch for Reference Application.
+### Note that this branch is deprecated. We used it for building Reference Application based on pre 2.x Platform, but it is no longer needed. Please use the openmrs-emr2 branch for Reference Application.
 
 ## QUICK SUMMARY FOR BUILDING THE STANDALONE
 
