@@ -1,15 +1,12 @@
 ## QUICK SUMMARY FOR BUILDING THE STANDALONE
 
 * Increase the maven memory: e.g. export MAVEN_OPTS="-Xms1012m -Xmx2024m -XX:PermSize=556m -XX:MaxPermSize=1012m"
-* mvn clean
-* mvn package -Dopenmrs.version=1.9.0
-* If you are building standalone for OpenMRS 1.8.x you need to append the above command with -P1.8.x 
-and put in the main directory the Demo-1.8.0.sql file from https://wiki.openmrs.org/display/RES/Demo+Data
+* mvn clean package -Dopenmrs.version=2.0.5 -Drefapp.version=2.6.0
 * If running a second time, ALWAYS check to make sure mysql processes on port 3326 and 3328 are stopped. 
   If you DON'T do that, then the "mvn clean" will not really clean. 
   A good command to use is: "pkill -f standalone"  (kills anything with "standalone" in the path) 
 
--> output is in the target folder, as openmrs-standalone-(openmrs.version).zip
+-> output is in the target folder, as referenceapplkication-standalone-(refapp.version).zip
 -> the contents of that zip are in the similarly-named folder under /target, if you want to test in-place
 
 ## HOW TO RUN FROM ECLIPSE
