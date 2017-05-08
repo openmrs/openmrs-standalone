@@ -1,6 +1,8 @@
 OpenMRS Standalone provides a simplified, all-inclusive installation option with both an embedded database and web server.
 Read more at: https://wiki.openmrs.org/display/docs/OpenMRS+Standalone
 
+The master branch of the standalone repo is built by our CI as part of the Platform build at https://ci.openmrs.org/browse/OP and the openmrs-emr2 branch as part of the Reference Application build at https://ci.openmrs.org/browse/REFAPP-OMODDISTRO
+
 ## Overview
 The following guide describes how to build and run an OpenMRS standalone jar file for its different artifacts. You can create the standalone jar in two ways i.e. from command line by following "QUICK SUMMARY FOR BUILDING THE STANDALONE" or using eclipse by following "HOW TO RUN FROM ECLIPSE".  Compare your jar build size with the build sizes specified in "SOME ROUGH STATISTICS SO FAR" to verify there is no significant difference.
 
@@ -10,11 +12,8 @@ Make sure your file structure reflects the file structure specified in "DISTRIBU
 
 Depending on what OpenMRS software artifact you are releasing, you may need to check out a different branch of this code:
 
-* If you are building OpenMRS Platform 2.0+ => use the `master` branch
-* If you are building OpenMRS Platform 1.x => use the `pre_platform2` branch
-* If you are building OpenMRS Reference Application 2.x...
- * ... on top of Platform 1.x => use the `openmrs-emr` branch
- * ... on top of Platform 2.x => use the `openmrs-emr2` branch
+* If you are building OpenMRS Platform => use the `master` branch
+* If you are building OpenMRS Reference Application => use the `openmrs-emr2` branch
 
 ## QUICK SUMMARY FOR BUILDING THE STANDALONE
 
@@ -25,9 +24,8 @@ and put in the main directory the Demo-1.8.0.sql file from https://wiki.openmrs.
 If you do not see the one for your release, you can create it by loading the latest existing demo data file in its version of openmrs and then upgrade this version of
 openmrs to the one you are releasing. After the upgrade, you can then dump a sql file to serve as the demo data file for the new release. Then, update the value of the path attribute of the sqlPath tag in liquibase-demo-data.xml file to match the name of the demo data you just downloaded
 * Download the latest CIEL for OpenMRS 1.9.x (use 1.9.x regardless of the maintenance release version) as described [here](https://wiki.openmrs.org/x/ww4JAg).
-* Upload it to mavenrepo by running:
+* Upload it to mavenrepo by running (adjust the version and the file parameters to match the downloaded version of CIEL):
 `mvn deploy:deploy-file -DgroupId=org.openmrs.contrib -DartifactId=ciel-dictionary -Dversion=1.9.9-20170409 -Dpackaging=zip -Dfile=openmrs_concepts_1.9.9_20170409.sql.zip -DrepositoryId=openmrs-repo-contrib -Durl=https://mavenrepo.openmrs.org/nexus/content/repositories/contrib`
-Adjust the version and the file parameters to match the downloaded version of CIEL.
 * Update the CIEL version in pom.xml.
 * If running "mvn clean package" second time, ALWAYS check to make sure mysql processes on port 3326 and/or 3328 and/or 33326 are stopped. 
   If you DON'T do that, then the "mvn clean" will not really clean. 
