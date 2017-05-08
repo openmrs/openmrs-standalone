@@ -1,3 +1,5 @@
+# Note that this branch is deprecated. We used it for building Reference Application based on pre 2.x Platform, but it is no longer needed. Please use the openmrs-emr2 branch for Reference Application.
+
 ## QUICK SUMMARY FOR BUILDING THE STANDALONE
 
 * Increase the maven memory: e.g. export MAVEN_OPTS="-Xms1012m -Xmx2024m -XX:PermSize=556m -XX:MaxPermSize=1012m"
