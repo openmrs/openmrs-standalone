@@ -14,7 +14,7 @@
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<tomcat.version>7.0.50</tomcat.version>
 		<ciel.dictionary.openmrs.version>1.9.9</ciel.dictionary.openmrs.version>
-		<ciel.dictionary.version>20170409</ciel.dictionary.version>
+		<ciel.dictionary.version>20171118</ciel.dictionary.version>
 	</properties>
 
 	<dependencies>
