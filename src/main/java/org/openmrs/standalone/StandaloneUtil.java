@@ -383,10 +383,10 @@ public class StandaloneUtil {
 	 * Resets the connection.password in the runtime properties file to "test"
 	 */
 	public static void resetConnectionPassword() {
-		System.out.println("Resetting connection.password to 'test'");
+		System.out.println("Resetting connection.password to 'Admin123'");
 		Map<String, String> props = new HashMap<String, String>();
 		props.put("connection.username", "openmrs");
-		props.put("connection.password", "test");
+		props.put("connection.password", "Admin123");
 		updateRuntimeProperties(props);
 	}
 	
@@ -419,7 +419,7 @@ public class StandaloneUtil {
 
 		System.out.println("Working directory is " + new File(".").getAbsolutePath());
 		System.out.println("Opening MySQL connection to create openmrs/test users");
-    	Connection conn = DriverManager.getConnection(url, "openmrs", "test");
+    	Connection conn = DriverManager.getConnection(url, "openmrs", "Admin123");
     	conn.close();
     	System.out.println("closed MySQL connection");
     	stopMySqlServer();
