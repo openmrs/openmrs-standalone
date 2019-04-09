@@ -136,18 +136,23 @@ tomcat/logs							 This is where the log files are created with names having a c
 									
 splashscreen-loading.png			 This is the splash screen displayed on startup. It can be any .png as long as the name remains
 									 the same because it is hardcoded in the application.
-									 
+
+mysql					This is the mysql script that runs on Mac and Linux machines. This script allows a user to access the embedded MySQL server at a command line level.
+						To run this script, navigate to the standalone folder via command line and type "./mysql".
+
+mysql.cmd				This is the mysql scirpt that runs on Windows machines. This script allows a user to access the embedded MySQL server at a command line level.
+						To run this script, navigate to the standalone folder via command line and type "mysql", or double click on the mysql.cmd file.									 
 
 
 ............... DATABASE CONNECTION STRING.......................
 
-jdbc:mysql:mxj://localhost:3316/openmrs?autoReconnect=true&sessionVariables=storage_engine=InnoDB&useUnicode=true&characterEncoding=UTF-8&server.initialize-user=true&createDatabaseIfNotExist=true&server.basedir=database&server.datadir=database/data&server.collation-server=utf8_general_ci&server.character-set-server=utf8
+jdbc:mysql:mxj://localhost:3316/openmrs?autoReconnect=true&sessionVariables=storage_engine=InnoDB&useUnicode=true&characterEncoding=UTF-8&server.initialize-user=true&createDatabaseIfNotExist=true&server.basedir=database&server.datadir=database/data&server.collation-server=utf8_general_ci&server.character-set-server=utf8&server.socket=/tmp/openmrs*****.sock
 
 The above default database connection string has all in the openmrs mysql default database connection string plus a 
 few additional parameters as explained below:
 
-mxj             This is required for the MySQL Connector/MXJ utility which we use for embedding mysql
-				More information about it can be found at: http://dev.mysql.com/doc/refman/5.1/en/connector-mxj.html
+mxj             		This is required for the MySQL Connector/MXJ utility which we use for embedding mysql
+							More information about it can be found at: http://dev.mysql.com/doc/refman/5.1/en/connector-mxj.html
 				
 server.initialize-user      	The value of true tells the database engine to create the user account that will be specified
 						    	in the openmrs web database setup. This is the account referred to as 
@@ -155,10 +160,10 @@ server.initialize-user      	The value of true tells the database engine to crea
 						   
 createDatabaseIfNotExist    	The value of true tells the database engine to create the database if it does not exist.
 
-server.basedir 			    	This is the directory where the mysql database server will be installed. The default value
+server.basedir 			This is the directory where the mysql database server will be installed. The default value
 						    	is a database folder in the current directory where the executable jar file is located.
 			
-server.datadir    		    	This is the dirrectory where mysql stores the database. The default value is the data folder
+server.datadir    		This is the dirrectory where mysql stores the database. The default value is the data folder
 						    	under the database folder in the current directory where the executable jar file is located.
 						   
 server.collation-server     	This sets the collation of the database server. If you do not set it to this value, you will
@@ -166,6 +171,9 @@ server.collation-server     	This sets the collation of the database server. If 
 						    	collation yet openmrs uses utf8
 					
 server.character-set-server 	This is the character set used by the database server.
+
+server.socket			This is the server socket used by the database server on UNIX machines.
+							The asterisks are replaced with a randomly generated 5 digit number on initial startup.
 
 						   
 NOTE: When creating a new database using the openmrs database setup wizard, remember to replace the default connection string
@@ -180,9 +188,9 @@ NOTE: When creating a new database using the openmrs database setup wizard, reme
 Tomcat Port					This is the port at which to run tomcat.
 MySQL Port					This is the port at which to run mysql
 
-File -> Quit				This menu item stops tomcat and mysql and then closes the application.
-File -> Launch Browser		This menu item opens the openmrs login page for the current web application context.
-File -> Clear Output		This clears the output log in the user interface text area. But does not clear the log file
+File -> Quit					This menu item stops tomcat and mysql and then closes the application.
+File -> Launch Browser				This menu item opens the openmrs login page for the current web application context.
+File -> Clear Output				This clears the output log in the user interface text area. But does not clear the log file
 							written on the file system.
 
 Start						This button runs tomcat, which will automatically start the mysql database engine if it
@@ -203,8 +211,8 @@ NOTE: Minimizing or Maximizing the application window does not have any effect o
 Running from command line requires the -commandline switch.
 e.g. java -jar standalone-0.0.1-SNAPSHOT.jar -commandline
 
--mysqlport: 	Use to override the mysql port in the runtime properties file.
--tomcatport: 	Use to override the tomcat port in the runtime properties file.
+-mysqlport: 		Use to override the mysql port in the runtime properties file.
+-tomcatport: 		Use to override the tomcat port in the runtime properties file.
 start			Use to start the server.
 stop			Use to stop the server.
 browser			Use to launch a new browser instance.

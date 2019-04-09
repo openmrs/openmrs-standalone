@@ -43,35 +43,38 @@ import com.mysql.management.driverlaunched.ServerLauncherSocketFactory;
  * Utility routines used by the standalone application.
  */
 public class StandaloneUtil {
-	
+
 	public static final String KEY_CONNECTION_USERNAME = "connection.username";
 	public static final String KEY_CONNECTION_PASSWORD = "connection.password";
 	public static final String KEY_CONNECTION_URL = "connection.url";
+	public static final String KEY_CONNECTION_SOCKET = "connection.socket";
+	public static final String KEY_MYSQL_PORT = "mysqlport";
 	public static final String KEY_TOMCAT_PORT = "tomcatport";
 	public static final String KEY_RESET_CONNECTION_PASSWORD = "reset_connection_password";
-	
+	public static final String KEY_RESET_CONNECTION_URL = "reset_connection_url";
+
 	/**
 	 * The minimum number of server port number.
 	 */
 	public static final int MIN_PORT_NUMBER = 1;
-	
+
 	/**
 	 * The maximum number of server port number.
 	 */
 	public static final int MAX_PORT_NUMBER = 49151;
-	
+
 	private static String CONTEXT_NAME;
-	
+
 	/**
 	 * Checks to see if a specific port is available.
-	 * 
+	 *
 	 * @param port the port to check for availability
 	 */
 	public static boolean isPortAvailable(int port) {
-		
+
 		if ((port < MIN_PORT_NUMBER) || (port > MAX_PORT_NUMBER))
 			return false;
-		
+
 		ServerSocket ss = null;
 		DatagramSocket ds = null;
 		try {
@@ -79,15 +82,15 @@ public class StandaloneUtil {
 			ss.setReuseAddress(true);
 			ds = new DatagramSocket(port);
 			ds.setReuseAddress(true);
-			
+
 			try {
 				closeConnections(ss, ds);
-				
+
 				//Checking if port is open by trying to connect as a client;
-		        Socket socket = new Socket("127.0.0.1", port);          
+		        Socket socket = new Socket("127.0.0.1", port);
 		        socket.close();
 		        return false; //Someone responding on port - so not available;
-		    } catch (Exception e) {    
+		    } catch (Exception e) {
 		        //Connection refused, so port must be available
 		    }
 
@@ -97,14 +100,14 @@ public class StandaloneUtil {
 		finally {
 			closeConnections(ss, ds);
 		}
-		
+
 		return false;
 	}
-	
+
 	private static void closeConnections(ServerSocket ss, DatagramSocket ds) {
 		if (ds != null)
 			ds.close();
-		
+
 		if (ss != null) {
 			try {
 				ss.close();
@@ -112,32 +115,33 @@ public class StandaloneUtil {
 			catch (IOException e) {}
 		}
 	}
-	
+
 	/**
 	 * Changes the MySQL and tomcat ports in the run time properties file and also changes the mysql
 	 * password if it is "test".
-	 * 
+	 *
 	 * @param mySqlPort the mysql port number.
 	 * @param tomcatPort the tomcat port number.
 	 * @return the mysql port number. If supplied in the parameter, it will be the same, else the
 	 *         one in the connection string.
 	 */
 	public static String setPortsAndMySqlPassword(String mySqlPort, String tomcatPort) {
-		
+
 		InputStream input = null;
 		boolean propertiesFileChanged = false;
-		
+
 		try {
 			Properties properties = OpenmrsUtil.getRuntimeProperties(getContextName()); //new Properties();
-			
+
 			String connectionString = properties.getProperty(KEY_CONNECTION_URL);
 			String password = properties.getProperty(KEY_CONNECTION_PASSWORD);
 			String username = properties.getProperty(KEY_CONNECTION_USERNAME);
 			String resetConnectionPassword = properties.getProperty(KEY_RESET_CONNECTION_PASSWORD);
-			
+			String resetConnectionUrl = properties.getProperty(KEY_RESET_CONNECTION_URL);
+
 			//We change the mysql password only if it is test.
 			//if (password != null && password.toLowerCase().equals("test")) {
-			
+
 			//Change the mysql password if instructed to.
 			if ("true".equalsIgnoreCase(resetConnectionPassword)) {
 				String newPassword = "";
@@ -147,33 +151,59 @@ public class StandaloneUtil {
 				for (int x = 0; x < 12; x++) {
 					newPassword += chars.charAt(r.nextInt(chars.length()));
 				}
-				
+
 				if (setMysqlPassword(connectionString, username, password, newPassword)) {
 					properties.put(KEY_CONNECTION_PASSWORD, newPassword);
-					
+
 					//Now remove the reset connection password property such that we do not change the password again.
 					properties.remove(KEY_RESET_CONNECTION_PASSWORD);
-					
+
 					propertiesFileChanged = true;
 				}
 			}
-			
+
+			//Change the connection url to include unique socket directory for mac users running mysql script
+			if ("true".equalsIgnoreCase(resetConnectionUrl)) {
+				String newConnectionUrlTag = "";
+				String numbs = "0123456789";
+				Random r = new Random();
+
+				for (int x = 0; x < 5; x++) {
+					newConnectionUrlTag += numbs.charAt(r.nextInt(numbs.length()));
+				}
+
+				//This addition to connection string allows mac machines to connect to OpenMRS via the mysql script
+				String connectionSocket = "/tmp/openmrs" + newConnectionUrlTag + ".sock";
+				connectionString = connectionString + "&server.socket=" + connectionSocket;
+				properties.put(KEY_CONNECTION_URL, connectionString);
+				properties.put(KEY_CONNECTION_SOCKET, connectionSocket);
+				propertiesFileChanged = true;
+
+				//Now remove the reset connection url property such that we do not change the password again.
+				properties.remove(KEY_RESET_CONNECTION_URL);
+			}
+
 			String portToken = ":" + mySqlPort + "/";
-			
+
 			//in a string like this: jdbc:mysql:mxj://localhost:3306/openmrs?autoReconnect=true
 			//look for something like this :3306/
 			String regex = ":[0-9]+/";
 			Pattern pattern = Pattern.compile(regex);
 			Matcher matcher = pattern.matcher(connectionString);
-			
+
 			//Check if we have a port number to set.
 			if (mySqlPort != null) {
-				
+
 				//If the port has changed, then update the properties file with the new one.
 				if (!connectionString.contains(portToken)) {
 					connectionString = matcher.replaceAll(portToken);
 					properties.put(KEY_CONNECTION_URL, connectionString);
-					
+					propertiesFileChanged = true;
+				}
+
+				//If the MySQL port is not updated within the properties file, update it
+				if (!mySqlPort.equals(properties.get(KEY_MYSQL_PORT))) {
+					properties.put(KEY_MYSQL_PORT, mySqlPort);
 					propertiesFileChanged = true;
 				}
 			} else {
@@ -184,19 +214,21 @@ public class StandaloneUtil {
 					mySqlPort = mySqlPort.replace("/", "");
 				}
 			}
-			
+
+			//Check if we have a port number to add to properties
 			if (tomcatPort != null) {
+				//If the Tomcat port is not updated within the properties file, update it
 				if (!tomcatPort.equals(properties.get(KEY_TOMCAT_PORT))) {
 					properties.put(KEY_TOMCAT_PORT, tomcatPort);
 					propertiesFileChanged = true;
 				}
 			}
-			
+
 			//Write back properties file only if changed.
 			if (propertiesFileChanged) {
 				writeRuntimeProperties(properties);
 			}
-			
+
 		}
 		finally {
 			try {
@@ -205,13 +237,13 @@ public class StandaloneUtil {
 			}
 			catch (Exception ex) {}
 		}
-		
+
 		return mySqlPort;
 	}
-	
+
 	/**
      * Auto generated method comment
-     * 
+     *
      * @param properties
      */
     public static void writeRuntimeProperties(Properties properties) {
@@ -241,7 +273,7 @@ public class StandaloneUtil {
 
 	/**
 	 * Converts a string to an integer.
-	 * 
+	 *
 	 * @param value the string value.
 	 * @return the integer value.
 	 */
@@ -250,18 +282,18 @@ public class StandaloneUtil {
 			return Integer.parseInt(value);
 		}
 		catch (NumberFormatException ex) {}
-		
+
 		return 0;
 	}
-	
+
 	public static boolean launchBrowser(int port, String contextName) {
 		try {
-			// Before more Desktop API is used, first check 
-			// whether the API is supported by this particular 
+			// Before more Desktop API is used, first check
+			// whether the API is supported by this particular
 			// virtual machine (VM) on this particular host.
 			if (Desktop.isDesktopSupported()) {
 				Desktop desktop = Desktop.getDesktop();
-				
+
 				if (desktop.isSupported(Desktop.Action.BROWSE)) {
 					desktop.browse(new URI("http://localhost:" + port + "/" + contextName));
 					return true;
@@ -271,17 +303,17 @@ public class StandaloneUtil {
 		catch (Exception e) {
 			e.printStackTrace();
 		}
-		
+
 		return false;
 	}
-	
+
 	public static String getContextName() {
-		
+
 		if (CONTEXT_NAME == null) {
-			
+
 			// This is the path to the application's base directory
 			String path = getBaseDir();
-			
+
 			//Get the name of the war file in the tomcat/webapps folder.
 			//If no war file found, the just get the name of the folder.
 			path = path + File.separatorChar + "tomcat" + File.separatorChar + "webapps";
@@ -300,23 +332,23 @@ public class StandaloneUtil {
 				}
 			}
 		}
-		
+
 		return CONTEXT_NAME;
 	}
-	
+
 	private static boolean setMysqlPassword(String url, String username, String oldPassword, String newPassword) {
-		
+
 		Connection connection = null;
 		try {
 			Class.forName("com.mysql.jdbc.Driver").newInstance();
-			
+
 			String sql = "update mysql.user set password=PASSWORD('" + newPassword + "') where User='" + username + "';";
 			connection = DriverManager.getConnection(url, username, oldPassword);
 			Statement statement = connection.createStatement();
 			statement.executeUpdate(sql);
-			
+
 			StandaloneUtil.stopMySqlServer();
-			
+
 			return true;
 		}
 		catch (Exception ex) {
@@ -332,10 +364,10 @@ public class StandaloneUtil {
 				ex.printStackTrace();
 			}
 		}
-		
+
 		return false;
 	}
-	
+
 	public static void stopMySqlServer() {
 		try {
 			ServerLauncherSocketFactory.shutdown(new File("database"), new File("database/data"));
@@ -344,19 +376,19 @@ public class StandaloneUtil {
 			System.out.println("Cannot Stop MySQL" + exception.getMessage());
 		}
 	}
-	
+
 	/**
 	 * Gets the name of the running jar file, without the path.
-	 * 
+	 *
 	 * @return the name of the running jar file.
 	 */
 	public static String getJarFileName() {
 		return getJarPathName().getName();
 	}
-	
+
 	/**
 	 * Gets the full path and name of the running jar file.
-	 * 
+	 *
 	 * @return the full path and name of the jar file.
 	 */
 	private static File getJarPathName() {
@@ -366,20 +398,20 @@ public class StandaloneUtil {
 		catch (URISyntaxException ex) {
 			ex.printStackTrace();
 		}
-		
+
 		return null;
 	}
-	
+
 	/**
 	 * Gets the directory of the running jar file.
-	 * 
+	 *
 	 * @return the full path of the running jar file.
 	 */
 	private static String getBaseDir() {
 		String jarPathName = getJarPathName().getAbsolutePath();
 		return jarPathName.substring(0, jarPathName.lastIndexOf(File.separatorChar));
 	}
-	
+
 	/**
 	 * Resets the connection.password in the runtime properties file to "test"
 	 */
@@ -390,10 +422,10 @@ public class StandaloneUtil {
 		props.put("connection.password", "test");
 		updateRuntimeProperties(props);
 	}
-	
+
 	/**
 	 * Sets the given runtime properties, and re-saves the file
-	 * 
+	 *
 	 * @param newProps
 	 */
 	private static void updateRuntimeProperties(Map<String, String> newProps) {
@@ -401,11 +433,11 @@ public class StandaloneUtil {
 		properties.putAll(newProps);
 		writeRuntimeProperties(properties);
 	}
-	
-	
+
+
 	/**
 	 * Starts and stops MySQL, so that mxj can create the default user
-	 * @throws Exception 
+	 * @throws Exception
 	 */
 	public static void startupDatabaseToCreateDefaultUser() throws Exception {
     	try {
@@ -425,40 +457,40 @@ public class StandaloneUtil {
     	System.out.println("closed MySQL connection");
     	stopMySqlServer();
     }
-	
-	
+
+
 	/**
 	 * Sets the MySQL and Tomcat ports in the run time properties file.
-	 * 
+	 *
 	 * @param mySqlPort the mysql port number to set.
 	 * @param tomcatPort the Tomcat port number to set.
 	 * @return the mysql port number. If supplied in the parameter, it will be the same, else the
 	 *         one in the connection string.
 	 */
 	public static String setRuntimePropertiesFileMysqlAndTomcatPorts(String mySqlPort, String tomcatPort) {
-		
+
 		InputStream input = null;
 		boolean propertiesFileChanged = false;
-		
+
 		try {
 			Properties properties = OpenmrsUtil.getRuntimeProperties(getContextName()); //new Properties();
 			String connectionString = properties.getProperty(KEY_CONNECTION_URL);
 			String portToken = ":" + mySqlPort + "/";
-			
+
 			//in a string like this: jdbc:mysql:mxj://localhost:3306/openmrs?autoReconnect=true
 			//look for something like this :3306/
 			String regex = ":[0-9]+/";
 			Pattern pattern = Pattern.compile(regex);
 			Matcher matcher = pattern.matcher(connectionString);
-			
+
 			//Check if we have a mysql port number to set.
 			if (mySqlPort != null) {
-				
+
 				//If the mysql port has changed, then update the properties file with the new one.
 				if (!connectionString.contains(portToken)) {
 					connectionString = matcher.replaceAll(portToken);
 					properties.put(KEY_CONNECTION_URL, connectionString);
-					
+
 					propertiesFileChanged = true;
 				}
 			} else {
@@ -469,7 +501,7 @@ public class StandaloneUtil {
 					mySqlPort = mySqlPort.replace("/", "");
 				}
 			}
-			
+
 			//Set the Tomcat port
 			if (tomcatPort != null) {
 				if (!tomcatPort.equals(properties.get(KEY_TOMCAT_PORT))) {
@@ -477,12 +509,12 @@ public class StandaloneUtil {
 					propertiesFileChanged = true;
 				}
 			}
-			
+
 			//Write back properties file only if changed.
 			if (propertiesFileChanged) {
 				writeRuntimeProperties(properties);
 			}
-			
+
 		}
 		finally {
 			try {
@@ -491,7 +523,7 @@ public class StandaloneUtil {
 			}
 			catch (Exception ex) {}
 		}
-		
+
 		return mySqlPort;
 	}
 
