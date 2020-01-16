@@ -620,6 +620,11 @@
 				<enabled>false</enabled>
 			</snapshots>
 		</pluginRepository>
+		<pluginRepository>
+			<id>openmrs-repo-snapshots</id>
+			<name>OpenMRS Nexus Snapshots</name>
+			<url>http://mavenrepo.openmrs.org/nexus/content/repositories/snapshots</url>
+		</pluginRepository>
 	</pluginRepositories>
 
 </project>
