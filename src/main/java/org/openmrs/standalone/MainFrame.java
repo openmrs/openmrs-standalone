@@ -558,7 +558,7 @@ public class MainFrame extends javax.swing.JFrame implements ActionListener, Use
 		colorHelper(demoDatabase, new Color(136, 235, 148));
 		
 		final JButton emptyDatabase = new JButton(
-		        "<html><h3>Starter Implementation</h3>Configures OpenMRS with the MVP/CIEL dictionary, but without any patient data. If you are familiar with OpenMRS and want to start a new system, this is a good place to start.</html>",
+		        "<html><h3>Starter Implementation</h3>Configures OpenMRS with the CIEL dictionary, but without any patient data. If you are familiar with OpenMRS and want to start a new system, this is a good place to start.</html>",
 		        new ImageIcon(getClass().getResource("starter_impl.png")));
 		colorHelper(emptyDatabase, new Color(255, 243, 136));
 		

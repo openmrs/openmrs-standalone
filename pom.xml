@@ -80,7 +80,7 @@
 				<liquibasePluginArtifactId>liquibase-maven-plugin</liquibasePluginArtifactId>
 				<liquibasePluginVersion>2.0.1</liquibasePluginVersion>
 				<liquibaseDemoDataFileName>liquibase-demo-data.xml</liquibaseDemoDataFileName>
-				<liquibaseMVPDataFileName>liquibase-mvp-data.xml</liquibaseMVPDataFileName>
+				<liquibasecielDataFileName>liquibase-ciel-data.xml</liquibasecielDataFileName>
 				<liquibaseDemoDataFollowupFileName>liquibase-empty-changelog.xml</liquibaseDemoDataFollowupFileName>
 				<liquibaseEmptyDbFollowupFileName>liquibase-empty-changelog.xml</liquibaseEmptyDbFollowupFileName>
 			</properties>
@@ -97,7 +97,7 @@
 				<liquibasePluginArtifactId>liquibase-plugin</liquibasePluginArtifactId>
 				<liquibasePluginVersion>1.9.5.0</liquibasePluginVersion>
 				<liquibaseDemoDataFileName>liquibase-demo-data-18x.xml</liquibaseDemoDataFileName>
-				<liquibaseMVPDataFileName>liquibase-mvp-data-18x.xml</liquibaseMVPDataFileName>
+				<liquibasecielDataFileName>liquibase-ciel-data-18x.xml</liquibasecielDataFileName>
 				<liquibaseDemoDataFollowupFileName>liquibase-rename-helper-tables-18x.xml</liquibaseDemoDataFollowupFileName>
 				<liquibaseEmptyDbFollowupFileName>liquibase-rename-helper-tables-18x.xml</liquibaseEmptyDbFollowupFileName>
 			</properties>
@@ -223,11 +223,11 @@
 						</goals>
 					</execution>
 					<execution>
-						<id>empty-db-add-mvp-data</id>
+						<id>empty-db-add-ciel-data</id>
 						<phase>generate-resources</phase>
 						<configuration>
 							<driver>com.mysql.jdbc.Driver</driver>
-							<changeLogFile>${project.build.directory}/liquibase/${liquibaseMVPDataFileName}</changeLogFile>
+							<changeLogFile>${project.build.directory}/liquibase/${liquibasecielDataFileName}</changeLogFile>
 							<url><![CDATA[jdbc:mysql:mxj://127.0.0.1:33326/openmrs?autoReconnect=true&sessionVariables=storage_engine=InnoDB&useUnicode=true&characterEncoding=UTF-8&server.initialize-user=true&createDatabaseIfNotExist=true&server.basedir=${project.build.directory}/emptydatabase&server.datadir=${project.build.directory}/emptydatabase/data&server.collation-server=utf8_general_ci&server.character-set-server=utf8&server.max_allowed_packet=32M]]></url>
 							<username>openmrs</username>
 							<password>test</password>
@@ -468,7 +468,7 @@
 						</configuration>
 					</execution>
 					<execution>
-						<id>zip-mvp-data</id>
+						<id>zip-ciel-data</id>
 						<phase>package</phase>
 						<goals>
 							<goal>single</goal>
@@ -477,7 +477,7 @@
 							<finalName>emptydatabase</finalName>
 							<appendAssemblyId>false</appendAssemblyId>
 							<descriptors>
-								<descriptor>src/main/assembly/zip-mvp-data.xml</descriptor>
+								<descriptor>src/main/assembly/zip-ciel-data.xml</descriptor>
 							</descriptors>
 						</configuration>
 					</execution>
