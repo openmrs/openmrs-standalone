@@ -6,7 +6,7 @@ The master branch of the standalone repo is built by our CI as part of the Platf
 ## Overview
 The following guide describes how to build and run an OpenMRS standalone jar file for its different artifacts. You can create the standalone jar in two ways i.e. from command line by following "QUICK SUMMARY FOR BUILDING THE STANDALONE" or using eclipse by following "HOW TO RUN FROM ECLIPSE".  Compare your jar build size with the build sizes specified in "SOME ROUGH STATISTICS SO FAR" to verify there is no significant difference.
 
-Make sure your file structure reflects the file structure specified in "DISTRIBUTION FOLDER STRUCTURE (This is a MUST)" before running the jar file. Run your standalone jar either by double clicking the jar to follow "APPLICATION USER INTERFACE" or by following "HOW TO RUN FROM COMMAND LINE". Follow "HOW TO RESPOND TO THE OPENMRS SETUP WIZARD" for the OpenMRS setup in the browser. If you would also like to package a database with the standalone to make it more customized for a usecase please read "HOW TO GENERATE A DATABASE TO INCLUDE WITH A DISTIBUTION" section. 
+Make sure your file structure reflects the file structure specified in "DISTRIBUTION FOLDER STRUCTURE (This is a MUST)" before running the jar file. Run your standalone jar either by double clicking the jar to follow "APPLICATION USER INTERFACE" or by following "HOW TO RUN FROM COMMAND LINE". Follow "HOW TO RESPOND TO THE OPENMRS SETUP WIZARD" for the OpenMRS setup in the browser. If you would also like to package a database with the standalone to make it more customized for a usecase please read "HOW TO GENERATE A DATABASE TO INCLUDE WITH A DISTRIBUTION" section. 
 
 ## Which Branch to use?
 
