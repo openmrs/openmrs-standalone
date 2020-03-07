@@ -648,7 +648,12 @@
 		<repository>
 			<id>openmrs-repo</id>
 			<name>OpenMRS Nexus Repository</name>
-			<url>http://mavenrepo.openmrs.org/nexus/content/repositories/public</url>
+			<url>https://openmrs.jfrog.io/artifactory/releases</url>
+		</repository>
+		<repository>
+			<id>openmrs-public</id>
+			<name>OpenMRS Public Repository</name>
+			<url>https://openmrs.jfrog.io/artifactory/public</url>
 		</repository>
 	</repositories>
 
@@ -656,7 +661,12 @@
 		<pluginRepository>
 			<id>openmrs-repo</id>
 			<name>OpenMRS Nexus Repository</name>
-			<url>http://mavenrepo.openmrs.org/nexus/content/repositories/public</url>
+			<url>https://openmrs.jfrog.io/artifactory/releases</url>
+		</pluginRepository>
+		<pluginRepository>
+			<id>openmrs-public</id>
+			<name>OpenMRS Public Repository</name>
+			<url>https://openmrs.jfrog.io/artifactory/public</url>
 		</pluginRepository>
 	</pluginRepositories>
 
