@@ -177,8 +177,8 @@
 							<driver>com.mysql.jdbc.Driver</driver>
 							<changeLogFile>liquibase-schema-only.xml</changeLogFile>
 							<url><![CDATA[jdbc:mysql:mxj://${mysql.server.host}:${mysql.server.port}/${mysql.mrs.db}?autoReconnect=true&sessionVariables=storage_engine=InnoDB&useUnicode=true&characterEncoding=UTF-8&server.initialize-user=true&createDatabaseIfNotExist=true&server.basedir=${project.build.directory}/emptydatabase&server.datadir=${project.build.directory}/emptydatabase/data&server.collation-server=utf8_general_ci&server.character-set-server=utf8&server.max_allowed_packet=32M]]></url>
-							<username>openmrs</username>
-							<password>test</password>
+							<username>${mysql.user}</username>
+							<password>${mysql.password}</password>
 							<verbose>true</verbose>
 							<dropFirst>false</dropFirst>
 							<systemProperties>
@@ -203,8 +203,8 @@
 							<driver>com.mysql.jdbc.Driver</driver>
 							<changeLogFile>liquibase-core-data.xml</changeLogFile>
 							<url><![CDATA[jdbc:mysql:mxj://${mysql.server.host}:${mysql.server.port}/${mysql.mrs.db}?autoReconnect=true&sessionVariables=storage_engine=InnoDB&useUnicode=true&characterEncoding=UTF-8&server.initialize-user=true&createDatabaseIfNotExist=true&server.basedir=${project.build.directory}/emptydatabase&server.datadir=${project.build.directory}/emptydatabase/data&server.collation-server=utf8_general_ci&server.character-set-server=utf8&server.max_allowed_packet=32M]]></url>
-							<username>openmrs</username>
-							<password>test</password>
+							<username>${mysql.user}</username>
+							<password>${mysql.password}</password>
 							<verbose>true</verbose>
 							<dropFirst>false</dropFirst>
 							<systemProperties>
@@ -255,8 +255,8 @@
 							<driver>com.mysql.jdbc.Driver</driver>
 							<changeLogFile>liquibase-update-to-latest.xml</changeLogFile>
 							<url><![CDATA[jdbc:mysql:mxj://${mysql.server.host}:${mysql.server.port}/${mysql.mrs.db}?autoReconnect=true&sessionVariables=storage_engine=InnoDB&useUnicode=true&characterEncoding=UTF-8&server.initialize-user=true&createDatabaseIfNotExist=true&server.basedir=${project.build.directory}/emptydatabase&server.datadir=${project.build.directory}/emptydatabase/data&server.collation-server=utf8_general_ci&server.character-set-server=utf8&server.max_allowed_packet=32M]]></url>
-							<username>openmrs</username>
-							<password>test</password>
+							<username>${mysql.user}</username>
+							<password>${mysql.password}</password>
 							<verbose>true</verbose>
 							<dropFirst>false</dropFirst>
 							<systemProperties>
@@ -282,8 +282,8 @@
 							<driver>com.mysql.jdbc.Driver</driver>
 							<changeLogFile>${liquibaseEmptyDbFollowupFileName}</changeLogFile>
 							<url><![CDATA[jdbc:mysql:mxj://${mysql.server.host}:${mysql.server.port}/${mysql.mrs.db}?autoReconnect=true&sessionVariables=storage_engine=InnoDB&useUnicode=true&characterEncoding=UTF-8&server.initialize-user=true&createDatabaseIfNotExist=true&server.basedir=${project.build.directory}/emptydatabase&server.datadir=${project.build.directory}/emptydatabase/data&server.collation-server=utf8_general_ci&server.character-set-server=utf8&server.max_allowed_packet=32M]]></url>
-							<username>openmrs</username>
-							<password>test</password>
+							<username>${mysql.user}</username>
+							<password>${mysql.password}</password>
 							<verbose>true</verbose>
 							<dropFirst>false</dropFirst>
 							<systemProperties>
@@ -309,8 +309,8 @@
 							<driver>com.mysql.jdbc.Driver</driver>
 							<changeLogFile>${liquibaseDemoDataFileName}</changeLogFile>
 							<url><![CDATA[jdbc:mysql:mxj://${mysql.server.host}:${mysql.server.port}/${mysql.mrs.db}?autoReconnect=true&sessionVariables=storage_engine=InnoDB&useUnicode=true&characterEncoding=UTF-8&server.initialize-user=true&createDatabaseIfNotExist=true&server.basedir=${project.build.directory}/demodatabase&server.datadir=${project.build.directory}/demodatabase/data&server.collation-server=utf8_general_ci&server.character-set-server=utf8&server.max_allowed_packet=32M]]></url>
-							<username>openmrs</username>
-							<password>test</password>
+							<username>${mysql.user}</username>
+							<password>${mysql.password}</password>
 							<verbose>true</verbose>
 							<dropFirst>false</dropFirst>
 							<systemProperties>
@@ -335,8 +335,8 @@
 							<driver>com.mysql.jdbc.Driver</driver>
 							<changeLogFile>liquibase-update-to-latest.xml</changeLogFile>
 							<url><![CDATA[jdbc:mysql:mxj://${mysql.server.host}:${mysql.server.port}/${mysql.mrs.db}?autoReconnect=true&sessionVariables=storage_engine=InnoDB&useUnicode=true&characterEncoding=UTF-8&server.initialize-user=true&createDatabaseIfNotExist=true&server.basedir=${project.build.directory}/demodatabase&server.datadir=${project.build.directory}/demodatabase/data&server.collation-server=utf8_general_ci&server.character-set-server=utf8&server.max_allowed_packet=32M]]></url>
-							<username>openmrs</username>
-							<password>test</password>
+							<username>${mysql.user}</username>
+							<password>${mysql.password}</password>
 							<verbose>true</verbose>
 							<dropFirst>false</dropFirst>
 							<systemProperties>
@@ -361,8 +361,8 @@
 							<driver>com.mysql.jdbc.Driver</driver>
 							<changeLogFile>${liquibaseDemoDataFollowupFileName}</changeLogFile>
 							<url><![CDATA[jdbc:mysql:mxj://${mysql.server.host}:${mysql.server.port}/${mysql.mrs.db}?autoReconnect=true&sessionVariables=storage_engine=InnoDB&useUnicode=true&characterEncoding=UTF-8&server.initialize-user=true&createDatabaseIfNotExist=true&server.basedir=${project.build.directory}/demodatabase&server.datadir=${project.build.directory}/demodatabase/data&server.collation-server=utf8_general_ci&server.character-set-server=utf8&server.max_allowed_packet=32M]]></url>
-							<username>openmrs</username>
-							<password>test</password>
+							<username>${mysql.user}</username>
+							<password>${mysql.password}</password>
 							<verbose>true</verbose>
 							<dropFirst>false</dropFirst>
 							<systemProperties>
