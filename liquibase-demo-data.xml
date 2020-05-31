@@ -21,5 +21,13 @@
 			<column name="MD5SUM" type="varchar(35)" />
 		</ext:modifyColumn>
 	</changeSet>
-	   
+	
+	<changeSet id="drop-tribe-foreign-key-TRUNK-4492" author="dkayiwa">
+		<preConditions onFail="MARK_RAN">
+			<foreignKeyConstraintExists foreignKeyName="belongs_to_tribe" />
+		</preConditions>
+		<comment>Dropping foreign key on patient.tribe</comment>
+		<dropForeignKeyConstraint baseTableName="patient" constraintName="belongs_to_tribe" />
+	</changeSet>
+
 </databaseChangeLog>
