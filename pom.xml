@@ -1,22 +1,20 @@
-<project xmlns="http//maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+
+<project xmlns="http//maven.apache.org/POM/4.0.0"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
 	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
-
 	<groupId>org.openmrs</groupId>
 	<artifactId>standalone</artifactId>
 	<version>2.0.0-SNAPSHOT</version>
 	<packaging>jar</packaging>
-
 	<name>standalone</name>
 	<url>https://github.com/openmrs/openmrs-standalone</url>
-
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<tomcat.version>7.0.100</tomcat.version>
 		<ciel.dictionary.openmrs.version>1.9.9</ciel.dictionary.openmrs.version>
 		<ciel.dictionary.version>20171118</ciel.dictionary.version>
 	</properties>
-
 	<dependencies>
 		<dependency>
 			<groupId>org.openmrs.api</groupId>
@@ -57,19 +55,18 @@
 			<scope>compile</scope>
 		</dependency>
 		<dependency>
-			<groupId>mysql</groupId>
-			<artifactId>mysql-connector-mxj-fixed</artifactId>
-			<version>5.0.12</version>
+			<groupId>ch.vorburger.mariaDB4j</groupId>
+			<artifactId>mariaDB4j</artifactId>
+			<version>2.4.0</version>
 			<scope>compile</scope>
-		</dependency>
-		<dependency>
-			<groupId>mysql</groupId>
-			<artifactId>mysql-connector-mxj-db-files-fixed</artifactId>
-			<version>5.0.12-20170418</version>
-			<scope>compile</scope>
+         <!--This can combine all the newest driver to access all databases  -->
+		<!--	<dependency>
+				<groupId>org.craftercms.mariaDB4j</groupId>
+				<artifactId>mariaDB4j-db-win64</artifactId>
+				<version>2.4.0</version>
+			</dependency> -->
 		</dependency>
 	</dependencies>
-
 	<profiles>
 		<profile>
 			<id>default</id> <!-- for 1.9.x and up -->
@@ -79,7 +76,7 @@
 			<properties>
 				<liquibasePluginArtifactId>liquibase-maven-plugin</liquibasePluginArtifactId>
 				<liquibasePluginVersion>2.0.1</liquibasePluginVersion>
-				<liquibaseDemoDataFileName>liquibase-demo-data.xml</liquibaseDemoDataFileName>
+				<liquibaseDemoDataFileName>liquibase-demo-data.xml	</liquibaseDemoDataFileName>
 				<liquibasecielDataFileName>liquibase-ciel-data.xml</liquibasecielDataFileName>
 				<liquibaseDemoDataFollowupFileName>liquibase-empty-changelog.xml</liquibaseDemoDataFollowupFileName>
 				<liquibaseEmptyDbFollowupFileName>liquibase-empty-changelog.xml</liquibaseEmptyDbFollowupFileName>
@@ -103,10 +100,8 @@
 			</properties>
 		</profile>
 	</profiles>
-
 	<build>
 		<finalName>openmrs-standalone-${openmrs.version}</finalName>
-		
 		<plugins>
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
@@ -124,7 +119,8 @@
 									<message>openmrs.version property is missing. This should be
 										something like 1.9.0, 1.8.3, or 1.10-alpha. Add
 										-Dopenmrs.version=1.9.1. NOTE: If building for 1.8.x, also add
-										-P1.8.x</message>
+										-P1.8.x
+									</message>
 								</requireProperty>
 							</rules>
 							<fail>true</fail>
@@ -132,7 +128,6 @@
 					</execution>
 				</executions>
 			</plugin>
-
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-compiler-plugin</artifactId>
@@ -142,7 +137,76 @@
 					<target>1.6</target>
 				</configuration>
 			</plugin>
-			
+			<plugin>
+				<groupId>ch.vorburger.mariaDB4j</groupId>
+				<artifactId>mariaDB4j-maven-plugin</artifactId>
+				<configuration>
+					<databaseName>openmrs</databaseName>
+					<baseDir>${project.build.directory}</baseDir>
+					<dataDir>${project.build.directory}/emptydatabase/data</dataDir>
+					<port>33326</port>
+					<scripts>
+						<script>src/main/resources/setup-openmrs-user.sql</script>
+					</scripts>
+					<args>
+						<arg>--character-set-server=utf8</arg>
+						<arg>--collation-server=utf8_general_ci</arg>
+						<!-- 33554432 ~= 32M -->
+						<arg>--max-allowed-packet=33554432</arg>
+					</args>
+				</configuration>
+				<executions>
+					<execution>
+						<id>start-empty-db</id>
+						<phase>generate-resources</phase>
+						<goals>
+							<goal>start</goal>
+						</goals>
+					</execution>
+					<execution>
+						<id>stop-empty-db</id>
+						<phase>process-resources</phase>
+						<goals>
+							<goal>stop</goal>
+						</goals>
+					</execution>
+				</executions>
+			</plugin>
+			<plugin>
+				<groupId>ch.vorburger.mariaDB4j</groupId>
+				<artifactId>mariaDB4j-maven-plugin</artifactId>
+				<configuration>
+					<databaseName>openmrs</databaseName>
+					<port>33328</port>
+					<scripts>
+						<script>src/main/resources/setup-openmrs-user.sql</script>
+					</scripts>
+					<args>
+						<arg>--basedir=${project.build.directory}</arg>
+						<arg>--datadir=${project.build.directory}/emptydatabase/data</arg>
+						<arg>--character-set-server=utf8</arg>
+						<arg>--collation-server=utf8_general_ci</arg>
+						<!-- 33554432 ~= 32M -->
+						<arg>--max-allowed-packet=33554432</arg>
+					</args>
+				</configuration>
+				<executions>
+					<execution>
+						<id>start-empty-db</id>
+						<phase>generate-resources</phase>
+						<goals>
+							<goal>start</goal>
+						</goals>
+					</execution>
+					<execution>
+						<id>stop-empty-db</id>
+						<phase>process-resources</phase>
+						<goals>
+							<goal>stop</goal>
+						</goals>
+					</execution>
+				</executions>
+			</plugin>
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-resources-plugin</artifactId>
@@ -153,19 +217,19 @@
 						<goals>
 							<goal>copy-resources</goal>
 						</goals>
-							<configuration>
-								<outputDirectory>${project.build.directory}/liquibase</outputDirectory>
-								<resources>
-									<resource>
-										<directory>src/main/liquibase</directory>
-										<filtering>true</filtering>
-									</resource>
-								</resources>
-							</configuration>
+						<configuration>
+							<outputDirectory>${project.build.directory}/liquibase
+							</outputDirectory>
+							<resources>
+								<resource>
+									<directory>src/main/liquibase</directory>
+									<filtering>true</filtering>
+								</resource>
+							</resources>
+						</configuration>
 					</execution>
 				</executions>
 			</plugin>
-			
 			<plugin>
 				<groupId>org.liquibase</groupId>
 				<artifactId>${liquibasePluginArtifactId}</artifactId>
@@ -176,7 +240,7 @@
 						<configuration>
 							<driver>com.mysql.jdbc.Driver</driver>
 							<changeLogFile>liquibase-schema-only.xml</changeLogFile>
-							<url><![CDATA[jdbc:mysql:mxj://127.0.0.1:33326/openmrs?autoReconnect=true&sessionVariables=storage_engine=InnoDB&useUnicode=true&characterEncoding=UTF-8&server.initialize-user=true&createDatabaseIfNotExist=true&server.basedir=${project.build.directory}/emptydatabase&server.datadir=${project.build.directory}/emptydatabase/data&server.collation-server=utf8_general_ci&server.character-set-server=utf8&server.max_allowed_packet=32M]]></url>
+							<url><![CDATA[jdbc:mysql://127.0.0.1:33326/openmrs?autoReconnect=true&sessionVariables=storage_engine=InnoDB&useUnicode=true&characterEncoding=UTF-8&server.initialize-user=true&createDatabaseIfNotExist=true&server.basedir=${project.build.directory}/emptydatabase&server.datadir=${project.build.directory}/emptydatabase/data&server.collation-server=utf8_general_ci&server.character-set-server=utf8&server.max_allowed_packet=32M]]></url>
 							<username>openmrs</username>
 							<password>test</password>
 							<verbose>true</verbose>
@@ -202,7 +266,7 @@
 						<configuration>
 							<driver>com.mysql.jdbc.Driver</driver>
 							<changeLogFile>liquibase-core-data.xml</changeLogFile>
-							<url><![CDATA[jdbc:mysql:mxj://127.0.0.1:33326/openmrs?autoReconnect=true&sessionVariables=storage_engine=InnoDB&useUnicode=true&characterEncoding=UTF-8&server.initialize-user=true&createDatabaseIfNotExist=true&server.basedir=${project.build.directory}/emptydatabase&server.datadir=${project.build.directory}/emptydatabase/data&server.collation-server=utf8_general_ci&server.character-set-server=utf8&server.max_allowed_packet=32M]]></url>
+							<url><![CDATA[jdbc:mysql://127.0.0.1:33326/openmrs?autoReconnect=true&sessionVariables=storage_engine=InnoDB&useUnicode=true&characterEncoding=UTF-8&server.initialize-user=true&createDatabaseIfNotExist=true&server.basedir=${project.build.directory}/emptydatabase&server.datadir=${project.build.directory}/emptydatabase/data&server.collation-server=utf8_general_ci&server.character-set-server=utf8&server.max_allowed_packet=32M]]></url>
 							<username>openmrs</username>
 							<password>test</password>
 							<verbose>true</verbose>
@@ -227,8 +291,9 @@
 						<phase>generate-resources</phase>
 						<configuration>
 							<driver>com.mysql.jdbc.Driver</driver>
-							<changeLogFile>${project.build.directory}/liquibase/${liquibasecielDataFileName}</changeLogFile>
-							<url><![CDATA[jdbc:mysql:mxj://127.0.0.1:33326/openmrs?autoReconnect=true&sessionVariables=storage_engine=InnoDB&useUnicode=true&characterEncoding=UTF-8&server.initialize-user=true&createDatabaseIfNotExist=true&server.basedir=${project.build.directory}/emptydatabase&server.datadir=${project.build.directory}/emptydatabase/data&server.collation-server=utf8_general_ci&server.character-set-server=utf8&server.max_allowed_packet=32M]]></url>
+							<changeLogFile>${project.build.directory}/liquibase/${liquibasecielDataFileName}
+							</changeLogFile>
+							<url><![CDATA[jdbc:mysql://127.0.0.1:33326/openmrs?autoReconnect=true&sessionVariables=storage_engine=InnoDB&useUnicode=true&characterEncoding=UTF-8&server.initialize-user=true&createDatabaseIfNotExist=true&server.basedir=${project.build.directory}/emptydatabase&server.datadir=${project.build.directory}/emptydatabase/data&server.collation-server=utf8_general_ci&server.character-set-server=utf8&server.max_allowed_packet=32M]]></url>
 							<username>openmrs</username>
 							<password>test</password>
 							<verbose>true</verbose>
@@ -254,7 +319,7 @@
 						<configuration>
 							<driver>com.mysql.jdbc.Driver</driver>
 							<changeLogFile>liquibase-update-to-latest.xml</changeLogFile>
-							<url><![CDATA[jdbc:mysql:mxj://127.0.0.1:33326/openmrs?autoReconnect=true&sessionVariables=storage_engine=InnoDB&useUnicode=true&characterEncoding=UTF-8&server.initialize-user=true&createDatabaseIfNotExist=true&server.basedir=${project.build.directory}/emptydatabase&server.datadir=${project.build.directory}/emptydatabase/data&server.collation-server=utf8_general_ci&server.character-set-server=utf8&server.max_allowed_packet=32M]]></url>
+							<url><![CDATA[jdbc:mysql://127.0.0.1:33326/openmrs?autoReconnect=true&sessionVariables=storage_engine=InnoDB&useUnicode=true&characterEncoding=UTF-8&server.initialize-user=true&createDatabaseIfNotExist=true&server.basedir=${project.build.directory}/emptydatabase&server.datadir=${project.build.directory}/emptydatabase/data&server.collation-server=utf8_general_ci&server.character-set-server=utf8&server.max_allowed_packet=32M]]></url>
 							<username>openmrs</username>
 							<password>test</password>
 							<verbose>true</verbose>
@@ -274,14 +339,14 @@
 							<goal>update</goal>
 						</goals>
 					</execution>
-
 					<execution>
 						<id>empty-db-followup</id>
 						<phase>generate-resources</phase>
 						<configuration>
 							<driver>com.mysql.jdbc.Driver</driver>
-							<changeLogFile>${liquibaseEmptyDbFollowupFileName}</changeLogFile>
-							<url><![CDATA[jdbc:mysql:mxj://127.0.0.1:33326/openmrs?autoReconnect=true&sessionVariables=storage_engine=InnoDB&useUnicode=true&characterEncoding=UTF-8&server.initialize-user=true&createDatabaseIfNotExist=true&server.basedir=${project.build.directory}/emptydatabase&server.datadir=${project.build.directory}/emptydatabase/data&server.collation-server=utf8_general_ci&server.character-set-server=utf8&server.max_allowed_packet=32M]]></url>
+							<changeLogFile>${liquibaseEmptyDbFollowupFileName}
+							</changeLogFile>
+							<url><![CDATA[jdbc:mysql://127.0.0.1:33326/openmrs?autoReconnect=true&sessionVariables=storage_engine=InnoDB&useUnicode=true&characterEncoding=UTF-8&server.initialize-user=true&createDatabaseIfNotExist=true&server.basedir=${project.build.directory}/emptydatabase&server.datadir=${project.build.directory}/emptydatabase/data&server.collation-server=utf8_general_ci&server.character-set-server=utf8&server.max_allowed_packet=32M]]></url>
 							<username>openmrs</username>
 							<password>test</password>
 							<verbose>true</verbose>
@@ -301,14 +366,13 @@
 							<goal>update</goal>
 						</goals>
 					</execution>
-
 					<execution>
 						<id>demo-db-add-data</id>
 						<phase>generate-resources</phase>
 						<configuration>
 							<driver>com.mysql.jdbc.Driver</driver>
 							<changeLogFile>${liquibaseDemoDataFileName}</changeLogFile>
-							<url><![CDATA[jdbc:mysql:mxj://127.0.0.1:33328/openmrs?autoReconnect=true&sessionVariables=storage_engine=InnoDB&useUnicode=true&characterEncoding=UTF-8&server.initialize-user=true&createDatabaseIfNotExist=true&server.basedir=${project.build.directory}/demodatabase&server.datadir=${project.build.directory}/demodatabase/data&server.collation-server=utf8_general_ci&server.character-set-server=utf8&server.max_allowed_packet=32M]]></url>
+							<url><![CDATA[jdbc:mysql://127.0.0.1:33328/openmrs?autoReconnect=true&sessionVariables=storage_engine=InnoDB&useUnicode=true&characterEncoding=UTF-8&server.initialize-user=true&createDatabaseIfNotExist=true&server.basedir=${project.build.directory}/demodatabase&server.datadir=${project.build.directory}/demodatabase/data&server.collation-server=utf8_general_ci&server.character-set-server=utf8&server.max_allowed_packet=32M]]></url>
 							<username>openmrs</username>
 							<password>test</password>
 							<verbose>true</verbose>
@@ -359,8 +423,9 @@
 						<phase>generate-resources</phase>
 						<configuration>
 							<driver>com.mysql.jdbc.Driver</driver>
-							<changeLogFile>${liquibaseDemoDataFollowupFileName}</changeLogFile>
-							<url><![CDATA[jdbc:mysql:mxj://127.0.0.1:33328/openmrs?autoReconnect=true&sessionVariables=storage_engine=InnoDB&useUnicode=true&characterEncoding=UTF-8&server.initialize-user=true&createDatabaseIfNotExist=true&server.basedir=${project.build.directory}/demodatabase&server.datadir=${project.build.directory}/demodatabase/data&server.collation-server=utf8_general_ci&server.character-set-server=utf8&server.max_allowed_packet=32M]]></url>
+							<changeLogFile>${liquibaseDemoDataFollowupFileName}
+							</changeLogFile>
+							<url><![CDATA[jdbc:mysql://127.0.0.1:33328/openmrs?autoReconnect=true&sessionVariables=storage_engine=InnoDB&useUnicode=true&characterEncoding=UTF-8&server.initialize-user=true&createDatabaseIfNotExist=true&server.basedir=${project.build.directory}/demodatabase&server.datadir=${project.build.directory}/demodatabase/data&server.collation-server=utf8_general_ci&server.character-set-server=utf8&server.max_allowed_packet=32M]]></url>
 							<username>openmrs</username>
 							<password>test</password>
 							<verbose>true</verbose>
@@ -429,7 +494,6 @@
 					</execution>
 				</executions>
 			</plugin>
-
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-assembly-plugin</artifactId>
@@ -498,7 +562,6 @@
 				</executions>
 			</plugin>
 		</plugins>
-
 		<pluginManagement>
 			<plugins>
 				<plugin>
@@ -511,13 +574,11 @@
 					<artifactId>maven-compiler-plugin</artifactId>
 					<version>2.3.2</version>
 				</plugin>
-				
 				<plugin>
 					<groupId>org.apache.maven.plugins</groupId>
 					<artifactId>maven-resources-plugin</artifactId>
 					<version>3.0.2</version>
 				</plugin>
-				
 				<plugin>
 					<groupId>org.apache.maven.plugins</groupId>
 					<artifactId>maven-dependency-plugin</artifactId>
@@ -556,7 +617,8 @@
 						<dependency>
 							<groupId>org.openmrs.contrib</groupId>
 							<artifactId>ciel-dictionary</artifactId>
-							<version>${ciel.dictionary.openmrs.version}-${ciel.dictionary.version}</version>
+							<version>${ciel.dictionary.openmrs.version}-${ciel.dictionary.version}
+							</version>
 							<type>zip</type>
 						</dependency>
 					</dependencies>
@@ -571,7 +633,6 @@
 					<artifactId>maven-assembly-plugin</artifactId>
 					<version>2.3</version>
 				</plugin>
-
 				<!--This plugin's configuration is used to store Eclipse m2e settings 
 					only. It has no influence on the Maven build itself. -->
 				<plugin>
@@ -643,21 +704,19 @@
 			</plugins>
 		</pluginManagement>
 	</build>
-
 	<repositories>
 		<repository>
 			<id>openmrs-repo</id>
 			<name>OpenMRS Nexus Repository</name>
-			<url>http://mavenrepo.openmrs.org/nexus/content/repositories/public</url>
+			<url>http://mavenrepo.openmrs.org/nexus/content/repositories/public
+			</url>
 		</repository>
 	</repositories>
-
 	<pluginRepositories>
 		<pluginRepository>
 			<id>openmrs-repo</id>
 			<name>OpenMRS Nexus Repository</name>
-			<url>http://mavenrepo.openmrs.org/nexus/content/repositories/public</url>
+		    <url>http://mavenrepo.openmrs.org/nexus/content/repositories/public</url>
 		</pluginRepository>
 	</pluginRepositories>
-
 </project>
