@@ -12,9 +12,10 @@
 
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+		<openmrs.version>2.3.1</openmrs.version>
 		<tomcat.version>7.0.100</tomcat.version>
 		<ciel.dictionary.openmrs.version>1.9.9</ciel.dictionary.openmrs.version>
-		<ciel.dictionary.version>20171118</ciel.dictionary.version>
+		<ciel.dictionary.version>20200822</ciel.dictionary.version>
 	</properties>
 
 	<dependencies>
