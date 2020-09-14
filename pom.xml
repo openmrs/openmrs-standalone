@@ -664,6 +664,11 @@
 			<name>OpenMRS Nexus Repository</name>
 			<url>http://mavenrepo.openmrs.org/nexus/content/repositories/public</url>
 		</pluginRepository>
+		<pluginRepository>
+			<id>openmrs-contrib</id>
+			<name>OpenMRS Nexus Repository</name>
+			<url>http://mavenrepo.openmrs.org/nexus/content/repositories/contrib</url>
+		</pluginRepository>
 	</pluginRepositories>
 
 </project>
