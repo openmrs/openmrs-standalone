@@ -401,7 +401,6 @@ public class StandaloneUtil {
 		writeRuntimeProperties(properties);
 	}
 	
-	
 	/**
 	 * Starts and stops MySQL, so that mxj can create the default user
 	 * @throws Exception 

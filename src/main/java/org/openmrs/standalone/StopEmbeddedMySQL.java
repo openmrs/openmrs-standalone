@@ -1,3 +1,5 @@
+
+
 /**
  * The contents of this file are subject to the OpenMRS Public License
  * Version 1.0 (the "License"); you may not use this file except in
@@ -16,7 +18,6 @@ package org.openmrs.standalone;
 import java.io.File;
 
 import com.mysql.management.driverlaunched.ServerLauncherSocketFactory;
-
 /**
  * It is used to stop embedded database.
  */
@@ -29,6 +30,6 @@ public class StopEmbeddedMySQL {
 		
 		for (int i = 0; i < args.length; i++) {
 			ServerLauncherSocketFactory.shutdown(new File(args[i]), null);
-        }
+      }
 	}
 }
