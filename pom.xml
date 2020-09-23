@@ -79,7 +79,7 @@
 			</activation>
 			<properties>
 				<liquibasePluginArtifactId>liquibase-maven-plugin</liquibasePluginArtifactId>
-				<liquibasePluginVersion>2.0.1</liquibasePluginVersion>
+				<liquibasePluginVersion>3.10.2</liquibasePluginVersion>
 				<liquibaseDemoDataFileName>liquibase-demo-data.xml</liquibaseDemoDataFileName>
 				<liquibasecielDataFileName>liquibase-ciel-data.xml</liquibasecielDataFileName>
 				<liquibaseDemoDataFollowupFileName>liquibase-empty-changelog.xml</liquibaseDemoDataFollowupFileName>
