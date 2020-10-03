@@ -1,11 +1,34 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
-	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:ext="http://www.liquibase.org/xml/ns/dbchangelog-ext"
-	xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-2.0.xsd
-    http://www.liquibase.org/xml/ns/dbchangelog-ext http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-ext.xsd">
+	xmlns:ext="http://www.liquibase.org/xml/ns/dbchangelog-ext"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog-ext
+		http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-ext.xsd
+		http://www.liquibase.org/xml/ns/dbchangelog
+		http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-2.0.xsd">
+
+	<!--
+		The table "concept_set_derived" was removed in openmrs-api version 2.0.
+
+		Dropping the table was extracted into a separate change set to allow for
+		adding the precondition.
+	 -->
+	<changeSet id="20201003-1000" author="standalone" dbms="mysql">
+		<preConditions onFail="MARK_RAN">
+			<tableExists tableName="concept_set_derived"/>
+		</preConditions>
+		<comment>Preparing schema for adding ciel data</comment>
+
+		<sql>SET FOREIGN_KEY_CHECKS=0</sql>
+
+		<dropTable tableName="concept_set_derived"/>
+
+		<sql>SET FOREIGN_KEY_CHECKS=1</sql>
+	</changeSet>
 
 	<changeSet id="20120315-1000" author="standalone" dbms="mysql">
 		<validCheckSum>3:dc136a76a36273b5cdb2f47b0eb24522</validCheckSum>
+		<validCheckSum>8:842f411a0f413d97a8aae085bdd90c95</validCheckSum>
 		<comment>Preparing schema for adding ciel data</comment>
 
 		<sql>SET FOREIGN_KEY_CHECKS=0</sql>
@@ -20,7 +43,7 @@
 		<dropTable tableName="concept_name_tag" />
 		<dropTable tableName="concept_name_tag_map" />
 		<dropTable tableName="concept_numeric" />
-		<!-- <dropTable tableName="concept_proposal" /> not contained in the ciel			dict -->
+		<!-- <dropTable tableName="concept_proposal" /> not contained in the ciel dict -->
 		<!-- <dropTable tableName="concept_proposal_tag_map" /> not contained in 
 			the ciel dict -->
 		<dropTable tableName="concept_reference_map" />
@@ -28,9 +51,8 @@
 		<dropTable tableName="concept_reference_term" />
 		<dropTable tableName="concept_reference_term_map" />
 		<dropTable tableName="concept_set" />
-		<dropTable tableName="concept_set_derived" />
 		<dropTable tableName="concept_state_conversion" ></dropTable>
-		<!-- <dropTable tableName="concept_stop_word" /> not contained in the ciel			dict -->
+		<!-- <dropTable tableName="concept_stop_word" /> not contained in the ciel dict -->
 
 		<delete tableName="liquibasechangelog">
 			<where>id="20110919-0638" or id="20110301-1030c-fix"</where>
@@ -40,8 +62,8 @@
 			<!-- Skip this changeset since it is unnecessary and takes too long -->
 			insert into liquibasechangelog values('200905150821', 'bwolfe',
 			'liquibase-update-to-latest.xml', '2012-03-15 11:00:00', 10242,
-			'EXECUTED', '3:c0b7abc7eb00f243325b4a3fb2afc614', 'Custom SQL',
-			'Deleting duplicate concept word keys', NULL, '3.10.2', NULL, NULL, NULL)
+			'EXECUTED', '8:096845d15f847ebefb86fec52322ee8f', 'Custom SQL',
+			'Deleting duplicate concept word keys', NULL, '3.10.2', NULL, NULL, NULL);
 		</sql>
 
 		<sql>SET FOREIGN_KEY_CHECKS=1</sql>
@@ -52,10 +74,10 @@
 		<comment>Adding ciel data</comment>
 		<sqlFile path="openmrs_concepts_${ciel.dictionary.openmrs.version}_${ciel.dictionary.version}.sql" encoding="UTF-8" />
 
-		<!-- We need to make the liquibasechangelog table modifications to 2.0.x 
-			within this changeset because the one in demo data was created with version 
-			1.9.x, so that liquibase doesn't fail when entering this changeset into table 
-			because of the missing columns that are required. See http://www.liquibase.org/download 
+		<!-- We need to make the liquibasechangelog table modifications to 2.0.x
+			within this changeset because the one in demo data was created with version
+			1.9.x, so that liquibase doesn't fail when entering this changeset into table
+			because of the missing columns that are required. See http://www.liquibase.org/download
 			for more details. -->
 
 		<ext:modifyColumn tableName="liquibasechangelog">
@@ -68,53 +90,53 @@
 			<!-- Skip these changesets because the concept_word table does not exist in mvp data -->
 			insert into liquibasechangelog values('200905150814', 'bwolfe',
 			'liquibase-update-to-latest.xml', '2012-03-15 11:00:00', 10069,
-			'EXECUTED', '3:44c729b393232d702553e0768cf94994', 'Delete Data',
+			'EXECUTED', '8:d4325318f852b3ede2798d3a08f42088', 'Delete Data',
 			'Deleting invalid concept words', NULL, '3.10.2', NULL, NULL, NULL);
 			
 			insert into liquibasechangelog values('200905071626', 'bwolfe',
 			'liquibase-update-to-latest.xml', '2012-03-15 11:00:00', 10070,
-			'EXECUTED', '3:d29884c3ef8fd867c3c2ffbd557c14c2', 'Create Index',
+			'EXECUTED', '8:56e2d2bb15a004bd5ac5bf362e7e3f82', 'Create Index',
 			'Add an index to the concept_word.concept_id column (This update may fail if it already exists)', NULL, '3.10.2', NULL, NULL, NULL);
 			
 			insert into liquibasechangelog values('20090414-0811a', 'bwolfe',
 			'liquibase-update-to-latest.xml', '2012-03-15 11:00:00', 10234,
-			'EXECUTED', '3:f027a0ad38c0f6302def391da78aaaee', 'Drop Foreign Key Constraint',
+			'EXECUTED', '8:a996aae13913281567000b04221e17b4', 'Drop Foreign Key Constraint',
 			'Dropping foreign key on concept_word.concept_id column', NULL, '3.10.2', NULL, NULL, NULL);
 			
 			insert into liquibasechangelog values('20090428-0811aa', 'bwolfe',
 			'liquibase-update-to-latest.xml', '2012-03-15 11:00:00', 10235,
-			'EXECUTED', '3:58d8f3df1fe704714a7b4957a6c0e7f7', 'Drop Foreign Key Constraint',
+			'EXECUTED', '8:210185827394b8982208a79333b4c33f', 'Drop Foreign Key Constraint',
 			'Removing concept_word.concept_name_id foreign key so that primary key can be changed to concept_word_id', NULL, '3.10.2', NULL, NULL, NULL);
 
 			insert into liquibasechangelog values('20090414-0811b', 'bwolfe',
 			'liquibase-update-to-latest.xml', '2012-03-15 11:00:00', 10236,
-			'EXECUTED', '3:982d502e56854922542286cead4c09ce', 'Drop Primary Key',
+			'EXECUTED', '8:68201f30b43cec5ad62a2c0ad1ef8cf3', 'Drop Primary Key',
 			'Dropping non-integer primary key on concept word table before adding new integer one', NULL, '3.10.2', NULL, NULL, NULL);
 			
 			insert into liquibasechangelog values('20090414-0812', 'bwolfe',
 			'liquibase-update-to-latest.xml', '2012-03-15 11:00:00', 10237,
-			'EXECUTED', '3:948e635fe3f63122856ca9b8a174352b', 'Add Column',
+			'EXECUTED', '8:be261ff12facaf51c32cbd2c442149ce', 'Add Column',
 			'Adding integer primary key to concept word table', NULL, '3.10.2', NULL, NULL, NULL);
 
 			insert into liquibasechangelog values('20090414-0812b', 'bwolfe',
 			'liquibase-update-to-latest.xml', '2012-03-15 11:00:00', 10238,
-			'EXECUTED', '3:bd7731e58f3db9b944905597a08eb6cb', 'Add Foreign Key Constraint',
+			'EXECUTED', '8:6a9f6449f288592ea5e47bae65986340', 'Add Foreign Key Constraint',
 			'Re-adding foreign key for concept_word.concept_name_id', NULL, '3.10.2', NULL, NULL, NULL);
 
 			insert into liquibasechangelog values('20090428-0854', 'bwolfe',
 			'liquibase-update-to-latest.xml', '2012-03-15 11:00:00', 10239,
-			'EXECUTED', '3:11086a37155507c0238c9532f66b172b', 'Add Foreign Key Constraint',
+			'EXECUTED', '8:1ad9516c3ccff7c5d0f2c4d0ccb4d820', 'Add Foreign Key Constraint',
 			'Adding foreign key for concept_word.concept_id column', NULL, '3.10.2', NULL, NULL, NULL);
 
 			insert into liquibasechangelog values('200904271042', 'bwolfe',
 			'liquibase-update-to-latest.xml', '2012-03-15 11:00:00', 10241,
-			'EXECUTED', '3:db63ce704aff4741c52181d1c825ab62', 'Drop Column',
+			'EXECUTED', '8:63e5f7ca7868c45cda0fcb1250323e00', 'Drop Column',
 			'Remove the now unused synonym column', NULL, '3.10.2', NULL, NULL, NULL);
 			
 			insert into liquibasechangelog values('20101209-1721', 'bwolfe',
 			'liquibase-update-to-latest.xml', '2012-03-15 11:00:00', 10357,
 			'EXECUTED', '3:351460e0f822555b77acff1a89bec267', 'Add Column',
-			'Add weight column to concept_word table', NULL, '3.10.2', NULL, NULL, NULL);	
+			'Add weight column to concept_word table', NULL, '3.10.2', NULL, NULL, NULL);
 			
 			insert into liquibasechangelog values('20101209-1722', 'bwolfe',
 			'liquibase-update-to-latest.xml', '2012-03-15 11:00:00', 10358,
@@ -129,8 +151,8 @@
 			<!-- Skip this changeset because the concept_set_derived table does not exist in mvp data -->
 			insert into liquibasechangelog values('200907161638-4', 'bwolfe',
 			'liquibase-update-to-latest.xml', '2012-03-15 11:00:00', 10248,
-			'EXECUTED', '3:3ffccaa291298fea317eb7025c058492', 'Modify Column',
-			'Change concept_set_derived.sort_weight from a double(22,0) to a double', NULL, '3.10.2', NULL, NULL, NULL);			
+			'EXECUTED', '8:e9cf31e6d6c61bd1fe037f91a615a8bc', 'Modify Column',
+			'Change concept_set_derived.sort_weight from a double(22,0) to a double', NULL, '3.10.2', NULL, NULL, NULL);
 		</sql>
 	</changeSet>
 	
