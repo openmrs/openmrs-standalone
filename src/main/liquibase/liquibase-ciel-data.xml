@@ -72,7 +72,7 @@
 	<changeSet id="20120315-1100" author="standalone" dbms="mysql">
 		<validCheckSum>3:da27117b32a07c5b89b9df072d8d3b45</validCheckSum>
 		<comment>Adding ciel data</comment>
-		<sqlFile path="openmrs_concepts_${ciel.dictionary.openmrs.version}_${ciel.dictionary.version}.sql" encoding="UTF-8" />
+		<sqlFile path="openmrs_concepts_1.9.9_20171118_schema_only.sql" encoding="UTF-8" />
 
 		<!-- We need to make the liquibasechangelog table modifications to 2.0.x
 			within this changeset because the one in demo data was created with version

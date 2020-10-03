@@ -178,9 +178,12 @@
 						<configuration>
 							<driver>com.mysql.jdbc.Driver</driver>
 							<changeLogFile>liquibase-schema-only.xml</changeLogFile>
-							<url><![CDATA[jdbc:mysql:mxj://127.0.0.1:33326/openmrs?autoReconnect=true&sessionVariables=storage_engine=InnoDB&useUnicode=true&characterEncoding=UTF-8&server.initialize-user=true&createDatabaseIfNotExist=true&server.basedir=${project.build.directory}/emptydatabase&server.datadir=${project.build.directory}/emptydatabase/data&server.collation-server=utf8_general_ci&server.character-set-server=utf8&server.max_allowed_packet=32M]]></url>
-							<username>openmrs</username>
-							<password>test</password>
+<!--							<url><![CDATA[jdbc:mysql:mxj://127.0.0.1:33326/openmrs?autoReconnect=true&sessionVariables=storage_engine=InnoDB&useUnicode=true&characterEncoding=UTF-8&server.initialize-user=true&createDatabaseIfNotExist=true&server.basedir=${project.build.directory}/emptydatabase&server.datadir=${project.build.directory}/emptydatabase/data&server.collation-server=utf8_general_ci&server.character-set-server=utf8&server.max_allowed_packet=32M]]></url>-->
+<!--							<username>openmrs</username>-->
+<!--							<password>test</password>-->
+							<url><![CDATA[jdbc:mysql://127.0.0.1:3306/openmrs?autoReconnect=true&sessionVariables=storage_engine=InnoDB&useUnicode=true&characterEncoding=UTF-8&server.initialize-user=true&createDatabaseIfNotExist=true&server.basedir=${project.build.directory}/emptydatabase&server.datadir=${project.build.directory}/emptydatabase/data&server.collation-server=utf8_general_ci&server.character-set-server=utf8&server.max_allowed_packet=32M]]></url>
+							<username>root</username>
+							<password>Admin123</password>
 							<verbose>true</verbose>
 							<dropFirst>false</dropFirst>
 							<systemProperties>
@@ -204,9 +207,12 @@
 						<configuration>
 							<driver>com.mysql.jdbc.Driver</driver>
 							<changeLogFile>liquibase-core-data.xml</changeLogFile>
-							<url><![CDATA[jdbc:mysql:mxj://127.0.0.1:33326/openmrs?autoReconnect=true&sessionVariables=storage_engine=InnoDB&useUnicode=true&characterEncoding=UTF-8&server.initialize-user=true&createDatabaseIfNotExist=true&server.basedir=${project.build.directory}/emptydatabase&server.datadir=${project.build.directory}/emptydatabase/data&server.collation-server=utf8_general_ci&server.character-set-server=utf8&server.max_allowed_packet=32M]]></url>
-							<username>openmrs</username>
-							<password>test</password>
+<!--							<url><![CDATA[jdbc:mysql:mxj://127.0.0.1:33326/openmrs?autoReconnect=true&sessionVariables=storage_engine=InnoDB&useUnicode=true&characterEncoding=UTF-8&server.initialize-user=true&createDatabaseIfNotExist=true&server.basedir=${project.build.directory}/emptydatabase&server.datadir=${project.build.directory}/emptydatabase/data&server.collation-server=utf8_general_ci&server.character-set-server=utf8&server.max_allowed_packet=32M]]></url>-->
+<!--							<username>openmrs</username>-->
+<!--							<password>test</password>-->
+							<url><![CDATA[jdbc:mysql://127.0.0.1:3306/openmrs?autoReconnect=true&sessionVariables=storage_engine=InnoDB&useUnicode=true&characterEncoding=UTF-8&server.initialize-user=true&createDatabaseIfNotExist=true&server.basedir=${project.build.directory}/emptydatabase&server.datadir=${project.build.directory}/emptydatabase/data&server.collation-server=utf8_general_ci&server.character-set-server=utf8&server.max_allowed_packet=32M]]></url>
+							<username>root</username>
+							<password>Admin123</password>
 							<verbose>true</verbose>
 							<dropFirst>false</dropFirst>
 							<systemProperties>
@@ -230,9 +236,12 @@
 						<configuration>
 							<driver>com.mysql.jdbc.Driver</driver>
 							<changeLogFile>${project.build.directory}/liquibase/${liquibasecielDataFileName}</changeLogFile>
-							<url><![CDATA[jdbc:mysql:mxj://127.0.0.1:33326/openmrs?autoReconnect=true&sessionVariables=storage_engine=InnoDB&useUnicode=true&characterEncoding=UTF-8&server.initialize-user=true&createDatabaseIfNotExist=true&server.basedir=${project.build.directory}/emptydatabase&server.datadir=${project.build.directory}/emptydatabase/data&server.collation-server=utf8_general_ci&server.character-set-server=utf8&server.max_allowed_packet=32M]]></url>
-							<username>openmrs</username>
-							<password>test</password>
+<!--							<url><![CDATA[jdbc:mysql:mxj://127.0.0.1:33326/openmrs?autoReconnect=true&sessionVariables=storage_engine=InnoDB&useUnicode=true&characterEncoding=UTF-8&server.initialize-user=true&createDatabaseIfNotExist=true&server.basedir=${project.build.directory}/emptydatabase&server.datadir=${project.build.directory}/emptydatabase/data&server.collation-server=utf8_general_ci&server.character-set-server=utf8&server.max_allowed_packet=32M]]></url>-->
+<!--							<username>openmrs</username>-->
+<!--							<password>test</password>-->
+							<url><![CDATA[jdbc:mysql://127.0.0.1:3306/openmrs?autoReconnect=true&sessionVariables=storage_engine=InnoDB&useUnicode=true&characterEncoding=UTF-8&server.initialize-user=true&createDatabaseIfNotExist=true&server.basedir=${project.build.directory}/emptydatabase&server.datadir=${project.build.directory}/emptydatabase/data&server.collation-server=utf8_general_ci&server.character-set-server=utf8&server.max_allowed_packet=32M]]></url>
+							<username>root</username>
+							<password>Admin123</password>
 							<verbose>true</verbose>
 							<dropFirst>false</dropFirst>
 							<systemProperties>
@@ -256,9 +265,12 @@
 						<configuration>
 							<driver>com.mysql.jdbc.Driver</driver>
 							<changeLogFile>liquibase-update-to-latest.xml</changeLogFile>
-							<url><![CDATA[jdbc:mysql:mxj://127.0.0.1:33326/openmrs?autoReconnect=true&sessionVariables=storage_engine=InnoDB&useUnicode=true&characterEncoding=UTF-8&server.initialize-user=true&createDatabaseIfNotExist=true&server.basedir=${project.build.directory}/emptydatabase&server.datadir=${project.build.directory}/emptydatabase/data&server.collation-server=utf8_general_ci&server.character-set-server=utf8&server.max_allowed_packet=32M]]></url>
-							<username>openmrs</username>
-							<password>test</password>
+<!--							<url><![CDATA[jdbc:mysql:mxj://127.0.0.1:33326/openmrs?autoReconnect=true&sessionVariables=storage_engine=InnoDB&useUnicode=true&characterEncoding=UTF-8&server.initialize-user=true&createDatabaseIfNotExist=true&server.basedir=${project.build.directory}/emptydatabase&server.datadir=${project.build.directory}/emptydatabase/data&server.collation-server=utf8_general_ci&server.character-set-server=utf8&server.max_allowed_packet=32M]]></url>-->
+<!--							<username>openmrs</username>-->
+<!--							<password>test</password>-->
+							<url><![CDATA[jdbc:mysql://127.0.0.1:3306/openmrs?autoReconnect=true&sessionVariables=storage_engine=InnoDB&useUnicode=true&characterEncoding=UTF-8&server.initialize-user=true&createDatabaseIfNotExist=true&server.basedir=${project.build.directory}/emptydatabase&server.datadir=${project.build.directory}/emptydatabase/data&server.collation-server=utf8_general_ci&server.character-set-server=utf8&server.max_allowed_packet=32M]]></url>
+							<username>root</username>
+							<password>Admin123</password>
 							<verbose>true</verbose>
 							<dropFirst>false</dropFirst>
 							<systemProperties>
@@ -283,9 +295,12 @@
 						<configuration>
 							<driver>com.mysql.jdbc.Driver</driver>
 							<changeLogFile>${liquibaseEmptyDbFollowupFileName}</changeLogFile>
-							<url><![CDATA[jdbc:mysql:mxj://127.0.0.1:33326/openmrs?autoReconnect=true&sessionVariables=storage_engine=InnoDB&useUnicode=true&characterEncoding=UTF-8&server.initialize-user=true&createDatabaseIfNotExist=true&server.basedir=${project.build.directory}/emptydatabase&server.datadir=${project.build.directory}/emptydatabase/data&server.collation-server=utf8_general_ci&server.character-set-server=utf8&server.max_allowed_packet=32M]]></url>
-							<username>openmrs</username>
-							<password>test</password>
+<!--							<url><![CDATA[jdbc:mysql:mxj://127.0.0.1:33326/openmrs?autoReconnect=true&sessionVariables=storage_engine=InnoDB&useUnicode=true&characterEncoding=UTF-8&server.initialize-user=true&createDatabaseIfNotExist=true&server.basedir=${project.build.directory}/emptydatabase&server.datadir=${project.build.directory}/emptydatabase/data&server.collation-server=utf8_general_ci&server.character-set-server=utf8&server.max_allowed_packet=32M]]></url>-->
+<!--							<username>openmrs</username>-->
+<!--							<password>test</password>-->
+							<url><![CDATA[jdbc:mysql://127.0.0.1:3306/openmrs?autoReconnect=true&sessionVariables=storage_engine=InnoDB&useUnicode=true&characterEncoding=UTF-8&server.initialize-user=true&createDatabaseIfNotExist=true&server.basedir=${project.build.directory}/emptydatabase&server.datadir=${project.build.directory}/emptydatabase/data&server.collation-server=utf8_general_ci&server.character-set-server=utf8&server.max_allowed_packet=32M]]></url>
+							<username>root</username>
+							<password>Admin123</password>
 							<verbose>true</verbose>
 							<dropFirst>false</dropFirst>
 							<systemProperties>
@@ -304,84 +319,93 @@
 						</goals>
 					</execution>
 
-					<execution>
-						<id>demo-db-add-data</id>
-						<phase>generate-resources</phase>
-						<configuration>
-							<driver>com.mysql.jdbc.Driver</driver>
-							<changeLogFile>${liquibaseDemoDataFileName}</changeLogFile>
-							<url><![CDATA[jdbc:mysql:mxj://127.0.0.1:33328/openmrs?autoReconnect=true&sessionVariables=storage_engine=InnoDB&useUnicode=true&characterEncoding=UTF-8&server.initialize-user=true&createDatabaseIfNotExist=true&server.basedir=${project.build.directory}/demodatabase&server.datadir=${project.build.directory}/demodatabase/data&server.collation-server=utf8_general_ci&server.character-set-server=utf8&server.max_allowed_packet=32M]]></url>
-							<username>openmrs</username>
-							<password>test</password>
-							<verbose>true</verbose>
-							<dropFirst>false</dropFirst>
-							<systemProperties>
-								<property>
-									<name>liquibase.databaseChangeLogTableName</name>
-									<value>liquibasechangelog</value>
-								</property>
-								<property>
-									<name>liquibase.databaseChangeLogLockTableName</name>
-									<value>liquibasechangeloglock</value>
-								</property>
-							</systemProperties>
-						</configuration>
-						<goals>
-							<goal>update</goal>
-						</goals>
-					</execution>
-					<execution>
-						<id>demo-db-update-to-latest</id>
-						<phase>generate-resources</phase>
-						<configuration>
-							<driver>com.mysql.jdbc.Driver</driver>
-							<changeLogFile>liquibase-update-to-latest.xml</changeLogFile>
-							<url><![CDATA[jdbc:mysql:mxj://127.0.0.1:33328/openmrs?autoReconnect=true&sessionVariables=storage_engine=InnoDB&useUnicode=true&characterEncoding=UTF-8&server.initialize-user=true&createDatabaseIfNotExist=true&server.basedir=${project.build.directory}/demodatabase&server.datadir=${project.build.directory}/demodatabase/data&server.collation-server=utf8_general_ci&server.character-set-server=utf8&server.max_allowed_packet=32M]]></url>
-							<username>openmrs</username>
-							<password>test</password>
-							<verbose>true</verbose>
-							<dropFirst>false</dropFirst>
-							<systemProperties>
-								<property>
-									<name>liquibase.databaseChangeLogTableName</name>
-									<value>liquibasechangelog</value>
-								</property>
-								<property>
-									<name>liquibase.databaseChangeLogLockTableName</name>
-									<value>liquibasechangeloglock</value>
-								</property>
-							</systemProperties>
-						</configuration>
-						<goals>
-							<goal>update</goal>
-						</goals>
-					</execution>
-					<execution>
-						<id>demo-db-followup</id>
-						<phase>generate-resources</phase>
-						<configuration>
-							<driver>com.mysql.jdbc.Driver</driver>
-							<changeLogFile>${liquibaseDemoDataFollowupFileName}</changeLogFile>
-							<url><![CDATA[jdbc:mysql:mxj://127.0.0.1:33328/openmrs?autoReconnect=true&sessionVariables=storage_engine=InnoDB&useUnicode=true&characterEncoding=UTF-8&server.initialize-user=true&createDatabaseIfNotExist=true&server.basedir=${project.build.directory}/demodatabase&server.datadir=${project.build.directory}/demodatabase/data&server.collation-server=utf8_general_ci&server.character-set-server=utf8&server.max_allowed_packet=32M]]></url>
-							<username>openmrs</username>
-							<password>test</password>
-							<verbose>true</verbose>
-							<dropFirst>false</dropFirst>
-							<systemProperties>
-								<property>
-									<name>liquibase.databaseChangeLogTableName</name>
-									<value>liquibasechangelog</value>
-								</property>
-								<property>
-									<name>liquibase.databaseChangeLogLockTableName</name>
-									<value>liquibasechangeloglock</value>
-								</property>
-							</systemProperties>
-						</configuration>
-						<goals>
-							<goal>update</goal>
-						</goals>
-					</execution>
+<!--					<execution>-->
+<!--						<id>demo-db-add-data</id>-->
+<!--						<phase>generate-resources</phase>-->
+<!--						<configuration>-->
+<!--							<driver>com.mysql.jdbc.Driver</driver>-->
+<!--							<changeLogFile>${liquibaseDemoDataFileName}</changeLogFile>-->
+<!--&lt;!&ndash;							<url><![CDATA[jdbc:mysql:mxj://127.0.0.1:33328/openmrs?autoReconnect=true&sessionVariables=storage_engine=InnoDB&useUnicode=true&characterEncoding=UTF-8&server.initialize-user=true&createDatabaseIfNotExist=true&server.basedir=${project.build.directory}/demodatabase&server.datadir=${project.build.directory}/demodatabase/data&server.collation-server=utf8_general_ci&server.character-set-server=utf8&server.max_allowed_packet=32M]]></url>&ndash;&gt;-->
+<!--&lt;!&ndash;							<username>openmrs</username>&ndash;&gt;-->
+<!--&lt;!&ndash;							<password>test</password>&ndash;&gt;-->
+<!--							<url><![CDATA[jdbc:mysql://127.0.0.1:3306/openmrs?autoReconnect=true&sessionVariables=storage_engine=InnoDB&useUnicode=true&characterEncoding=UTF-8&server.initialize-user=true&createDatabaseIfNotExist=true&server.basedir=${project.build.directory}/demodatabase&server.datadir=${project.build.directory}/demodatabase/data&server.collation-server=utf8_general_ci&server.character-set-server=utf8&server.max_allowed_packet=32M]]></url>-->
+<!--							<username>root</username>-->
+<!--							<password>Admin123</password>-->
+<!--							<verbose>true</verbose>-->
+<!--							<dropFirst>false</dropFirst>-->
+<!--							<systemProperties>-->
+<!--								<property>-->
+<!--									<name>liquibase.databaseChangeLogTableName</name>-->
+<!--									<value>liquibasechangelog</value>-->
+<!--								</property>-->
+<!--								<property>-->
+<!--									<name>liquibase.databaseChangeLogLockTableName</name>-->
+<!--									<value>liquibasechangeloglock</value>-->
+<!--								</property>-->
+<!--							</systemProperties>-->
+<!--						</configuration>-->
+<!--						<goals>-->
+<!--							<goal>update</goal>-->
+<!--						</goals>-->
+<!--					</execution>-->
+<!--					<execution>-->
+<!--						<id>demo-db-update-to-latest</id>-->
+<!--						<phase>generate-resources</phase>-->
+<!--						<configuration>-->
+<!--							<driver>com.mysql.jdbc.Driver</driver>-->
+<!--							<changeLogFile>liquibase-update-to-latest.xml</changeLogFile>-->
+<!--&lt;!&ndash;							<url><![CDATA[jdbc:mysql:mxj://127.0.0.1:33328/openmrs?autoReconnect=true&sessionVariables=storage_engine=InnoDB&useUnicode=true&characterEncoding=UTF-8&server.initialize-user=true&createDatabaseIfNotExist=true&server.basedir=${project.build.directory}/demodatabase&server.datadir=${project.build.directory}/demodatabase/data&server.collation-server=utf8_general_ci&server.character-set-server=utf8&server.max_allowed_packet=32M]]></url>&ndash;&gt;-->
+<!--&lt;!&ndash;							<username>openmrs</username>&ndash;&gt;-->
+<!--&lt;!&ndash;							<password>test</password>&ndash;&gt;-->
+<!--							<url><![CDATA[jdbc:mysql://127.0.0.1:3306/openmrs?autoReconnect=true&sessionVariables=storage_engine=InnoDB&useUnicode=true&characterEncoding=UTF-8&server.initialize-user=true&createDatabaseIfNotExist=true&server.basedir=${project.build.directory}/demodatabase&server.datadir=${project.build.directory}/demodatabase/data&server.collation-server=utf8_general_ci&server.character-set-server=utf8&server.max_allowed_packet=32M]]></url>-->
+<!--							<username>root</username>-->
+<!--							<password>Admin123</password>-->
+<!--							<verbose>true</verbose>-->
+<!--							<dropFirst>false</dropFirst>-->
+<!--							<systemProperties>-->
+<!--								<property>-->
+<!--									<name>liquibase.databaseChangeLogTableName</name>-->
+<!--									<value>liquibasechangelog</value>-->
+<!--								</property>-->
+<!--								<property>-->
+<!--									<name>liquibase.databaseChangeLogLockTableName</name>-->
+<!--									<value>liquibasechangeloglock</value>-->
+<!--								</property>-->
+<!--							</systemProperties>-->
+<!--						</configuration>-->
+<!--						<goals>-->
+<!--							<goal>update</goal>-->
+<!--						</goals>-->
+<!--					</execution>-->
+<!--					<execution>-->
+<!--						<id>demo-db-followup</id>-->
+<!--						<phase>generate-resources</phase>-->
+<!--						<configuration>-->
+<!--							<driver>com.mysql.jdbc.Driver</driver>-->
+<!--							<changeLogFile>${liquibaseDemoDataFollowupFileName}</changeLogFile>-->
+<!--&lt;!&ndash;							<url><![CDATA[jdbc:mysql:mxj://127.0.0.1:33328/openmrs?autoReconnect=true&sessionVariables=storage_engine=InnoDB&useUnicode=true&characterEncoding=UTF-8&server.initialize-user=true&createDatabaseIfNotExist=true&server.basedir=${project.build.directory}/demodatabase&server.datadir=${project.build.directory}/demodatabase/data&server.collation-server=utf8_general_ci&server.character-set-server=utf8&server.max_allowed_packet=32M]]></url>&ndash;&gt;-->
+<!--&lt;!&ndash;							<username>openmrs</username>&ndash;&gt;-->
+<!--&lt;!&ndash;							<password>test</password>&ndash;&gt;-->
+<!--							<url><![CDATA[jdbc:mysql://127.0.0.1:3306/openmrs?autoReconnect=true&sessionVariables=storage_engine=InnoDB&useUnicode=true&characterEncoding=UTF-8&server.initialize-user=true&createDatabaseIfNotExist=true&server.basedir=${project.build.directory}/demodatabase&server.datadir=${project.build.directory}/demodatabase/data&server.collation-server=utf8_general_ci&server.character-set-server=utf8&server.max_allowed_packet=32M]]></url>-->
+<!--							<username>root</username>-->
+<!--							<password>Admin123</password>-->
+<!--							<verbose>true</verbose>-->
+<!--							<dropFirst>false</dropFirst>-->
+<!--							<systemProperties>-->
+<!--								<property>-->
+<!--									<name>liquibase.databaseChangeLogTableName</name>-->
+<!--									<value>liquibasechangelog</value>-->
+<!--								</property>-->
+<!--								<property>-->
+<!--									<name>liquibase.databaseChangeLogLockTableName</name>-->
+<!--									<value>liquibasechangeloglock</value>-->
+<!--								</property>-->
+<!--							</systemProperties>-->
+<!--						</configuration>-->
+<!--						<goals>-->
+<!--							<goal>update</goal>-->
+<!--						</goals>-->
+<!--					</execution>-->
 				</executions>
 			</plugin>
 
@@ -637,6 +661,11 @@
 	</build>
 
 	<repositories>
+		<repository>
+			<id>local-repo</id>
+			<name>Maven repository on Wolf's machine</name>
+			<url>file://${user.home}/.m2/repository</url>
+		</repository>
 		<repository>
 			<id>openmrs-repo</id>
 			<name>OpenMRS Nexus Repository</name>
