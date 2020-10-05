@@ -16,6 +16,7 @@
 		<tomcat.version>7.0.100</tomcat.version>
 		<ciel.dictionary.openmrs.version>1.9.9</ciel.dictionary.openmrs.version>
 		<ciel.dictionary.version>20200822</ciel.dictionary.version>
+		<liquibase.plugin.version>3.10.2</liquibase.plugin.version>
 	</properties>
 
 	<dependencies>
@@ -79,7 +80,7 @@
 			</activation>
 			<properties>
 				<liquibasePluginArtifactId>liquibase-maven-plugin</liquibasePluginArtifactId>
-				<liquibasePluginVersion>3.10.2</liquibasePluginVersion>
+				<liquibasePluginVersion>${liquibase.plugin.version}</liquibasePluginVersion>
 				<liquibaseDemoDataFileName>liquibase-demo-data.xml</liquibaseDemoDataFileName>
 				<liquibasecielDataFileName>liquibase-ciel-data.xml</liquibasecielDataFileName>
 				<liquibaseDemoDataFollowupFileName>liquibase-empty-changelog.xml</liquibaseDemoDataFollowupFileName>
@@ -579,7 +580,7 @@
 											liquibase-maven-plugin
 										</artifactId>
 										<versionRange>
-											[2.0.1,)
+											[${liquibase.plugin.version},)
 										</versionRange>
 										<goals>
 											<goal>update</goal>
