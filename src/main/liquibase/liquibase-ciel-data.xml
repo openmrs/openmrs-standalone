@@ -44,7 +44,7 @@
 		<dropTable tableName="concept_name_tag_map" />
 		<dropTable tableName="concept_numeric" />
 		<!-- <dropTable tableName="concept_proposal" /> not contained in the ciel dict -->
-		<!-- <dropTable tableName="concept_proposal_tag_map" /> not contained in 
+		<!-- <dropTable tableName="concept_proposal_tag_map" /> not contained in
 			the ciel dict -->
 		<dropTable tableName="concept_reference_map" />
 		<dropTable tableName="concept_reference_source" />
@@ -57,7 +57,7 @@
 		<delete tableName="liquibasechangelog">
 			<where>id="20110919-0638" or id="20110301-1030c-fix"</where>
 		</delete>
-		
+
 		<sql>
 			<!-- Skip this changeset since it is unnecessary and takes too long -->
 			insert into liquibasechangelog values('200905150821', 'bwolfe',
@@ -72,7 +72,7 @@
 	<changeSet id="20120315-1100" author="standalone" dbms="mysql">
 		<validCheckSum>3:da27117b32a07c5b89b9df072d8d3b45</validCheckSum>
 		<comment>Adding ciel data</comment>
-		<sqlFile path="openmrs_concepts_1.9.9_20171118_schema_only.sql" encoding="UTF-8" />
+		<sqlFile path="openmrs_concepts_${ciel.dictionary.openmrs.version}_${ciel.dictionary.version}.sql" encoding="UTF-8" />
 
 		<!-- We need to make the liquibasechangelog table modifications to 2.0.x
 			within this changeset because the one in demo data was created with version
@@ -92,17 +92,17 @@
 			'liquibase-update-to-latest.xml', '2012-03-15 11:00:00', 10069,
 			'EXECUTED', '8:d4325318f852b3ede2798d3a08f42088', 'Delete Data',
 			'Deleting invalid concept words', NULL, '3.10.2', NULL, NULL, NULL);
-			
+
 			insert into liquibasechangelog values('200905071626', 'bwolfe',
 			'liquibase-update-to-latest.xml', '2012-03-15 11:00:00', 10070,
 			'EXECUTED', '8:56e2d2bb15a004bd5ac5bf362e7e3f82', 'Create Index',
 			'Add an index to the concept_word.concept_id column (This update may fail if it already exists)', NULL, '3.10.2', NULL, NULL, NULL);
-			
+
 			insert into liquibasechangelog values('20090414-0811a', 'bwolfe',
 			'liquibase-update-to-latest.xml', '2012-03-15 11:00:00', 10234,
 			'EXECUTED', '8:a996aae13913281567000b04221e17b4', 'Drop Foreign Key Constraint',
 			'Dropping foreign key on concept_word.concept_id column', NULL, '3.10.2', NULL, NULL, NULL);
-			
+
 			insert into liquibasechangelog values('20090428-0811aa', 'bwolfe',
 			'liquibase-update-to-latest.xml', '2012-03-15 11:00:00', 10235,
 			'EXECUTED', '8:210185827394b8982208a79333b4c33f', 'Drop Foreign Key Constraint',
@@ -112,7 +112,7 @@
 			'liquibase-update-to-latest.xml', '2012-03-15 11:00:00', 10236,
 			'EXECUTED', '8:68201f30b43cec5ad62a2c0ad1ef8cf3', 'Drop Primary Key',
 			'Dropping non-integer primary key on concept word table before adding new integer one', NULL, '3.10.2', NULL, NULL, NULL);
-			
+
 			insert into liquibasechangelog values('20090414-0812', 'bwolfe',
 			'liquibase-update-to-latest.xml', '2012-03-15 11:00:00', 10237,
 			'EXECUTED', '8:be261ff12facaf51c32cbd2c442149ce', 'Add Column',
@@ -132,22 +132,22 @@
 			'liquibase-update-to-latest.xml', '2012-03-15 11:00:00', 10241,
 			'EXECUTED', '8:63e5f7ca7868c45cda0fcb1250323e00', 'Drop Column',
 			'Remove the now unused synonym column', NULL, '3.10.2', NULL, NULL, NULL);
-			
+
 			insert into liquibasechangelog values('20101209-1721', 'bwolfe',
 			'liquibase-update-to-latest.xml', '2012-03-15 11:00:00', 10357,
 			'EXECUTED', '3:351460e0f822555b77acff1a89bec267', 'Add Column',
 			'Add weight column to concept_word table', NULL, '3.10.2', NULL, NULL, NULL);
-			
+
 			insert into liquibasechangelog values('20101209-1722', 'bwolfe',
 			'liquibase-update-to-latest.xml', '2012-03-15 11:00:00', 10358,
 			'EXECUTED', '3:d63107017bdcef0e28d7ad5e4df21ae5', 'Create Index',
 			'Adding index to concept_word.weight column', NULL, '3.10.2', NULL, NULL, NULL);
-			
+
 			insert into liquibasechangelog values('20121025-TRUNK-213', 'bwolfe',
 			'liquibase-update-to-latest.xml', '2012-03-15 11:00:00', 10496,
 			'EXECUTED', '3:65536ae335b0a6cb23619d6ef7ea3274', 'Modify Column (x2)',
 			'Normalize varchar length of locale columns', NULL, '3.10.2', NULL, NULL, NULL);
-			
+
 			<!-- Skip this changeset because the concept_set_derived table does not exist in mvp data -->
 			insert into liquibasechangelog values('200907161638-4', 'bwolfe',
 			'liquibase-update-to-latest.xml', '2012-03-15 11:00:00', 10248,
