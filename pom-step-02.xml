@@ -1,0 +1,82 @@
+<project xmlns="http//maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+
+	<groupId>org.openmrs</groupId>
+	<artifactId>standalone-02</artifactId>
+	<version>2.0.0-SNAPSHOT</version>
+	<packaging>jar</packaging>
+
+	<name>standalone-step-02</name>
+
+	<parent>
+		<groupId>org.openmrs</groupId>
+		<artifactId>standalone</artifactId>
+		<version>2.0.0-SNAPSHOT</version>
+		<relativePath>pom.xml</relativePath>
+	</parent>
+
+	<build>
+		<plugins>
+			<plugin>
+				<groupId>org.liquibase</groupId>
+				<artifactId>${liquibase.plugin.artifactId}</artifactId>
+				<executions>
+					<execution>
+						<id>empty-db-add-ciel-data</id>
+						<phase>generate-resources</phase>
+						<configuration>
+							<driver>com.mysql.jdbc.Driver</driver>
+							<changeLogFile>${project.build.directory}/liquibase/${liquibase.cieldata.filename}</changeLogFile>
+							<url><![CDATA[jdbc:mysql:mxj://127.0.0.1:33326/openmrs?autoReconnect=true&sessionVariables=storage_engine=InnoDB&useUnicode=true&characterEncoding=UTF-8&server.initialize-user=true&createDatabaseIfNotExist=true&server.basedir=${project.build.directory}/emptydatabase&server.datadir=${project.build.directory}/emptydatabase/data&server.collation-server=utf8_general_ci&server.character-set-server=utf8&server.max_allowed_packet=32M]]></url>
+							<username>openmrs</username>
+							<password>test</password>
+							<verbose>true</verbose>
+							<dropFirst>false</dropFirst>
+							<systemProperties>
+								<property>
+									<name>liquibase.databaseChangeLogTableName</name>
+									<value>liquibasechangelog</value>
+								</property>
+								<property>
+									<name>liquibase.databaseChangeLogLockTableName</name>
+									<value>liquibasechangeloglock</value>
+								</property>
+							</systemProperties>
+						</configuration>
+						<goals>
+							<goal>update</goal>
+						</goals>
+					</execution>
+				</executions>
+			</plugin>
+		</plugins>
+		<pluginManagement>
+			<plugins>
+				<plugin>
+					<groupId>org.liquibase</groupId>
+					<artifactId>${liquibase.plugin.artifactId}</artifactId>
+					<version>${liquibase.plugin.version.2.x}</version>
+					<dependencies>
+						<dependency>
+							<groupId>org.openmrs.liquibase.ext</groupId>
+							<artifactId>modify-column</artifactId>
+							<version>2.0.2</version>
+						</dependency>
+						<dependency>
+							<groupId>org.openmrs.liquibase.ext</groupId>
+							<artifactId>identity-insert</artifactId>
+							<version>1.2.1</version>
+						</dependency>
+						<dependency>
+							<groupId>org.openmrs.contrib</groupId>
+							<artifactId>ciel-dictionary</artifactId>
+							<version>${ciel.dictionary.openmrs.version}-${ciel.dictionary.version}</version>
+							<type>zip</type>
+						</dependency>
+					</dependencies>
+				</plugin>
+			</plugins>
+		</pluginManagement>
+	</build>
+</project>
