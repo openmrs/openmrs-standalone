@@ -15,25 +15,77 @@ Depending on what OpenMRS software artifact you are releasing, you may need to c
 * If you are building OpenMRS Platform => use the `master` branch
 * If you are building OpenMRS Reference Application => use the `openmrs-emr2` branch
 
-## QUICK SUMMARY FOR BUILDING THE STANDALONE
+## Building openmrs-standalone for OpenMRS version 2.4 or later
 
-* Increase the maven memory: e.g. export MAVEN_OPTS="-Xms1012m -Xmx2024m -XX:PermSize=556m -XX:MaxPermSize=1012m"
-* mvn clean package -Dopenmrs.version=1.9.0
-* If you are building standalone for OpenMRS 1.8.x you need to append the above command with -P1.8.x 
-and put in the main directory the Demo-1.8.0.sql file from https://wiki.openmrs.org/x/GwRN, be sure to download the appropriate demo data file for the release line.
-If you do not see the one for your release, you can create it by loading the latest existing demo data file in its version of openmrs and then upgrade this version of
-openmrs to the one you are releasing. After the upgrade, you can then dump a sql file to serve as the demo data file for the new release. Then, update the value of the path attribute of the sqlPath tag in liquibase-demo-data.xml file to match the name of the demo data you just downloaded
+### Increasing maven memory
+
+Increase the maven memory: e.g. export MAVEN_OPTS="-Xms1012m -Xmx2024m -XX:PermSize=556m -XX:MaxPermSize=1012m"
+
+### Running the build in two steps
+
+Building openmrs-standalone is decomposed into five steps as different steps use different version of the Liquibase Maven plugin.
+
+Openmrs-core is using Liquibase 3.x as of OpenMRS version 2.4.x. However, Liquibase version 3.x *fails* to load
+large sql files such as the CIEL concept dictionary. Liquibase version 2.x successfully loads large sql files.
+
+* Steps 1, 3, and 5 use version 3.10.2 of the plugin as they depend on openmrs-core version 2.4.x  or later.
+
+* Steps 2 and 4 load large sql files and continue to use Liquibase version 2.0.1.
+
+When running
+ 
+    $ mvn clean package -Dopenmrs.version=2.4.0
+
+the `clean` step is executed for each module. This means that the folder 
+
+    datadir=/<some root dir>/openmrs/standalone/target/emptydatabase/data
+     
+is deleted at the beginning of step 2 and the database created in step 1 is no longer available.
+
+To avoid that, `mvn clean` needs to be run separately before the rest of the build:
+
+    $ mvn clean
+    $ mvn package -Dopenmrs.version=2.4.0
+    
+### Choosing demo data
+
+* Be sure to download the appropriate demo data file for the release line. If you do not see the one for your release, 
+you can create it by loading the latest existing demo data file in its version of openmrs and then upgrade this version 
+of openmrs to the one you are releasing. 
+
+* After the upgrade, you can then dump a sql file to serve as the demo data file for the new release. Then, update the 
+value of the path attribute of the sqlPath tag in liquibase-demo-data.xml file to match the name of the demo data you 
+just downloaded
+
+
+### Choosing CIEL data
+
 * Download the latest CIEL for OpenMRS 1.9.x (use 1.9.x regardless of the maintenance release version) as described [here](https://wiki.openmrs.org/x/ww4JAg).
+
 * Upload it to mavenrepo by running (adjust the version and the file parameters to match the downloaded version of CIEL):
 `mvn deploy:deploy-file -DgroupId=org.openmrs.contrib -DartifactId=ciel-dictionary -Dversion=1.9.9-20170409 -Dpackaging=zip -Dfile=openmrs_concepts_1.9.9_20170409.sql.zip -DrepositoryId=openmrs-repo-contrib -Durl=https://mavenrepo.openmrs.org/nexus/content/repositories/contrib`
+
 * Update the CIEL version in pom.xml.
-* If running "mvn clean package" second time, ALWAYS check to make sure mysql processes on port 3326 and/or 3328 and/or 33326 are stopped. 
-  If you DON'T do that, then the "mvn clean" will not really clean. 
-  A good command to use is: "pkill -f standalone"  (kills anything with "standalone" in the path) 
-* If compiling the standalone on a linux running machine like on ubuntu 12.04 LTS, move your clone of this standalone project into an ext file system for-example under your home directory; running it on for-example an NTFS file system will result into permission failures since by default linux may fail to modify privileges on non ext file systems.
+
+### Other tips 
+
+* If running `mvn clean` and `mvn package` second time, ALWAYS check to make sure mysql processes on port 3326 and/or 
+3328 and/or 33326 are stopped. If you DON'T do that, then the `mvn clean` will not really clean.
+
+* A good command to use is: "pkill -f standalone"  (kills anything with "standalone" in the path) 
+
+* If compiling the standalone on a linux running machine like on ubuntu 12.04 LTS, move your clone of this standalone project 
+into an ext file system for-example under your home directory; running it on for-example an NTFS file system will result into 
+permission failures since by default linux may fail to modify privileges on non ext file systems.
 
 -> output is in the target folder, as openmrs-standalone-(openmrs.version).zip
 -> the contents of that zip are in the similarly-named folder under /target, if you want to test in-place
+
+## Building openmrs-standalone for OpenMRS version 2.3 or earlier
+
+Please note that this version of openmrs-standalone cannot be used for openmrs-core 2.3.x or earlier. 
+
+Instead, you need to use an earlier version of openmrs-standalone.
 
 ## HOW TO RUN FROM ECLIPSE
 
