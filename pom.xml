@@ -13,18 +13,6 @@
 
   <url>https://github.com/openmrs/openmrs-standalone</url>
 
-  <!--
-      Building openmrs-standalone is decomposed into five steps as different steps use different version of the
-      Liquibase Maven plugin.
-
-      Openmrs-core is using Liquibase 3.x as of OpenMRS version 2.4.x. However, Liquibase version 3.x FAILS to load
-      large sql files such as the CIEL concept dictionary. Liquibase version 2.x successfully loads large sql files.
-
-      - Steps 1, 3, and 5 use version 3.10.2 of the plugin as they depend on openmrs-core version 2.4.x  or later.
-      - Steps 2 and 4 load large sql files and continue to use Liquibase version 2.0.1.
-
-      Please note that this version of openmrs-standalone CANNOT be used for openmrs-core 2.3.x or earlier.
-  -->
   <modules>
       <module>pom-step-01.xml</module>
       <module>pom-step-02.xml</module>
