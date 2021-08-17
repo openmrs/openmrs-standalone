@@ -25,7 +25,7 @@
 
     <liquibase.plugin.artifactId>liquibase-maven-plugin</liquibase.plugin.artifactId>
     <liquibase.plugin.version.2.x>2.0.1</liquibase.plugin.version.2.x>
-    <liquibase.plugin.version.3.x>3.10.2</liquibase.plugin.version.3.x>
+    <liquibase.plugin.version.3.x>4.4.1</liquibase.plugin.version.3.x>
 
     <liquibase.demodata.archive>Demo-1.9.0.sql.zip</liquibase.demodata.archive>
     <liquibase.cieldata.filename>liquibase-ciel-data.xml</liquibase.cieldata.filename>
