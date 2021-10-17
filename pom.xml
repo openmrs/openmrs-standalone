@@ -20,8 +20,8 @@
   </modules>
 
   <properties>
-    <ciel.dictionary.openmrs.version>1.9.9</ciel.dictionary.openmrs.version>
-    <ciel.dictionary.version>20200822</ciel.dictionary.version>
+    <ciel.dictionary.openmrs.version>2.5.0</ciel.dictionary.openmrs.version>
+    <ciel.dictionary.version>2.3.0_20211012</ciel.dictionary.version>
 
     <liquibase.plugin.artifactId>liquibase-maven-plugin</liquibase.plugin.artifactId>
     <liquibase.plugin.version.2.x>2.0.1</liquibase.plugin.version.2.x>
