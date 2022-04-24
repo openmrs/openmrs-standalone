@@ -16,19 +16,29 @@ package org.openmrs.standalone;
 import java.io.File;
 
 import com.mysql.management.driverlaunched.ServerLauncherSocketFactory;
+import ch.vorburger.mariadb4j.DB;
+import ch.vorburger.mariadb4j.DBConfiguration;
 
 /**
  * It is used to stop embedded database.
  */
 public class StopEmbeddedMySQL {
 	
+	protected DB db;
+	protected DBConfigurationBuilder configBuilder;
+	
 	public static void main(String[] args) throws Exception {
 		if (args.length == 0) {
 			throw new IllegalArgumentException("Must be called with at least one argument pointing to a database directory!");
 		}
 		
-		for (int i = 0; i < args.length; i++) {
-			ServerLauncherSocketFactory.shutdown(new File(args[i]), null);
-        }
+		new StopEmbeddedMySQL().stopEmbeddedMariadb();
+	}
+	public void stopEmbeddedMariadb() {
+		if (db != null) {
+			db.stop();
+			db = null;
+			configBuilder = null;
+		}
 	}
 }

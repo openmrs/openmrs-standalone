@@ -13,6 +13,9 @@
  */
 package org.openmrs.standalone;
 
+import ch.vorburger.mariadb4j.DB;
+import ch.vorburger.mariadb4j.DBConfiguration;
+
 import java.awt.Desktop;
 import java.io.BufferedWriter;
 import java.io.File;
@@ -55,6 +58,10 @@ public class StandaloneUtil {
 	public static final int MAX_PORT_NUMBER = 49151;
 	
 	private static String CONTEXT_NAME;
+	
+	protected DB db;
+	
+	protected DBConfigurationBuilder configBuilder;
 	
 	/**
 	 * Checks to see if a specific port is available.
@@ -337,7 +344,11 @@ public class StandaloneUtil {
 	
 	public static void stopMySqlServer() {
 		try {
-			ServerLauncherSocketFactory.shutdown(new File("database"), new File("database/data"));
+			if (db != null) {
+				db.stop();
+				db = null;
+				configBuilder = null;
+			}
 		}
 		catch (Exception exception) {
 			System.out.println("Cannot Stop MySQL" + exception.getMessage());

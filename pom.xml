@@ -64,15 +64,15 @@
       <scope>compile</scope>
     </dependency>
     <dependency>
-      <groupId>mysql</groupId>
-      <artifactId>mysql-connector-mxj-fixed</artifactId>
-      <version>5.0.12</version>
+      <groupId>org.mariadb.jdbc</groupId>
+      <artifactId>mariadb-java-client</artifactId>
+      <version>5.1.8</version>
       <scope>compile</scope>
     </dependency>
     <dependency>
-      <groupId>mysql</groupId>
-      <artifactId>mysql-connector-mxj-db-files-fixed</artifactId>
-      <version>5.0.12-20170418</version>
+      <groupId>ch.vorburger.mariaDB4j</groupId>
+      <artifactId>mariaDB4j</artifactId>
+      <version>2.5.3</version>
       <scope>compile</scope>
     </dependency>
   </dependencies>
