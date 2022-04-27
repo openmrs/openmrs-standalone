@@ -64,15 +64,15 @@
       <scope>compile</scope>
     </dependency>
     <dependency>
-      <groupId>mysql</groupId>
-      <artifactId>mysql-connector-mxj-fixed</artifactId>
-      <version>5.0.12</version>
+      <groupId>org.mariadb.jdbc</groupId>
+      <artifactId>mariadb-java-client</artifactId>
+      <version>2.7.4</version>
       <scope>compile</scope>
     </dependency>
     <dependency>
-      <groupId>mysql</groupId>
-      <artifactId>mysql-connector-mxj-db-files-fixed</artifactId>
-      <version>5.0.12-20170418</version>
+      <groupId>ch.vorburger.mariaDB4j</groupId>
+      <artifactId>mariaDB4j</artifactId>
+      <version>2.5.3</version>
       <scope>compile</scope>
     </dependency>
   </dependencies>
@@ -104,6 +104,7 @@
           </execution>
         </executions>
       </plugin>
+      
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-compiler-plugin</artifactId>
@@ -155,6 +156,83 @@
           <artifactId>maven-assembly-plugin</artifactId>
           <version>2.3</version>
         </plugin>
+
+        <plugin>
+	<groupId>ch.vorburger.mariaDB4j</groupId>
+	<artifactId>mariaDB4j-maven-plugin</artifactId>
+	<configuration>
+		<databaseName>openmrs</databaseName>
+		<baseDir>${project.build.directory}</baseDir>
+		<dataDir>${project.build.directory}/emptydatabase/data</dataDir>
+		<port>33326</port>
+		<scripts>
+			<script>src/main/resources/setup-openmrs-user.sql</script>
+		</scripts>
+		<args>
+			<arg>--basedir=${project.build.directory}/emptydatabase</arg>
+			<arg>--datadir=${project.build.directory}/emptydatabase/data</arg>
+			<arg>--character-set-server=utf8</arg>
+			<arg>--collation-server=utf8_general_ci</arg>
+			<!-- 33554432 ~= 32M -->
+			<arg>--max-allowed-packet=33554432</arg>
+		</args>
+	</configuration>
+	<executions>
+		<execution>
+			<id>start-empty-db</id>
+			<phase>generate-resources</phase>
+			<goals>
+				<goal>start</goal>
+			</goals>
+		</execution>
+		<execution>
+			<id>stop-empty-db</id>
+			<!-- This is a bit hacky... process-resources should be run after generate-resources -->
+			<phase>process-resources</phase>
+			<goals>
+				<goal>stop</goal>
+			</goals>
+		</execution>
+	</executions>
+</plugin>
+<plugin>
+	<groupId>ch.vorburger.mariaDB4j</groupId>
+	<artifactId>mariaDB4j-maven-plugin</artifactId>
+	<configuration>
+		<databaseName>openmrs</databaseName>
+		<baseDir>${project.build.directory}/demodatabase</baseDir>
+		<dataDir>${project.build.directory}/demodatabase/data</dataDir>
+		<port>33328</port>
+		<scripts>
+			<script>src/main/resources/setup-openmrs-user.sql</script>
+		</scripts>
+		<args>
+			<arg>--basedir=${project.build.directory}</arg>
+			<arg>--datadir=${project.build.directory}/emptydatabase/data</arg>
+			<arg>--character-set-server=utf8</arg>
+			<arg>--collation-server=utf8_general_ci</arg>
+			<!-- 33554432 ~= 32M -->
+			<arg>--max-allowed-packet=33554432</arg>
+		</args>
+	</configuration>
+	<executions>
+		<execution>
+			<id>start-empty-db</id>
+			<phase>generate-resources</phase>
+			<goals>
+				<goal>start</goal>
+			</goals>
+		</execution>
+		<execution>
+			<id>stop-empty-db</id>
+			<!-- This is a bit hacky... process-resources should be run after generate-resources -->
+			<phase>process-resources</phase>
+			<goals>
+				<goal>stop</goal>
+			</goals>
+		</execution>
+	</executions>
+</plugin>
 
         <!--This plugin's configuration is used to store Eclipse m2e settings
             only. It has no influence on the Maven build itself. -->

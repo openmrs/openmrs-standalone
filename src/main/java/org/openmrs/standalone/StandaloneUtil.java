@@ -307,7 +307,7 @@ public class StandaloneUtil {
 		
 		Connection connection = null;
 		try {
-			Class.forName("com.mysql.jdbc.Driver").newInstance();
+			Class.forName("com.mysql.jdbc.Driver");
 			
 			String sql = "update mysql.user set password=PASSWORD('" + newPassword + "') where User='" + username + "';";
 			connection = DriverManager.getConnection(url, username, oldPassword);
