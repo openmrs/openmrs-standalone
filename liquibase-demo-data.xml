@@ -21,5 +21,16 @@
 			<column name="MD5SUM" type="varchar(35)" />
 		</ext:modifyColumn>
 	</changeSet>
+	
+	<changeSet id="20141010-4492" author="standalone" dbms="mysql">
+	
+		<preConditions onFail="MARK_RAN">
+			<foreignKeyConstraintExists foreignKeyName="belongs_to_tribe" />
+		</preConditions>
+		<comment>Dropping foreign key on patient.tribe</comment>
+		
+		<dropForeignKeyConstraint baseTableName="patient" constraintName="belongs_to_tribe" />
+		<comment>updated changes made to tables after dropping a column named tribe from table patient was made on liquibase-schema-only.xml</comment>
+	</changeSet>
 	   
 </databaseChangeLog>
