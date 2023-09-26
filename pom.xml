@@ -35,7 +35,7 @@
 
     <openmrs.version>2.4.0-SNAPSHOT</openmrs.version>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    <tomcat.version>7.0.50</tomcat.version>
+    <tomcat.version>7.0.73</tomcat.version>
   </properties>
 
   <dependencies>
