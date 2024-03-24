@@ -26,7 +26,7 @@ import java.util.Properties;
 
 /**
  * The only reason for existence of this class is to enable us increase tomcat memory by passing the
- * JVM options as advised at http://wiki.openmrs.org/display/docs/Out+Of+Memory+Errors. Since we
+ * JVM options as advised at <a href="http://wiki.openmrs.org/display/docs/Out+Of+Memory+Errors">...</a>. Since we
  * cannot pass JVM options when it has already loaded the application, we use this to class start a
  * new JVM process and hence have a chance of passing the JVM parameters.
  */
@@ -42,12 +42,13 @@ public class Bootstrap {
 			this.is = is;
 			this.os = os;
 		}
-		
+
+		@Override
 		public void run() {
 			try {
 				InputStreamReader isr = new InputStreamReader(is);
 				BufferedReader br = new BufferedReader(isr);
-				String line = null;
+				String line;
 				while ((line = br.readLine()) != null) {
 					os.println(line);
 				}
@@ -65,7 +66,8 @@ public class Bootstrap {
 		OutputStreamProxy(OutputStream os) {
 			this.os = os;
 		}
-		
+
+		@Override
 		public void run() {
 			try {
 				PrintWriter writer = new PrintWriter(new OutputStreamWriter(new BufferedOutputStream(os)), true);
@@ -95,9 +97,12 @@ public class Bootstrap {
 		
 		try {	
 			Properties properties = OpenmrsUtil.getRuntimeProperties(StandaloneUtil.getContextName());
-			String vm_arguments = properties.getProperty("vm_arguments", "-Xmx512m -Xms512m -XX:PermSize=256m -XX:MaxPermSize=256m -XX:NewSize=128m");
-			
-			// Spin up a separate java process calling a non-default Main class in our Jar.  
+            String vm_arguments = null;
+            if (properties != null) {
+                vm_arguments = properties.getProperty("vm_arguments", "-Xmx512m -Xms512m -XX:PermSize=256m -XX:MaxPermSize=256m -XX:NewSize=128m");
+            }
+
+            // Spin up a separate java process calling a non-default Main class in our Jar.
 			process = Runtime.getRuntime().exec(
 			    "java " + (showSplashScreen ? "-splash:splashscreen-loading.png" : "")
 			            + " " + vm_arguments + " -cp "
@@ -140,9 +145,9 @@ public class Bootstrap {
 	public static void main(String[] args) {
 		boolean showSplashScreen = true;
 		
-		String commandLineArguments = "";
+		StringBuilder commandLineArguments = new StringBuilder();
 		for (String arg : args) {
-			commandLineArguments += (" " + arg);
+			commandLineArguments.append(" ").append(arg);
 			
 			if (arg.contains("commandline"))
 				showSplashScreen = false;
@@ -150,12 +155,13 @@ public class Bootstrap {
 		
 		// add shutdown hook to stop server
 		Runtime.getRuntime().addShutdownHook(new Thread() {
-			
+
+			@Override
 			public void run() {
 				StandaloneUtil.stopMySqlServer();
 			}
 		});
 		
-		new Bootstrap().launch(commandLineArguments, showSplashScreen);
+		new Bootstrap().launch(commandLineArguments.toString(), showSplashScreen);
 	}
 }
