@@ -13,11 +13,9 @@
  */
 package org.openmrs.standalone;
 
+import javax.swing.*;
 import java.io.ByteArrayOutputStream;
 import java.io.FilterOutputStream;
-import java.io.IOException;
-
-import javax.swing.JTextArea;
 
 
 /**
@@ -26,7 +24,7 @@ import javax.swing.JTextArea;
  */
 public class TextAreaWriter extends FilterOutputStream {
 	
-	private JTextArea text;
+	private final JTextArea text;
 	private int length;
 	public static long LOG_LENGTH = 10000;
 	
@@ -34,13 +32,15 @@ public class TextAreaWriter extends FilterOutputStream {
 		super(new ByteArrayOutputStream());
 		this.text = text;
 	}
-	
-	public void write(byte b[]) throws IOException {
+
+	@Override
+	public void write(byte[] b) {
 		String aString = new String(b);
 		text.append(aString);
 	}
-	
-	public void write(byte b[], int off, int len) {
+
+	@Override
+	public void write(byte[] b, int off, int len) {
 		
 		String aString = null;
 		
