@@ -13,10 +13,7 @@
  */
 package org.openmrs.standalone;
 
-import java.io.ByteArrayOutputStream;
-import java.io.File;
-import java.io.FileWriter;
-import java.io.FilterOutputStream;
+import java.io.*;
 import java.util.Calendar;
 
 
@@ -28,8 +25,9 @@ public class LogWriter extends FilterOutputStream {
 	public LogWriter() {
 		super(new ByteArrayOutputStream());
 	}
-	
-	public void write(byte b[], int off, int len) {
+
+	@Override
+	public void write(byte[] b, int off, int len) {
 		write(new String(b, off, len));
 	}
 	
@@ -40,19 +38,28 @@ public class LogWriter extends FilterOutputStream {
 	 */
 	public static void write(String aString) {
 		//Append to the log file under currentdir/tomcat/logs
+		FileWriter aWriter = null;
 		try {
 			Calendar cal = Calendar.getInstance();
 			String fileName = cal.get(Calendar.YEAR) + "-" + (cal.get(Calendar.MONTH) + 1) + "-" + cal.get(Calendar.DATE)
-			        + ".log";
+					+ ".log";
 			String path = new File(fileName).getAbsolutePath();
 			path = path.substring(0, path.lastIndexOf(File.separatorChar) + 1) + "tomcat" + File.separatorChar + "logs";
 			new File(path).mkdirs();
-			FileWriter aWriter = new FileWriter(path + File.separatorChar + fileName, true);
+			String filePath = path + File.separatorChar + fileName;
+			aWriter = new FileWriter(filePath, true);
 			aWriter.write(aString);
-			aWriter.close();
-		}
-		catch (Exception ex) {
-			//printing to the std streams here may result in an infinite loop since will keep calling into this same routine.
+		} catch (Exception ex) {
+			// printing to the std streams here may result in an infinite loop since will keep calling into this same routine.
+		} finally {
+			if (aWriter != null) {
+				try {
+					aWriter.close();
+				} catch (IOException e) {
+					//handle io exceptions occurred by file writer
+				}
+			}
 		}
 	}
+
 }
