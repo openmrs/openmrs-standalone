@@ -27,7 +27,7 @@ public class CommandLineWriter extends FilterOutputStream {
 	}
 	
 	@Override
-	public void write(byte b[]) throws IOException {
+	public void write(byte[] b) throws IOException {
 		super.write(b);
 		LogWriter.write(new String(b));
 	}
@@ -39,7 +39,7 @@ public class CommandLineWriter extends FilterOutputStream {
 	}
 	
 	@Override
-	public void write(byte b[], int off, int len) throws IOException {
+	public void write(byte[] b, int off, int len) throws IOException {
 		super.write(b, off, len);
 		LogWriter.write(new String(b, off, len));
 	}
