@@ -26,9 +26,9 @@ public class StopEmbeddedMySQL {
 		if (args.length == 0) {
 			throw new IllegalArgumentException("Must be called with at least one argument pointing to a database directory!");
 		}
-		
-		for (int i = 0; i < args.length; i++) {
-			ServerLauncherSocketFactory.shutdown(new File(args[i]), null);
+
+        for (String arg : args) {
+            ServerLauncherSocketFactory.shutdown(new File(arg), null);
         }
 	}
 }
