@@ -13,61 +13,24 @@
  */
 package org.openmrs.standalone;
 
-import java.awt.AWTException;
-import java.awt.BorderLayout;
-import java.awt.Color;
-import java.awt.Cursor;
-import java.awt.Dimension;
-import java.awt.Font;
-import java.awt.GridBagConstraints;
-import java.awt.GridBagLayout;
-import java.awt.GridLayout;
-import java.awt.Image;
-import java.awt.MenuItem;
-import java.awt.PopupMenu;
-import java.awt.SystemTray;
-import java.awt.Toolkit;
-import java.awt.TrayIcon;
+import javax.imageio.ImageIO;
+import javax.swing.*;
+import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.KeyEvent;
-import java.awt.event.WindowEvent;
-import java.awt.event.WindowStateListener;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.lang.reflect.Method;
-import java.net.URL;
 import java.util.Arrays;
 import java.util.List;
-
-import javax.imageio.ImageIO;
-import javax.swing.BorderFactory;
-import javax.swing.ImageIcon;
-import javax.swing.JButton;
-import javax.swing.JDialog;
-import javax.swing.JFrame;
-import javax.swing.JLabel;
-import javax.swing.JMenu;
-import javax.swing.JMenuBar;
-import javax.swing.JMenuItem;
-import javax.swing.JOptionPane;
-import javax.swing.JPanel;
-import javax.swing.JScrollPane;
-import javax.swing.JSeparator;
-import javax.swing.JTextArea;
-import javax.swing.JTextField;
-import javax.swing.KeyStroke;
-import javax.swing.SwingConstants;
-import javax.swing.SwingUtilities;
-import javax.swing.UIManager;
-import javax.swing.WindowConstants;
 
 /**
  * Provides non command line (GUI) interface to the standalone launcher..
  */
 public class MainFrame extends javax.swing.JFrame implements ActionListener, UserInterface {
 	
-	private ApplicationController appController;
+	private final ApplicationController appController;
 	
 	private int tomcatPort = UserInterface.DEFAULT_TOMCAT_PORT;
 	
@@ -77,7 +40,7 @@ public class MainFrame extends javax.swing.JFrame implements ActionListener, Use
 	public MainFrame(ApplicationController appController, String tomcatPort, String mysqlPort) {
 		this.appController = appController;
 		
-		if (tomcatPort != null && tomcatPort.trim().length() > 0)
+		if (tomcatPort != null && !tomcatPort.trim().isEmpty())
 			this.tomcatPort = StandaloneUtil.fromStringToInt(tomcatPort);
 		
 		initComponents(mysqlPort);
@@ -98,19 +61,20 @@ public class MainFrame extends javax.swing.JFrame implements ActionListener, Use
 		setLocationRelativeTo(null);
 		
 		menuBar = new JMenuBar();
-		fileMenu = new JMenu();
-		settingsMenu = new JMenu();
+        JMenu fileMenu = new JMenu();
+        JMenu settingsMenu = new JMenu();
 		browserMenuItem = new JMenuItem();
-		fileMenuSep = new JSeparator();
-		quitMenuItem = new JMenuItem();
+        JSeparator fileMenuSep = new JSeparator();
+        JMenuItem quitMenuItem = new JMenuItem();
 		trayMenuItem = new JMenuItem();
-		configlogMenuItem = new JMenuItem();
+        JMenuItem configlogMenuItem = new JMenuItem();
 		
 		setTitle(TITLE);
 		setDefaultCloseOperation(WindowConstants.DO_NOTHING_ON_CLOSE);
 		
 		addWindowListener(new java.awt.event.WindowAdapter() {
-			
+
+			@Override
 			public void windowClosing(java.awt.event.WindowEvent evt) {
 				exitForm(evt);
 			}
@@ -160,11 +124,11 @@ public class MainFrame extends javax.swing.JFrame implements ActionListener, Use
 	                System.exit(0);
 	            }
 	        };
-	        popup=new PopupMenu();
-	        exitTrayItem=new MenuItem("Exit");
+            PopupMenu popup = new PopupMenu();
+            MenuItem exitTrayItem = new MenuItem("Exit");
 	        exitTrayItem.addActionListener(exitListener);
 	        popup.add(exitTrayItem);
-	        maximizeTrayItem=new MenuItem("Maximize");
+            MenuItem maximizeTrayItem = new MenuItem("Maximize");
 	        maximizeTrayItem.addActionListener(new ActionListener() {
 	        	public void actionPerformed(ActionEvent e) {
 	        		setVisible(true);
@@ -224,22 +188,22 @@ public class MainFrame extends javax.swing.JFrame implements ActionListener, Use
 		menuBar.add(settingsMenu);
 		
 		setJMenuBar(menuBar);
-		
-		mainPanel = new JPanel();
-		portPanel = new JPanel();
+
+        JPanel mainPanel = new JPanel();
+        JPanel portPanel = new JPanel();
 		
 		mainPanel.setLayout(new GridBagLayout());
-	
-		
-		lblTomcatPort = new JLabel("Tomcat Port");
+
+
+        JLabel lblTomcatPort = new JLabel("Tomcat Port");
 		txtTomcatPort = new JTextField(tomcatPort + "", 5);
 		txtTomcatPort.addActionListener(this);
 		txtTomcatPort.setEnabled(false);
-		lblMySqlPort = new JLabel("MySQL Port");
+        JLabel lblMySqlPort = new JLabel("MySQL Port");
 		txtMySqlPort = new JTextField(mysqlPort, 5);
 		txtMySqlPort.addActionListener(this);
 		txtMySqlPort.setEnabled(false);
-		txtLog = new JTextArea();
+        JTextArea txtLog = new JTextArea();
 		
 		btnStart = new JButton("Start");
 		btnStop = new JButton("Stop");
@@ -302,7 +266,7 @@ public class MainFrame extends javax.swing.JFrame implements ActionListener, Use
 				Class[] paramImage = new Class[1]; //Image parameter
 				paramImage[0] = Image.class;
 				Class Application = Class.forName("com.apple.eawt.Application");
-				Object application = Application.newInstance();
+				Object application;
 				Method getApplication = Application.getDeclaredMethod("getApplication", noparams);
 				application = getApplication.invoke(null, null);
 				Method setDockIconImage = Application.getDeclaredMethod("setDockIconImage", paramImage);
@@ -324,21 +288,21 @@ public class MainFrame extends javax.swing.JFrame implements ActionListener, Use
 		//StandaloneUtil.setPortsAndMySqlPassword(txtMySqlPort.getText());
 	}
 	
-	private void browserMenuItemActionPerformed(java.awt.event.ActionEvent evt) {
+	private void browserMenuItemActionPerformed( ActionEvent evt) {
 		appController.launchBrowser(tomcatPort);
 	}
 	
-	private void quitMenuItemActionPerformed(java.awt.event.ActionEvent evt) {
+	private void quitMenuItemActionPerformed( ActionEvent evt) {
 		exitForm(null);
 	}
 	
-	private void clearMenuItemActionPerformed(java.awt.event.ActionEvent evt) {
+	private void clearMenuItemActionPerformed( ActionEvent evt) {
 		textAreaWriter.clear();
 	}
-	private void trayMenuItemActionPerformed(java.awt.event.ActionEvent evt) {
+	private void trayMenuItemActionPerformed( ActionEvent evt) {
 		minimizeToTray();
 	}
-	private void configlogMenuItemActionPerformed(java.awt.event.ActionEvent evt) {
+	private void configlogMenuItemActionPerformed( ActionEvent evt) {
 		setLogThresholdValue();
 	}
 	
@@ -494,49 +458,23 @@ public class MainFrame extends javax.swing.JFrame implements ActionListener, Use
 	}
 	
 	private JMenuItem browserMenuItem;
-	
-	private JMenu fileMenu;
-	
-	private JMenu settingsMenu;
-	
-	private JSeparator fileMenuSep;
-	
-	private JMenuBar menuBar;
-	
-	private JMenuItem quitMenuItem;
-	
-	private JMenuItem trayMenuItem;
-	
-	private JMenuItem configlogMenuItem;
-	
-	private JPanel mainPanel;
-	
-	private JPanel portPanel;
-	
-	private JTextField txtTomcatPort;
-	
-	private JLabel lblTomcatPort;
-	
-	private JTextField txtMySqlPort;
-	
-	private JLabel lblMySqlPort;
-	
-	private JButton btnStart;
+
+    private JMenuBar menuBar;
+
+    private JMenuItem trayMenuItem;
+
+    private JTextField txtTomcatPort;
+
+    private JTextField txtMySqlPort;
+
+    private JButton btnStart;
 	
 	private JButton btnStop;
-	
-	private JTextArea txtLog;
-	
-	private TrayIcon trayIcon;
+
+    private TrayIcon trayIcon;
     
 	private SystemTray tray;
-	
-    private PopupMenu popup;
-    
-    private MenuItem exitTrayItem;
-    
-    private MenuItem maximizeTrayItem;
-    
+
     Image trayImage;
 	/**
 	 * @see org.openmrs.standalone.UserInterface#showInitialConfig()
@@ -625,8 +563,8 @@ public class MainFrame extends javax.swing.JFrame implements ActionListener, Use
 	/**
 	 * Sets button color and the horizontal alignment of the text and icon
 	 * 
-	 * @param button
-	 * @param color
+	 * @param button - JButton object which will get styled in this method
+	 * @param color - Color object which contains the color need to be added to button background
 	 */
 	private void colorHelper(JButton button, Color color) {
 		button.setBackground(color);
@@ -636,7 +574,7 @@ public class MainFrame extends javax.swing.JFrame implements ActionListener, Use
 	}
 	
 	public void onFinishedInitialConfigCheck(){
-		
+		// TODO document why this method is empty
 	}
 	public void minimizeToTray(){
         try {

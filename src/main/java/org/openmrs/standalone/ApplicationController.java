@@ -44,9 +44,9 @@ public class ApplicationController {
 	/** The web app context name. */
 	private String contextName;
 	
-	private boolean commandLineMode = false;
+	private final boolean commandLineMode;
 	
-	private boolean nonInteractive = false;
+	private final boolean nonInteractive;
 	
 	public ApplicationController(boolean commandLineMode, boolean nonInteractive, DatabaseMode mode, String tomcatPort, String mysqlPort) throws Exception {
 		this.commandLineMode = commandLineMode;
@@ -57,7 +57,9 @@ public class ApplicationController {
 	/**
 	 * This is the entry point for the application.
 	 * 
-	 * @param args
+	 * @param args -The 'args' parameter in the main method represents an array of strings that hold any command-line 
+	 *                arguments passed to the application when it is executed. These arguments can be used to customize 
+	 *                the behavior or configuration of the application at runtime.
 	 */
 	public static void main(String[] args) throws Exception {
 		
@@ -228,7 +230,8 @@ public class ApplicationController {
 		
 		// add shutdown hook to stop server
 		Runtime.getRuntime().addShutdownHook(new Thread() {
-			
+
+			@Override
 			public void run() {
 				stopServer();
 			}
@@ -295,16 +298,23 @@ public class ApplicationController {
 	}
 	
 	/**
-	 * @param dirOrFile
-	 * @return
+	 * @param dirOrFile - this arg should contain a file object which contains the file directory or a file
+	 * @return - true as the value if file or the directory is deleted successfully, else returns false
 	 */
 	private boolean deleteFileOrDirectory(File dirOrFile) {
 		if (!dirOrFile.exists())
 			return true;
 		if (!dirOrFile.isDirectory())
 			return dirOrFile.delete();
+
+		File[] files = dirOrFile.listFiles();
+		if (files == null) {
+			// Unable to list files, possibly due to security restrictions
+			return false;
+		}
+
 		boolean okay = true;
-		for (File file : dirOrFile.listFiles()) {
+		for (File file : files) {
 			if (file.isDirectory())
 				okay &= deleteFileOrDirectory(file);
 			else
@@ -312,12 +322,13 @@ public class ApplicationController {
 		}
 		return okay;
 	}
-	
+
+
 	/**
 	 * Expands the given zip file as /database
 	 * 
-	 * @param zipFile
-	 * @throws IOException
+	 * @param zipFile - zipped file which contains database
+	 * @throws IOException - throws io exception
 	 */
 	private void unzipDatabase(File zipFile) throws IOException {
 		System.out.println("Unzipping database from " + zipFile.getName());
@@ -327,63 +338,68 @@ public class ApplicationController {
 	}
 	
 	/**
-	 * Modified version of
-	 * http://stackoverflow.com/questions/981578/how-to-unzip-files-recursively-in
-	 * -java/981731#981731
-	 * 
-	 * @param sourceZipFile
-	 * @param unzipDestinationDirectory
-	 * @throws IOException
-	 */
+     * Modified version of
+     * <a href="http://stackoverflow.com/questions/981578/how-to-unzip-files-recursively-in">...</a>
+     * -java/981731#981731
+     *
+     * @param sourceZipFile - this arg should contain a zipped file which need to be unzipped
+     * @param unzipDestinationDirectory - this arg should contain the path of destination directory
+     * @throws IOException - throws any input output exception
+     */
 	public void unzip(File sourceZipFile, File unzipDestinationDirectory) throws IOException {
-		int BUFFER = 2048;
+		final int BUFFER = 2048;
 		if (!unzipDestinationDirectory.exists())
 			unzipDestinationDirectory.mkdir();
-		
-		ZipFile zipFile;
-		// Open Zip file for reading
-		zipFile = new ZipFile(sourceZipFile, ZipFile.OPEN_READ);
-		
-		// Create an enumeration of the entries in the zip file
-		Enumeration<? extends ZipEntry> zipFileEntries = zipFile.entries();
-		
-		// Process each entry
-		while (zipFileEntries.hasMoreElements()) {
-			// grab a zip file entry
-			ZipEntry entry = zipFileEntries.nextElement();
-			String currentEntry = entry.getName();
-			
-			File destFile = new File(unzipDestinationDirectory, currentEntry);
-			
-			// grab file's parent directory structure
-			File destinationParent = destFile.getParentFile();
-			
-			// create the parent directory structure if needed
-			destinationParent.mkdirs();
-			
-			// extract file if not a directory
-			if (!entry.isDirectory()) {
-				BufferedInputStream is = new BufferedInputStream(zipFile.getInputStream(entry));
-				int currentByte;
-				// establish buffer for writing file
-				byte data[] = new byte[BUFFER];
-				
-				// write the current file to disk
-				FileOutputStream fos = new FileOutputStream(destFile);
-				BufferedOutputStream dest = new BufferedOutputStream(fos, BUFFER);
-				
-				// read and write until last byte is encountered
-				while ((currentByte = is.read(data, 0, BUFFER)) != -1) {
-					dest.write(data, 0, currentByte);
+
+		ZipFile zipFile = null;
+		try {
+			zipFile = new ZipFile(sourceZipFile, ZipFile.OPEN_READ);
+			Enumeration<? extends ZipEntry> zipFileEntries = zipFile.entries();
+
+			while (zipFileEntries.hasMoreElements()) {
+				ZipEntry entry = zipFileEntries.nextElement();
+				String currentEntry = entry.getName();
+
+				File destFile = new File(unzipDestinationDirectory, currentEntry);
+
+				File destinationParent = destFile.getParentFile();
+				destinationParent.mkdirs();
+
+				if (!entry.isDirectory()) {
+					BufferedInputStream is = null;
+					FileOutputStream fos = null;
+					BufferedOutputStream dest = null;
+					try {
+						is = new BufferedInputStream(zipFile.getInputStream(entry));
+						fos = new FileOutputStream(destFile);
+						dest = new BufferedOutputStream(fos, BUFFER);
+						int currentByte;
+						byte[] data = new byte[BUFFER];
+
+						while ((currentByte = is.read(data, 0, BUFFER)) != -1) {
+							dest.write(data, 0, currentByte);
+						}
+						dest.flush();
+					} finally {
+						if (dest != null) {
+							dest.close();
+						}
+						if (fos != null) {
+							fos.close();
+						}
+						if (is != null) {
+							is.close();
+						}
+					}
 				}
-				dest.flush();
-				dest.close();
-				is.close();
+			}
+		} finally {
+			if (zipFile != null) {
+				zipFile.close();
 			}
 		}
-		zipFile.close();
 	}
-	
+
 	/**
 	 * Starts running tomcat.
 	 * 
@@ -413,7 +429,7 @@ public class ApplicationController {
 	/**
 	 * Stops tomcat from running.
 	 * 
-	 * @return
+	 * @return - returns 'null'
 	 */
 	private String stopServer() {
 		if (tomcatManager != null)
@@ -453,7 +469,7 @@ public class ApplicationController {
 	/**
 	 * Indicates that the user has requested a database change.
 	 * 
-	 * @param modeToApply
+	 * @param modeToApply - this arg should contain the database mode which should be applied
 	 */
 	public void setApplyDatabaseChange(DatabaseMode modeToApply) {
 		this.applyDatabaseChange = modeToApply;
@@ -489,4 +505,4 @@ public class ApplicationController {
 			}
 		}
 	}
-};
+}

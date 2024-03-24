@@ -37,22 +37,20 @@ public class CommandLine implements UserInterface {
 	
 	private static final String CMD_EXIT = "exit";
 	
-	private ApplicationController appController;
+	private final ApplicationController appController;
 	
 	private int tomcatPort = UserInterface.DEFAULT_TOMCAT_PORT;
 	
 	private String mySqlPort = UserInterface.DEFAULT_MYSQL_PORT;
 	
-	private BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(System.in));
+	private final BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(System.in));
 	
 	private String status;
 	
 	private boolean running = false;
 	
 	private boolean exiting = false;
-	
-	private SwingWorker workerThread;
-	
+
 	private boolean nonInteractive = false;
 	
 	private DatabaseMode mode = DatabaseMode.DEMO_DATABASE;
@@ -100,6 +98,7 @@ public class CommandLine implements UserInterface {
 	}
 	
 	public void onFinishedInitialConfigCheck() {
+  SwingWorker workerThread;
 		if (nonInteractive) {
 			displayStatusMessage();
 		}

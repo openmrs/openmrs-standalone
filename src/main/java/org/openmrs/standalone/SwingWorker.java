@@ -18,7 +18,7 @@ import javax.swing.SwingUtilities;
 /**
  * This is the 3rd version of SwingWorker (also known as SwingWorker 3), an abstract class that you
  * subclass to perform GUI-related work in a dedicated thread. For instructions on using this class,
- * see: http://java.sun.com/docs/books/tutorial/uiswing/misc/threads.html Note that the API changed
+ * see: <a href="http://java.sun.com/docs/books/tutorial/uiswing/misc/threads.html">...</a> Note that the API changed
  * slightly in the 3rd version: You must now invoke start() on the SwingWorker after creating it.
  */
 public abstract class SwingWorker {
@@ -45,7 +45,7 @@ public abstract class SwingWorker {
 		}
 	}
 	
-	private ThreadVar threadVar;
+	private final ThreadVar threadVar;
 	
 	/**
 	 * Get the value produced by the worker thread, or null if it hasn't been constructed yet.

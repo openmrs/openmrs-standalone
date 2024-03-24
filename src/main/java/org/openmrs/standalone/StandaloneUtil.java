@@ -43,6 +43,10 @@ import com.mysql.management.driverlaunched.ServerLauncherSocketFactory;
  * Utility routines used by the standalone application.
  */
 public class StandaloneUtil {
+
+	private StandaloneUtil(){
+		//private constructor
+	}
 	
 	/**
 	 * The minimum number of server port number.
@@ -128,8 +132,9 @@ public class StandaloneUtil {
 		
 		try {
 			Properties properties = OpenmrsUtil.getRuntimeProperties(getContextName()); //new Properties();
-			
-			String connectionString = properties.getProperty(KEY_CONNECTION_URL);
+
+            assert properties != null;
+            String connectionString = properties.getProperty(KEY_CONNECTION_URL);
 			String password = properties.getProperty(KEY_CONNECTION_PASSWORD);
 			String username = properties.getProperty(KEY_CONNECTION_USERNAME);
 			String resetConnectionPassword = properties.getProperty(KEY_RESET_CONNECTION_PASSWORD);
@@ -139,16 +144,16 @@ public class StandaloneUtil {
 			
 			//Change the mysql password if instructed to.
 			if ("true".equalsIgnoreCase(resetConnectionPassword)) {
-				String newPassword = "";
+				StringBuilder newPassword = new StringBuilder();
 				// intentionally left out these characters: ufsb$() to prevent certain words forming randomly
 				String chars = "acdeghijklmnopqrtvwxyzACDEGHIJKLMNOPQRTVWXYZ0123456789.|~@^&";
 				Random r = new Random();
 				for (int x = 0; x < 12; x++) {
-					newPassword += chars.charAt(r.nextInt(chars.length()));
+					newPassword.append(chars.charAt(r.nextInt(chars.length())));
 				}
 				
-				if (setMysqlPassword(connectionString, username, password, newPassword)) {
-					properties.put(KEY_CONNECTION_PASSWORD, newPassword);
+				if (setMysqlPassword(connectionString, username, password, newPassword.toString())) {
+					properties.put(KEY_CONNECTION_PASSWORD, newPassword.toString());
 					
 					//Now remove the reset connection password property such that we do not change the password again.
 					properties.remove(KEY_RESET_CONNECTION_PASSWORD);
@@ -211,7 +216,7 @@ public class StandaloneUtil {
 	/**
      * Auto generated method comment
      * 
-     * @param properties
+     * @param properties - Object of a Property class which contains relevant properties
      */
     private static void writeRuntimeProperties(Properties properties) {
     	//I just do not like the extra characters that the store() method puts in the properties file.
