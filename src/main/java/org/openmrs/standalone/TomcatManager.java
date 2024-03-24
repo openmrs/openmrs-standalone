@@ -13,15 +13,6 @@
  */
 package org.openmrs.standalone;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.net.InetAddress;
-import java.net.MalformedURLException;
-import java.net.ServerSocket;
-import java.net.Socket;
-import java.security.AccessControlException;
-import java.util.Random;
-
 import org.apache.catalina.Context;
 import org.apache.catalina.Engine;
 import org.apache.catalina.Host;
@@ -29,35 +20,28 @@ import org.apache.catalina.LifecycleException;
 import org.apache.catalina.connector.Connector;
 import org.apache.catalina.startup.Embedded;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.net.InetAddress;
+import java.net.ServerSocket;
+import java.net.Socket;
+import java.security.AccessControlException;
+import java.util.Random;
+
 /**
  * Manages an embedded tomcat instance.
  */
 public class TomcatManager {
 	
-	private Embedded container = null;
-	
-	/**
-	 * The port number on which we wait for shutdown commands.
-	 */
-	private int port = 8005;
-	
-	/**
-	 * The address on which we wait for shutdown commands.
-	 */
-	private String address = "localhost";
-	
-	/**
+	private Embedded container;
+
+    /**
 	 * A random number generator that is <strong>only</strong> used if the shutdown command string
 	 * is longer than 1024 characters.
 	 */
 	private Random random = null;
-	
-	/**
-	 * The shutdown command string we are looking for.
-	 */
-	private String shutdown = "SHUTDOWN";
-	
-	/**
+
+    /**
 	 * Creates a single webapp configuration to be run in Tomcat.
 	 * 
 	 * @param contextName the context name without leading slash, for example, "openmrs"
@@ -94,7 +78,7 @@ public class TomcatManager {
 	/**
 	 * Starts the embedded Tomcat server.
 	 */
-	public void run() throws LifecycleException, MalformedURLException {
+	public void run() throws LifecycleException {
 		container.setAwait(true);
 		container.start();
 	}
@@ -129,7 +113,7 @@ public class TomcatManager {
 	/**
 	 * Wait until a proper shutdown command is received, then return. This keeps the main thread
 	 * alive - the thread pool listening for http connections is daemon threads.
-	 * 
+
 	 * NOTE: This method has been copied and modified slightly from 
 	 * org.apache.catalina.core.StandardServer.await()
 	 * We should have just called container.getServer().await()
@@ -138,7 +122,11 @@ public class TomcatManager {
 	public void await() {
 		// Set up a server socket to wait on
 		ServerSocket serverSocket = null;
-		try {
+        // The port number on which we wait for shutdown commands.
+        int port = 8005;
+        // The address on which we wait for shutdown commands.
+        String address = "localhost";
+        try {
 			serverSocket = new ServerSocket(port, 1, InetAddress.getByName(address));
 		}
 		catch (IOException e) {
@@ -169,14 +157,16 @@ public class TomcatManager {
 			// Read a set of characters from the socket
 			StringBuilder command = new StringBuilder();
 			int expected = 1024; // Cut off to avoid DoS attack
-			while (expected < shutdown.length()) {
+            // The shutdown command string we are looking for.
+            String shutdown = "SHUTDOWN";
+            while (expected < shutdown.length()) {
 				if (random == null) {
 					random = new Random();
 				}
 				expected += (random.nextInt() % 1024);
 			}
 			while (expected > 0) {
-				int ch = -1;
+				int ch;
 				try {
 					ch = stream.read();
 				}
@@ -205,7 +195,7 @@ public class TomcatManager {
 				System.out.println("TomcatManager.shutdownViaPort");
 				break;
 			} else {
-				System.out.println("TomcatManager.await: Invalid command '" + command.toString() + "' received");
+				System.out.println("TomcatManager.await: Invalid command '" + command + "' received");
 			}
 			
 		}
