@@ -23,6 +23,10 @@ import java.io.UnsupportedEncodingException;
 import java.util.Properties;
 
 public class OpenmrsUtil {
+
+	private OpenmrsUtil(){
+		// private constructor
+	}
 	
 	private static final String OPERATING_SYSTEM_KEY = "os.name";
 	
@@ -44,9 +48,9 @@ public class OpenmrsUtil {
 	 * Shortcut booleans used to make some OS specific checks more generic; note the *nix flavored
 	 * check is missing some less obvious choices
 	 */
-	private static final boolean UNIX_BASED_OPERATING_SYSTEM = (OPERATING_SYSTEM.indexOf(OPERATING_SYSTEM_LINUX) > -1
-			|| OPERATING_SYSTEM.indexOf(OPERATING_SYSTEM_SUNOS) > -1
-			|| OPERATING_SYSTEM.indexOf(OPERATING_SYSTEM_FREEBSD) > -1 || OPERATING_SYSTEM.indexOf(OPERATING_SYSTEM_OSX) > -1);
+	private static final boolean UNIX_BASED_OPERATING_SYSTEM = (OPERATING_SYSTEM.contains(OPERATING_SYSTEM_LINUX)
+			|| OPERATING_SYSTEM.contains(OPERATING_SYSTEM_SUNOS)
+			|| OPERATING_SYSTEM.contains(OPERATING_SYSTEM_FREEBSD) || OPERATING_SYSTEM.contains(OPERATING_SYSTEM_OSX));
 	
 	
 	
@@ -84,6 +88,14 @@ public class OpenmrsUtil {
 		}
 		catch (FileNotFoundException e) {
 		}
+		finally {
+            try {
+                assert propertyStream != null;
+                propertyStream.close();
+            } catch (IOException e) {
+                //handle the IO exceptions
+            }
+        }
 		
 		// next look for an environment variable
 		if (propertyStream == null) {
@@ -225,7 +237,7 @@ public class OpenmrsUtil {
 	 * Convenience method used to load properties from the given file.
 	 * 
 	 * @param props the properties object to be loaded into
-	 * @param propertyFile the properties file to read
+	 * @param inputStream the input stream which contains relevant data to load properties
 	 */
 	private static void loadProperties(Properties props, InputStream inputStream) {
 		try {
