@@ -12,11 +12,11 @@
   <url>https://github.com/openmrs/openmrs-standalone</url>
 
   <modules>
-      <module>pom-step-01.xml</module>
-      <module>pom-step-02.xml</module>
-      <module>pom-step-03.xml</module>
-      <module>pom-step-04.xml</module>
-      <module>pom-step-05.xml</module>
+      <module>pom-step-01-initial-setup.xml</module>
+      <module>pom-step-02-database-configuration.xml</module>
+      <module>pom-step-03-liquibase-migrations.xml</module>
+      <module>pom-step-04-liquibase-data-generation.xml</module>
+      <module>pom-step-05-finalization.xml</module>
   </modules>
 
   <properties>
