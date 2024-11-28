@@ -36,6 +36,32 @@
 	<build>
 		<plugins>
 			<plugin>
+				<groupId>ch.vorburger.mariaDB4j</groupId>
+				<artifactId>mariaDB4j-maven-plugin</artifactId>
+				<configuration>
+					<port>33328</port>
+					<baseDir>${project.build.directory}/demodatabase</baseDir>
+					<dataDir>${project.build.directory}/demodatabase/data</dataDir>
+				</configuration>
+
+				<executions>
+					<execution>
+						<id>start-demo-database</id>
+						<phase>initialize</phase>
+						<goals>
+							<goal>start</goal>
+						</goals>
+					</execution>
+					<execution>
+						<id>stop-demo-database</id>
+						<phase>process-resources</phase>
+						<goals>
+							<goal>stop</goal>
+						</goals>
+					</execution>
+				</executions>
+			</plugin>
+			<plugin>
 				<groupId>org.liquibase</groupId>
 				<artifactId>${liquibase.plugin.artifactId}</artifactId>
 				<executions>
@@ -43,9 +69,9 @@
 						<id>demo-db-update-to-latest</id>
 						<phase>generate-resources</phase>
 						<configuration>
-							<driver>com.mysql.jdbc.Driver</driver>
+							<driver>com.mysql.cj.jdbc.Driver</driver>
 							<changeLogFile>liquibase-update-to-latest-from-1.9.x.xml</changeLogFile>
-							<url><![CDATA[jdbc:mysql:mxj://127.0.0.1:33328/openmrs?autoReconnect=true&sessionVariables=storage_engine=InnoDB&useUnicode=true&characterEncoding=UTF-8&server.initialize-user=true&createDatabaseIfNotExist=true&server.basedir=${project.build.directory}/demodatabase&server.datadir=${project.build.directory}/demodatabase/data&server.collation-server=utf8_general_ci&server.character-set-server=utf8&server.max_allowed_packet=32M]]></url>
+							<url><![CDATA[jdbc:mysql://127.0.0.1:33328/openmrs?autoReconnect=true&sessionVariables=storage_engine=InnoDB&useUnicode=true&characterEncoding=UTF-8]]></url>
 							<username>openmrs</username>
 							<password>test</password>
 							<verbose>true</verbose>
@@ -69,9 +95,9 @@
 						<id>demo-db-followup</id>
 						<phase>generate-resources</phase>
 						<configuration>
-							<driver>com.mysql.jdbc.Driver</driver>
+							<driver>com.mysql.cj.jdbc.Driver</driver>
 							<changeLogFile>${liquibase.demodata.followup.filename}</changeLogFile>
-							<url><![CDATA[jdbc:mysql:mxj://127.0.0.1:33328/openmrs?autoReconnect=true&sessionVariables=storage_engine=InnoDB&useUnicode=true&characterEncoding=UTF-8&server.initialize-user=true&createDatabaseIfNotExist=true&server.basedir=${project.build.directory}/demodatabase&server.datadir=${project.build.directory}/demodatabase/data&server.collation-server=utf8_general_ci&server.character-set-server=utf8&server.max_allowed_packet=32M]]></url>
+							<url><![CDATA[jdbc:mysql://127.0.0.1:33328/openmrs?autoReconnect=true&sessionVariables=storage_engine=InnoDB&useUnicode=true&characterEncoding=UTF-8]]></url>
 							<username>openmrs</username>
 							<password>test</password>
 							<verbose>true</verbose>
@@ -90,25 +116,6 @@
 						<goals>
 							<goal>update</goal>
 						</goals>
-					</execution>
-				</executions>
-			</plugin>
-			<plugin>
-				<groupId>org.codehaus.mojo</groupId>
-				<artifactId>exec-maven-plugin</artifactId>
-				<executions>
-					<execution>
-						<phase>prepare-package</phase>
-						<goals>
-							<goal>java</goal>
-						</goals>
-						<configuration>
-							<mainClass>org.openmrs.standalone.StopEmbeddedMySQL</mainClass>
-							<arguments>
-								<argument>${project.build.directory}/emptydatabase</argument>
-								<argument>${project.build.directory}/demodatabase</argument>
-							</arguments>
-						</configuration>
 					</execution>
 				</executions>
 			</plugin>
@@ -204,6 +211,11 @@
 						</configuration>
 					</execution>
 				</executions>
+			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-surefire-plugin</artifactId>
+				<version>3.0.0-M3</version>
 			</plugin>
 		</plugins>
 		<pluginManagement>

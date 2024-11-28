@@ -28,6 +28,8 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.sql.Connection;
 import java.sql.DriverManager;
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.Date;
 import java.util.HashMap;
@@ -37,7 +39,7 @@ import java.util.Random;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import com.mysql.management.driverlaunched.ServerLauncherSocketFactory;
+import ch.vorburger.exec.ManagedProcessException;
 
 /**
  * Utility routines used by the standalone application.
@@ -134,33 +136,10 @@ public class StandaloneUtil {
 			String username = properties.getProperty(KEY_CONNECTION_USERNAME);
 			String resetConnectionPassword = properties.getProperty(KEY_RESET_CONNECTION_PASSWORD);
 			
-			//We change the mysql password only if it is test.
-			//if (password != null && password.toLowerCase().equals("test")) {
-			
-			//Change the mysql password if instructed to.
-			if ("true".equalsIgnoreCase(resetConnectionPassword)) {
-				String newPassword = "";
-				// intentionally left out these characters: ufsb$() to prevent certain words forming randomly
-				String chars = "acdeghijklmnopqrtvwxyzACDEGHIJKLMNOPQRTVWXYZ0123456789.|~@^&";
-				Random r = new Random();
-				for (int x = 0; x < 12; x++) {
-					newPassword += chars.charAt(r.nextInt(chars.length()));
-				}
-				
-				if (setMysqlPassword(connectionString, username, password, newPassword)) {
-					properties.put(KEY_CONNECTION_PASSWORD, newPassword);
-					
-					//Now remove the reset connection password property such that we do not change the password again.
-					properties.remove(KEY_RESET_CONNECTION_PASSWORD);
-					
-					propertiesFileChanged = true;
-				}
-			}
-			
 			String portToken = ":" + mySqlPort + "/";
 			
-			//in a string like this: jdbc:mysql:mxj://localhost:3306/openmrs?autoReconnect=true
-			//look for something like this :3306/
+			//in a string like this: jdbc:mysql://localhost:3316/openmrs?autoReconnect=true
+			//look for something like this :3316/
 			String regex = ":[0-9]+/";
 			Pattern pattern = Pattern.compile(regex);
 			Matcher matcher = pattern.matcher(connectionString);
@@ -183,7 +162,30 @@ public class StandaloneUtil {
 					mySqlPort = mySqlPort.replace("/", "");
 				}
 			}
-			
+
+			//We change the mysql password only if it is test.
+			//if (password != null && password.toLowerCase().equals("test")) {
+
+			//Change the mysql password if instructed to.
+			if ("true".equalsIgnoreCase(resetConnectionPassword)) {
+				String newPassword = "";
+				// intentionally left out these characters: ufsb$() to prevent certain words forming randomly
+				String chars = "acdeghijklmnopqrtvwxyzACDEGHIJKLMNOPQRTVWXYZ0123456789.|~@^&";
+				Random r = new Random();
+				for (int x = 0; x < 12; x++) {
+					newPassword += chars.charAt(r.nextInt(chars.length()));
+				}
+
+				if (setMysqlPassword(connectionString, mySqlPort, username, password, newPassword)) {
+					properties.put(KEY_CONNECTION_PASSWORD, newPassword);
+
+					//Now remove the reset connection password property such that we do not change the password again.
+					properties.remove(KEY_RESET_CONNECTION_PASSWORD);
+
+					propertiesFileChanged = true;
+				}
+			}
+
 			if (tomcatPort != null) {
 				if (!tomcatPort.equals(properties.get(KEY_TOMCAT_PORT))) {
 					properties.put(KEY_TOMCAT_PORT, tomcatPort);
@@ -302,46 +304,42 @@ public class StandaloneUtil {
 		
 		return CONTEXT_NAME;
 	}
-	
-	private static boolean setMysqlPassword(String url, String username, String oldPassword, String newPassword) {
-		
-		Connection connection = null;
+
+	private static boolean setMysqlPassword(String url, String mysqlPort, String username, String oldPassword, String newPassword) {
+
 		try {
-			Class.forName("com.mysql.jdbc.Driver").newInstance();
-			
-			String sql = "update mysql.user set password=PASSWORD('" + newPassword + "') where User='" + username + "';";
-			connection = DriverManager.getConnection(url, username, oldPassword);
-			Statement statement = connection.createStatement();
-			statement.executeUpdate(sql);
-			
-			StandaloneUtil.stopMySqlServer();
-			
-			return true;
-		}
-		catch (Exception ex) {
-			ex.printStackTrace();
-		}
-		finally {
-			try {
-				if (connection != null) {
-					connection.close();
-				}
-			}
-			catch (Exception ex) {
+			Class.forName("com.mysql.cj.jdbc.Driver").newInstance();
+
+			MariaDbController.startMariaDB(mysqlPort);
+
+			String sql = "SET PASSWORD FOR '" + username + "'@localhost = PASSWORD(?);";
+
+			try (Connection connection = DriverManager.getConnection(url, "root", MariaDbController.getRootPassword());
+				 PreparedStatement statement = connection.prepareStatement(sql)) {
+
+				statement.setString(1, newPassword);
+
+				statement.executeUpdate();
+
+				return true;
+
+			} catch (SQLException ex) {
 				ex.printStackTrace();
+				return false;
 			}
-		}
-		
-		return false;
-	}
-	
-	public static void stopMySqlServer() {
-		try {
-			ServerLauncherSocketFactory.shutdown(new File("database"), new File("database/data"));
-		}
-		catch (Exception exception) {
-			System.out.println("Cannot Stop MySQL" + exception.getMessage());
-		}
+
+		} catch (Exception ex) {
+			ex.printStackTrace();
+			return false;
+
+		} finally {
+            try {
+                MariaDbController.stopMariaDB();
+            } catch (ManagedProcessException e) {
+				System.out.println("Failed to stop MariaDB: " + e.getMessage());
+				e.printStackTrace();
+            }
+        }
 	}
 	
 	/**
@@ -403,29 +401,38 @@ public class StandaloneUtil {
 	
 	
 	/**
-	 * Starts and stops MySQL, so that mxj can create the default user
+	 * Starts and stops MySQL, so that MariaDB can create the default user
 	 * @throws Exception 
 	 */
-	public static void startupDatabaseToCreateDefaultUser() throws Exception {
-    	try {
-    		Class.forName("com.mysql.jdbc.Driver");
-    	} catch (ClassNotFoundException ex) {
-    		throw new RuntimeException("cannot find mysql driver class");
-    	}
-    	Properties props = OpenmrsUtil.getRuntimeProperties(getContextName());
-    	String url = props.getProperty("connection.url");
-    	if (!url.contains("server.initialize-user=true"))
-    		throw new RuntimeException("connection.url in runtime properties must contain server.initialize-user=true");
+	public static void startupDatabaseToCreateDefaultUser(String mysqlPort) throws Exception {
+		try {
+			Class.forName("com.mysql.cj.jdbc.Driver");
+		} catch (ClassNotFoundException ex) {
+			throw new RuntimeException("cannot find mysql driver class", ex);
+		}
+		Properties props = OpenmrsUtil.getRuntimeProperties(getContextName());
+		String url = props.getProperty("connection.url");
 
 		System.out.println("Working directory is " + new File(".").getAbsolutePath());
-		System.out.println("Opening MySQL connection to create openmrs/test users");
-    	Connection conn = DriverManager.getConnection(url, "openmrs", "test");
-    	conn.close();
-    	System.out.println("closed MySQL connection");
-    	stopMySqlServer();
-    }
-	
-	
+		System.out.println("Opening MariaDB connection to create openmrs/test users");
+
+		MariaDbController.startMariaDB(mysqlPort);
+
+		try (Connection conn = DriverManager.getConnection(url, "root", MariaDbController.getRootPassword());
+			 Statement stmt = conn.createStatement()) {
+
+			String createUserSQL = "CREATE USER IF NOT EXISTS 'openmrs'@'localhost' IDENTIFIED BY 'test';";
+			stmt.executeUpdate(createUserSQL);
+
+			String grantPrivilegesSQL = "GRANT ALL PRIVILEGES ON openmrs.* TO 'openmrs'@'localhost' WITH GRANT OPTION;";
+			stmt.executeUpdate(grantPrivilegesSQL);
+
+		} finally {
+			MariaDbController.stopMariaDB();
+		}
+	}
+
+
 	/**
 	 * Sets the MySQL and Tomcat ports in the run time properties file.
 	 * 
@@ -446,8 +453,8 @@ public class StandaloneUtil {
 			String connectionString = properties.getProperty(KEY_CONNECTION_URL);
 			String portToken = ":" + mySqlPort + "/";
 			
-			//in a string like this: jdbc:mysql:mxj://localhost:3306/openmrs?autoReconnect=true
-			//look for something like this :3306/
+			//in a string like this: jdbc:mysql://localhost:3316/openmrs?autoReconnect=true
+			//look for something like this :3316/
 			String regex = ":[0-9]+/";
 			Pattern pattern = Pattern.compile(regex);
 			Matcher matcher = pattern.matcher(connectionString);

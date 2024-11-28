@@ -22,6 +22,7 @@ import java.net.Socket;
 import java.security.AccessControlException;
 import java.util.Random;
 
+import ch.vorburger.exec.ManagedProcessException;
 import org.apache.catalina.Context;
 import org.apache.catalina.Engine;
 import org.apache.catalina.Host;
@@ -119,10 +120,15 @@ public class TomcatManager {
 			return false;
 		}
 		
-		//stop mysql.
-		if(stopMySql)
-			StandaloneUtil.stopMySqlServer();
-		
+		if(stopMySql) {
+            try {
+                MariaDbController.stopMariaDB();
+            } catch (ManagedProcessException e) {
+				System.out.println("Failed to stop MariaDB: " + e.getMessage());
+				e.printStackTrace();
+            }
+        }
+
 		return true;
 	}
 	

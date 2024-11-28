@@ -24,6 +24,8 @@ import java.io.PrintStream;
 import java.io.PrintWriter;
 import java.util.Properties;
 
+import ch.vorburger.exec.ManagedProcessException;
+
 /**
  * The only reason for existence of this class is to enable us increase tomcat memory by passing the
  * JVM options as advised at http://wiki.openmrs.org/display/docs/Out+Of+Memory+Errors. Since we
@@ -95,8 +97,10 @@ public class Bootstrap {
 		
 		try {	
 			Properties properties = OpenmrsUtil.getRuntimeProperties(StandaloneUtil.getContextName());
-			String vm_arguments = properties.getProperty("vm_arguments", "-Xmx512m -Xms512m -XX:PermSize=256m -XX:MaxPermSize=256m -XX:NewSize=128m");
-			
+			String debugArguments = "-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=5005";
+			String vm_arguments = properties.getProperty("vm_arguments", "-Xmx512m -Xms512m -XX:NewSize=128m");
+			vm_arguments = debugArguments + " " + vm_arguments;
+
 			// Spin up a separate java process calling a non-default Main class in our Jar.  
 			process = Runtime.getRuntime().exec(
 			    "java " + (showSplashScreen ? "-splash:splashscreen-loading.png" : "")
@@ -152,8 +156,13 @@ public class Bootstrap {
 		Runtime.getRuntime().addShutdownHook(new Thread() {
 			
 			public void run() {
-				StandaloneUtil.stopMySqlServer();
-			}
+                try {
+                    MariaDbController.stopMariaDB();
+                } catch (ManagedProcessException e) {
+					System.out.println("Failed to stop MariaDB: " + e.getMessage());
+					e.printStackTrace();
+                }
+            }
 		});
 		
 		new Bootstrap().launch(commandLineArguments, showSplashScreen);

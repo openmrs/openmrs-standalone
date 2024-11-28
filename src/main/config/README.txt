@@ -86,17 +86,17 @@ GUI MODE OPTIONS
 ================
 
 Tomcat Port			This is the port at which to run tomcat.
-MySQL Port 			This is the port at which to run mysql
-File → Quit			This menu item stops tomcat and mysql and then closes the application.
+MySQL Port 			This is the port at which to run MariaDB
+File → Quit			This menu item stops tomcat and MariaDB and then closes the application.
 File → Launch Browser 	This menu item opens the openmrs login page for the current web application context.
 File → Clear Output 	This clears the output log in the user interface text area. But does not clear the log file written on the file system.
-Start 				This button runs tomcat, which will automatically start the mysql database engine if it was not already running. For the embedded mysql, the first connection 				     	automatically starts the mysql engine.
-Stop 				This button stops tomcat and then also stops the mysql database engine, without closing the application. 
+Start 				This button runs tomcat, which will automatically start the MariaDB database engine if it was not already running. For the embedded MariaDB4j, the first connection 				     	automatically starts the MariaDB engine.
+Stop 				This button stops tomcat and then also stops the MariaDB database engine, without closing the application.
 
 COMMAND LINE OPTIONS
 ====================
 
--mysqlport		Use to override the mysql port in the runtime properties file.
+-mysqlport		Use to override the MariaDB port in the runtime properties file.
 -tomcatport		Use to override the tomcat port in the runtime properties file.
 -start			Use to start the server.
 -stop			Use to stop the server.

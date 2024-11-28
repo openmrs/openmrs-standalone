@@ -1,11 +1,11 @@
 
 ...............QUICK SUMMARY FOR BUILDING THE STANDALONE.....................
-* Increase the maven memory: e.g. export MAVEN_OPTS="-Xms1012m -Xmx2024m -XX:PermSize=556m -XX:MaxPermSize=1012m"
+* Increase the maven memory: e.g. export MAVEN_OPTS="-Xms1012m -Xmx2024m"
 * mvn clean
 * mvn package -Dopenmrs.version=1.9.0
 * If you are building standalone for OpenMRS 1.8.x you need to append the above command with -P1.8.x 
 and put in the main directory the Demo-1.8.0.sql file from https://wiki.openmrs.org/display/RES/Demo+Data
-* If running a second time, ALWAYS check to make sure mysql processes on port 3326 and 3328 are stopped. 
+* If running a second time, ALWAYS check to make sure MariaDB processes on port 3326 and 3328 are stopped.
   If you DON'T do that, then the "mvn clean" will not really clean. 
   A good command to use is: "pkill -f standalone"  (kills anything with "standalone" in the path) 
 
@@ -82,7 +82,7 @@ NOTE: Using Maven Package will generate the executable jar file in the target fo
 	
 7- 	For the section: "Do you currently have a database user other than root that has read/write access to the openmrs database?",
 	Choose Yes, and then enter a "openmrs" and "test" as the user name and password. This account will be created by the embedded database engine.
-	The reason to use 'test' is that when the application starts, it checks for the mysql password and if it is test, it is replaced with a randomly
+	The reason to use 'test' is that when the application starts, it checks for the MariaDB password and if it is test, it is replaced with a randomly
 	generated 12 character password which is written back to the runtime properties file.
 	
 8-	Click "Continue" to go to the next wizard screen, and feel free to fill what you want on this screen.
@@ -140,55 +140,34 @@ splashscreen-loading.png			 This is the splash screen displayed on startup. It c
 
 ............... DATABASE CONNECTION STRING.......................
 
-jdbc:mysql:mxj://localhost:3316/openmrs?autoReconnect=true&sessionVariables=storage_engine=InnoDB&useUnicode=true&characterEncoding=UTF-8&server.initialize-user=true&createDatabaseIfNotExist=true&server.basedir=database&server.datadir=database/data&server.collation-server=utf8_general_ci&server.character-set-server=utf8
+jdbc:mysql://127.0.0.1:3316/openmrs?autoReconnect=true&sessionVariables=storage_engine=InnoDB&useUnicode=true&characterEncoding=UTF-8
 
-The above default database connection string has all in the openmrs mysql default database connection string plus a 
-few additional parameters as explained below:
-
-mxj             This is required for the MySQL Connector/MXJ utility which we use for embedding mysql
-				More information about it can be found at: http://dev.mysql.com/doc/refman/5.1/en/connector-mxj.html
-				
-server.initialize-user      	The value of true tells the database engine to create the user account that will be specified
-						    	in the openmrs web database setup. This is the account referred to as 
-						    	connection.username & connection.password in the runtime properties file.
-						   
-createDatabaseIfNotExist    	The value of true tells the database engine to create the database if it does not exist.
-
-server.basedir 			    	This is the directory where the mysql database server will be installed. The default value
-						    	is a database folder in the current directory where the executable jar file is located.
-			
-server.datadir    		    	This is the dirrectory where mysql stores the database. The default value is the data folder
-						    	under the database folder in the current directory where the executable jar file is located.
-						   
-server.collation-server     	This sets the collation of the database server. If you do not set it to this value, you will
-						    	get problems running the openmrs liquibase files. This is because the default value is swedish
-						    	collation yet openmrs uses utf8
-					
-server.character-set-server 	This is the character set used by the database server.
+The above default database connection string has all in the openmrs mysql default database connection string used for a MariaDB
+connection
 
 						   
 NOTE: When creating a new database using the openmrs database setup wizard, remember to replace the default connection string
 	  with the one above in the "Database Connection:" text field.
 	  
-	  The embedded mysql database engine is a fully functional database engine that you can connect too using any database 
+	  The embedded MariaDB4j database engine is a fully functional database engine that you can connect too using any database
 	  GUI query tools like Navicat, EMS MySQL Manager, etc
 
 
 .......................APPLICATION USER INTERFACE.....................
 
 Tomcat Port					This is the port at which to run tomcat.
-MySQL Port					This is the port at which to run mysql
+MySQL Port					This is the port at which to run MariaDB
 
-File -> Quit				This menu item stops tomcat and mysql and then closes the application.
+File -> Quit				This menu item stops tomcat and MariaDB and then closes the application.
 File -> Launch Browser		This menu item opens the openmrs login page for the current web application context.
 File -> Clear Output		This clears the output log in the user interface text area. But does not clear the log file
 							written on the file system.
 
-Start						This button runs tomcat, which will automatically start the mysql database engine if it
-							was not already running. For the embedded mysql, the first connection automatically starts
-							the mysql engine.
+Start						This button runs tomcat, which will automatically start the MariaDB database engine if it
+							was not already running. For the embedded MariaDB4j, the first connection automatically starts
+							the MariaDB engine.
 							
-Stop						This button stops tomcat and then also stops the mysql database engine, without closing the application.
+Stop						This button stops tomcat and then also stops the MariaDB database engine, without closing the application.
 
 
 NOTE: Minimizing or Maximizing the application window does not have any effect on the server. The window close icon will stop
@@ -202,7 +181,7 @@ NOTE: Minimizing or Maximizing the application window does not have any effect o
 Running from command line requires the -commandline switch.
 e.g. java -jar standalone-0.0.1-SNAPSHOT.jar -commandline
 
--mysqlport: 	Use to override the mysql port in the runtime properties file.
+-mysqlport: 	Use to override the database port in the runtime properties file.
 -tomcatport: 	Use to override the tomcat port in the runtime properties file.
 start			Use to start the server.
 stop			Use to stop the server.
@@ -251,9 +230,5 @@ SUMMARY: Using a single package for all (most) platforms approximately tripples 
          
          
      
-MySQL MXJ documentation can be found at:
-http://dev.mysql.com/doc/refman/5.1/en/connector-mxj.html
-
-Details on how to add or remove platform specific databases can be found at: 
-http://dev.mysql.com/doc/refman/5.1/en/connector-mxj-usagenotes-packaging.html
-http://blog.teamlazerbeez.com/2011/10/03/embedded-mysql-on-java-with-connectormxj-and-64-bit-linux/
+MariaDB4j documentation can be found at:
+https://github.com/MariaDB4j/MariaDB4j

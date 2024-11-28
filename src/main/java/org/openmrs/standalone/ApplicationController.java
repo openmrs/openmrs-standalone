@@ -13,6 +13,8 @@
  */
 package org.openmrs.standalone;
 
+import static org.openmrs.standalone.MariaDbController.stopMariaDB;
+
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.File;
@@ -24,6 +26,8 @@ import java.util.Enumeration;
 import java.util.Properties;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
+
+import ch.vorburger.exec.ManagedProcessException;
 
 /**
  * Manages the application workflow.
@@ -230,7 +234,13 @@ public class ApplicationController {
 		Runtime.getRuntime().addShutdownHook(new Thread() {
 			
 			public void run() {
-				stopServer();
+                try {
+                    stopMariaDB();
+                } catch (ManagedProcessException e) {
+					System.out.println("Failed to stop MariaDB: " + e.getMessage());
+                    e.printStackTrace();
+                }
+                stopServer();
 			}
 		});
 		
@@ -243,17 +253,17 @@ public class ApplicationController {
 			if (applyDatabaseChange == DatabaseMode.USE_INITIALIZATION_WIZARD) {
 				deleteActiveDatabase();
 				StandaloneUtil.resetConnectionPassword();
-				StandaloneUtil.startupDatabaseToCreateDefaultUser();
+				StandaloneUtil.startupDatabaseToCreateDefaultUser(mySqlPort);
 			} else if (applyDatabaseChange == DatabaseMode.EMPTY_DATABASE) {
 				deleteActiveDatabase();
 				unzipDatabase(new File("emptydatabase.zip"));
 				StandaloneUtil.resetConnectionPassword();
-				StandaloneUtil.startupDatabaseToCreateDefaultUser();
+				StandaloneUtil.startupDatabaseToCreateDefaultUser(mySqlPort);
 			} else if (applyDatabaseChange == DatabaseMode.DEMO_DATABASE) {
 				deleteActiveDatabase();
 				unzipDatabase(new File("demodatabase.zip"));
 				StandaloneUtil.resetConnectionPassword();
-				StandaloneUtil.startupDatabaseToCreateDefaultUser();
+				StandaloneUtil.startupDatabaseToCreateDefaultUser(mySqlPort);
 			}
 			
 			deleteNeedsConfigFile();
@@ -395,8 +405,9 @@ public class ApplicationController {
 			//some stuff in this directory.
 			deleteTomcatWorkDir();
 			
-			StandaloneUtil.setPortsAndMySqlPassword(userInterface.getMySqlPort(), userInterface.getTomcatPort() + "");
-			
+			String mySqlPort = StandaloneUtil.setPortsAndMySqlPassword(userInterface.getMySqlPort(), userInterface.getTomcatPort() + "");
+			MariaDbController.startMariaDB(mySqlPort);
+
 			contextName = StandaloneUtil.getContextName();
 			tomcatManager = null;
 			tomcatManager = new TomcatManager(contextName, userInterface.getTomcatPort());
