@@ -458,35 +458,22 @@ public class ApplicationController {
 	public void setApplyDatabaseChange(DatabaseMode modeToApply) {
 		this.applyDatabaseChange = modeToApply;
 	}
-	
+
 	private static void writeProcessIdFile() {
-		FileWriter fw = null;
-		try {
-			String processId = ManagementFactory.getRuntimeMXBean().getName().split("@")[0];
-			System.out.println("OpenMRS Standalone process id:" + processId);
-			File pidFile = new File(".standalone.pid");
-			if (pidFile.exists()) {
-				System.out.println("There is already an instance of this standalone running, "
-				        + "please make sure all previous instances have been stopped");
-			}
-			pidFile.createNewFile();
-			pidFile.deleteOnExit();
-			System.out.println("Pid file:" + pidFile.getAbsolutePath());
-			
-			fw = new FileWriter(pidFile);
+		File pidFile = new File(".standalone.pid");
+		String processId = ManagementFactory.getRuntimeMXBean().getName().split("@")[0];
+
+		if (pidFile.exists()) {
+			System.err.println("Warning: Another instance may already be running. "
+					+ "Ensure previous instances are stopped before proceeding.");
+			return;
+		}
+
+		try (FileWriter fw = new FileWriter(pidFile)) {
 			fw.write(processId);
-			fw.flush();
-		}
-		catch (IOException ex) {
-			ex.printStackTrace();
-		}
-		finally {
-			if (fw != null) {
-				try {
-					fw.close();
-				}
-				catch (IOException ex) {}
-			}
+			System.out.println("Process ID (" + processId + ") written to " + pidFile.getAbsolutePath());
+		} catch (IOException ex) {
+			System.err.println("Error writing PID file: " + ex.getMessage());
 		}
 	}
 };
