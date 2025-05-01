@@ -20,6 +20,9 @@
   </modules>
 
   <properties>
+    <maven.compiler.source>1.8</maven.compiler.source>
+    <maven.compiler.target>1.8</maven.compiler.target>
+
     <ciel.dictionary.openmrs.version>2.6.0</ciel.dictionary.openmrs.version>
     <ciel.dictionary.version>20221104</ciel.dictionary.version>
 
@@ -28,14 +31,17 @@
     <liquibase.plugin.version.3.x>4.4.1</liquibase.plugin.version.3.x>
 
     <liquibase.demodata.archive>Demo-1.9.0.sql.zip</liquibase.demodata.archive>
-    <liquibase.cieldata.filename>liquibase-ciel-data.xml</liquibase.cieldata.filename>
+<!--    <liquibase.cieldata.filename>liquibase-ciel-data.xml</liquibase.cieldata.filename>-->
     <liquibase.demodata.filename>liquibase-demo-data.xml</liquibase.demodata.filename>
     <liquibase.demodata.followup.filename>liquibase-empty-changelog.xml</liquibase.demodata.followup.filename>
     <liquibase.emptydb.followup.filename>liquibase-empty-changelog.xml</liquibase.emptydb.followup.filename>
 
     <openmrs.version>2.4.0-SNAPSHOT</openmrs.version>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    <tomcat.version>7.0.50</tomcat.version>
+    <tomcat.version>7.0.109</tomcat.version>
+    <junitVersion>5.12.2</junitVersion>
+    <mockitoVersion>3.12.4</mockitoVersion>
+    <mariadb4jVersion>3.2.0</mariadb4jVersion>
   </properties>
 
   <dependencies>
@@ -58,22 +64,45 @@
       <scope>compile</scope>
     </dependency>
     <dependency>
-      <groupId>mysql</groupId>
-      <artifactId>mysql-connector-java</artifactId>
-      <version>5.1.28</version>
+      <groupId>com.mysql</groupId>
+      <artifactId>mysql-connector-j</artifactId>
+      <version>9.2.0</version>
       <scope>compile</scope>
     </dependency>
     <dependency>
-      <groupId>mysql</groupId>
-      <artifactId>mysql-connector-mxj-fixed</artifactId>
-      <version>5.0.12</version>
-      <scope>compile</scope>
+      <groupId>ch.vorburger.mariaDB4j</groupId>
+      <artifactId>mariaDB4j</artifactId>
+      <version>${mariadb4jVersion}</version>
     </dependency>
     <dependency>
-      <groupId>mysql</groupId>
-      <artifactId>mysql-connector-mxj-db-files-fixed</artifactId>
-      <version>5.0.12-20170418</version>
-      <scope>compile</scope>
+      <groupId>org.junit.jupiter</groupId>
+      <artifactId>junit-jupiter-api</artifactId>
+      <version>${junitVersion}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.junit.jupiter</groupId>
+      <artifactId>junit-jupiter-engine</artifactId>
+      <version>${junitVersion}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.mockito</groupId>
+      <artifactId>mockito-junit-jupiter</artifactId>
+      <version>${mockitoVersion}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.mockito</groupId>
+      <artifactId>mockito-core</artifactId>
+      <version>${mockitoVersion}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.mockito</groupId>
+      <artifactId>mockito-inline</artifactId>
+      <version>${mockitoVersion}</version>
+      <scope>test</scope>
     </dependency>
   </dependencies>
 
@@ -109,8 +138,8 @@
         <artifactId>maven-compiler-plugin</artifactId>
         <configuration>
           <fork>true</fork>
-          <source>1.6</source>
-          <target>1.6</target>
+          <source>1.8</source>
+          <target>1.8</target>
         </configuration>
       </plugin>
     </plugins>
@@ -124,7 +153,12 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-compiler-plugin</artifactId>
-          <version>2.3.2</version>
+          <version>3.13.0</version>
+          <configuration>
+            <fork>true</fork>
+            <source>${maven.compiler.source}</source>
+            <target>${maven.compiler.target}</target>
+          </configuration>
         </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
@@ -153,7 +187,7 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-assembly-plugin</artifactId>
-          <version>2.3</version>
+          <version>3.7.1</version>
         </plugin>
 
         <!--This plugin's configuration is used to store Eclipse m2e settings
@@ -222,6 +256,19 @@
                 </pluginExecution>
               </pluginExecutions>
             </lifecycleMappingMetadata>
+          </configuration>
+        </plugin>
+        <plugin>
+          <groupId>ch.vorburger.mariaDB4j</groupId>
+          <artifactId>mariaDB4j-maven-plugin</artifactId>
+          <version>${mariadb4jVersion}</version>
+          <configuration>
+            <databaseName>openmrs</databaseName>
+            <args>
+              <arg>--character-set-server=utf8</arg>
+              <arg>--collation-server=utf8_general_ci</arg>
+              <arg>--max_allowed_packet=32M</arg>
+            </args>
           </configuration>
         </plugin>
       </plugins>

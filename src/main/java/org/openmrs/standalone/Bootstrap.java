@@ -13,6 +13,8 @@
  */
 package org.openmrs.standalone;
 
+import ch.vorburger.exec.ManagedProcessException;
+
 import java.io.BufferedOutputStream;
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -95,8 +97,8 @@ public class Bootstrap {
 		
 		try {	
 			Properties properties = OpenmrsUtil.getRuntimeProperties(StandaloneUtil.getContextName());
-			String vm_arguments = properties.getProperty("vm_arguments", "-Xmx512m -Xms512m -XX:PermSize=256m -XX:MaxPermSize=256m -XX:NewSize=128m");
-			
+			String vm_arguments = properties.getProperty("vm_arguments", "-Xmx512m -Xms512m -XX:NewSize=128m --add-exports=java.desktop/com.apple.eawt=ALL-UNNAMED");
+
 			// Spin up a separate java process calling a non-default Main class in our Jar.  
 			process = Runtime.getRuntime().exec(
 			    "java " + (showSplashScreen ? "-splash:splashscreen-loading.png" : "")
@@ -152,7 +154,12 @@ public class Bootstrap {
 		Runtime.getRuntime().addShutdownHook(new Thread() {
 			
 			public void run() {
-				StandaloneUtil.stopMySqlServer();
+				try {
+					MariaDbController.stopMariaDB();
+				} catch (ManagedProcessException e) {
+					System.out.println("Failed to stop MariaDB: " + e.getMessage());
+					e.printStackTrace();
+				}
 			}
 		});
 		

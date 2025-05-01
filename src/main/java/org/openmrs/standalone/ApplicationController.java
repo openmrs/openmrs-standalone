@@ -13,6 +13,8 @@
  */
 package org.openmrs.standalone;
 
+import ch.vorburger.exec.ManagedProcessException;
+
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.File;
@@ -24,6 +26,8 @@ import java.util.Enumeration;
 import java.util.Properties;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
+
+import static org.openmrs.standalone.MariaDbController.stopMariaDB;
 
 /**
  * Manages the application workflow.
@@ -47,6 +51,8 @@ public class ApplicationController {
 	private boolean commandLineMode = false;
 	
 	private boolean nonInteractive = false;
+
+	Properties properties = OpenmrsUtil.getRuntimeProperties(StandaloneUtil.getContextName());
 	
 	public ApplicationController(boolean commandLineMode, boolean nonInteractive, DatabaseMode mode, String tomcatPort, String mysqlPort) throws Exception {
 		this.commandLineMode = commandLineMode;
@@ -230,6 +236,12 @@ public class ApplicationController {
 		Runtime.getRuntime().addShutdownHook(new Thread() {
 			
 			public void run() {
+				try {
+					stopMariaDB();
+				} catch (ManagedProcessException e) {
+					System.out.println("Failed to stop MariaDB: " + e.getMessage());
+					e.printStackTrace();
+				}
 				stopServer();
 			}
 		});
@@ -243,17 +255,17 @@ public class ApplicationController {
 			if (applyDatabaseChange == DatabaseMode.USE_INITIALIZATION_WIZARD) {
 				deleteActiveDatabase();
 				StandaloneUtil.resetConnectionPassword();
-				StandaloneUtil.startupDatabaseToCreateDefaultUser();
+				StandaloneUtil.startupDatabaseToCreateDefaultUser(mySqlPort);
 			} else if (applyDatabaseChange == DatabaseMode.EMPTY_DATABASE) {
 				deleteActiveDatabase();
 				unzipDatabase(new File("emptydatabase.zip"));
 				StandaloneUtil.resetConnectionPassword();
-				StandaloneUtil.startupDatabaseToCreateDefaultUser();
+				StandaloneUtil.startupDatabaseToCreateDefaultUser(mySqlPort);
 			} else if (applyDatabaseChange == DatabaseMode.DEMO_DATABASE) {
 				deleteActiveDatabase();
 				unzipDatabase(new File("demodatabase.zip"));
 				StandaloneUtil.resetConnectionPassword();
-				StandaloneUtil.startupDatabaseToCreateDefaultUser();
+				StandaloneUtil.startupDatabaseToCreateDefaultUser(mySqlPort);
 			}
 			
 			deleteNeedsConfigFile();
@@ -394,8 +406,10 @@ public class ApplicationController {
 			//This is an attempt to prevent some of the bad behavior caused by tomcat caching
 			//some stuff in this directory.
 			deleteTomcatWorkDir();
-			
-			StandaloneUtil.setPortsAndMySqlPassword(userInterface.getMySqlPort(), userInterface.getTomcatPort() + "");
+
+			String mySqlPort = StandaloneUtil.setPortsAndMySqlPassword(userInterface.getMySqlPort(), userInterface.getTomcatPort() + "");
+
+			MariaDbController.startMariaDB(mySqlPort, properties.getProperty("connection.password"));
 			
 			contextName = StandaloneUtil.getContextName();
 			tomcatManager = null;
