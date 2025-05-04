@@ -90,7 +90,7 @@ public class OpenmrsUtil {
 			String envVarName = applicationName.toUpperCase() + "_RUNTIME_PROPERTIES_FILE";
 			runtimePropertiesPathName = System.getenv(envVarName);
 			if (runtimePropertiesPathName != null) {
-				System.out.println("Atempting to load runtime properties from: " + runtimePropertiesPathName);
+				System.out.println("Attempting to load runtime properties from: " + runtimePropertiesPathName);
 				try {
 					propertyStream = new FileInputStream(runtimePropertiesPathName);
 				}

@@ -53,6 +53,8 @@ public class ApplicationController {
 	private boolean nonInteractive = false;
 
 	Properties properties = OpenmrsUtil.getRuntimeProperties(StandaloneUtil.getContextName());
+
+	static String mySqlPassword;
 	
 	public ApplicationController(boolean commandLineMode, boolean nonInteractive, DatabaseMode mode, String tomcatPort, String mysqlPort) throws Exception {
 		this.commandLineMode = commandLineMode;
@@ -73,6 +75,7 @@ public class ApplicationController {
 		Properties properties = OpenmrsUtil.getRuntimeProperties(StandaloneUtil.getContextName()); //StandaloneUtil.getRuntimeProperties(); //OpenmrsUtil.getRuntimeProperties(StandaloneUtil.getContextName());
 		if (properties != null) {
 			tomcatPort = properties.getProperty("tomcatport");
+			mySqlPassword = properties.getProperty("connection.password");
 		}
 		
 		//Some users may prefer command line to having the GUI, by providing the -commandline switch.
@@ -408,9 +411,10 @@ public class ApplicationController {
 			deleteTomcatWorkDir();
 
 			String mySqlPort = StandaloneUtil.setPortsAndMySqlPassword(userInterface.getMySqlPort(), userInterface.getTomcatPort() + "");
+			Properties updatedProperties = OpenmrsUtil.getRuntimeProperties(StandaloneUtil.getContextName());
 
-			MariaDbController.startMariaDB(mySqlPort, properties.getProperty("connection.password"));
-			
+			MariaDbController.startMariaDB(mySqlPort, updatedProperties.getProperty("connection.password"));
+
 			contextName = StandaloneUtil.getContextName();
 			tomcatManager = null;
 			tomcatManager = new TomcatManager(contextName, userInterface.getTomcatPort());

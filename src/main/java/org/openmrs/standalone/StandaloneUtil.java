@@ -106,6 +106,17 @@ public class StandaloneUtil {
 			catch (IOException e) {}
 		}
 	}
+
+	private static String generateSecurePassword() {
+		// intentionally left out these characters: ufsb$() to prevent certain words forming randomly
+		String chars = "acdeghijklmnopqrtvwxyzACDEGHIJKLMNOPQRTVWXYZ0123456789.|~@^&";
+		StringBuilder sb = new StringBuilder();
+		Random r = new Random();
+		for (int x = 0; x < 12; x++) {
+			sb.append(chars.charAt(r.nextInt(chars.length())));
+		}
+		return sb.toString();
+	}
 	
 	/**
 	 * Changes the MariaDB and tomcat ports in the run time properties file and also changes the mariaDB
@@ -131,7 +142,6 @@ public class StandaloneUtil {
 
 			if (properties != null) {
 				String connectionString = properties.getProperty(KEY_CONNECTION_URL);
-				String password = properties.getProperty(KEY_CONNECTION_PASSWORD);
 				String username = properties.getProperty(KEY_CONNECTION_USERNAME);
 				String resetConnectionPassword = properties.getProperty(KEY_RESET_CONNECTION_PASSWORD);
 
@@ -167,21 +177,18 @@ public class StandaloneUtil {
 
 				//Change the mysql password if instructed to.
 				if ("true".equalsIgnoreCase(resetConnectionPassword)) {
-					String newPassword = "";
-					// intentionally left out these characters: ufsb$() to prevent certain words forming randomly
-					String chars = "acdeghijklmnopqrtvwxyzACDEGHIJKLMNOPQRTVWXYZ0123456789.|~@^&";
-					Random r = new Random();
-					for (int x = 0; x < 12; x++) {
-						newPassword += chars.charAt(r.nextInt(chars.length()));
-					}
+					String newPassword = generateSecurePassword();
 
-					if (setMysqlPassword(connectionString, mariaDBPort, username, password, newPassword)) {
+					boolean passwordChanged = setMysqlPassword(connectionString, mariaDBPort, username, newPassword);
+
+					if (passwordChanged) {
 						properties.put(KEY_CONNECTION_PASSWORD, newPassword);
-
 						//Now remove the reset connection password property such that we do not change the password again.
 						properties.remove(KEY_RESET_CONNECTION_PASSWORD);
-
 						propertiesFileChanged = true;
+						System.out.println("✅ New password persisted.");
+					} else {
+						System.err.println("❌ Password not changed. Keeping existing configuration.");
 					}
 				}
 
@@ -307,29 +314,32 @@ public class StandaloneUtil {
 		return CONTEXT_NAME;
 	}
 
-	private static boolean setMysqlPassword(String url, String mysqlPort, String username, String oldPassword, String newPassword) throws Exception {
+	private static boolean setMysqlPassword(String url, String mysqlPort, String username, String newPassword) throws Exception {
 		try {
 			Class.forName("com.mysql.cj.jdbc.Driver").newInstance();
 
 			MariaDbController.startMariaDB(mysqlPort, properties.getProperty("connection.password", ""));
 
-			String sql = "ALTER USER '" + username + "'@'localhost' IDENTIFIED BY ?;";
+			String sql = "ALTER USER '" + username + "'@'localhost' IDENTIFIED BY '" + newPassword + "';";
 
 			try (Connection connection = DriverManager.getConnection(url, "openmrs", properties.getProperty("connection.password", ""));
-				 PreparedStatement statement = connection.prepareStatement(sql)) {
+				 Statement statement = connection.createStatement()) {
 
-				statement.setString(1, newPassword);
+				statement.execute(sql); // Change password
+				statement.execute("FLUSH PRIVILEGES;");
 
-				statement.executeUpdate();
-
+				System.out.println("✅ Password changed successfully.");
 				return true;
 
 			} catch (SQLException ex) {
+				System.err.println("❌ Failed to update password.");
 				ex.printStackTrace();
 				return false;
 			}
 
+
 		} catch (Exception ex) {
+			System.err.println("❌ Exception while setting MySQL password.");
 			ex.printStackTrace();
 			return false;
 
