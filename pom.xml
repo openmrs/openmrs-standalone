@@ -205,7 +205,7 @@
                       liquibase-maven-plugin
                     </artifactId>
                     <versionRange>
-                      [${liquibase.plugin.version.4.x},)
+                      [${liquibase.plugin.version.3.x},)
                     </versionRange>
                     <goals>
                       <goal>update</goal>
