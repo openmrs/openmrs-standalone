@@ -30,7 +30,7 @@
     <liquibase.plugin.version.3.x>4.4.1</liquibase.plugin.version.3.x>
 
     <liquibase.demodata.archive>Demo-1.9.0.sql.zip</liquibase.demodata.archive>
-<!--    <liquibase.cieldata.filename>liquibase-ciel-data.xml</liquibase.cieldata.filename>-->
+    <liquibase.cieldata.filename>liquibase-ciel-data.xml</liquibase.cieldata.filename>
     <liquibase.demodata.filename>liquibase-demo-data.xml</liquibase.demodata.filename>
     <liquibase.demodata.followup.filename>liquibase-empty-changelog.xml</liquibase.demodata.followup.filename>
     <liquibase.emptydb.followup.filename>liquibase-empty-changelog.xml</liquibase.emptydb.followup.filename>
@@ -63,11 +63,17 @@
       <scope>compile</scope>
     </dependency>
     <dependency>
-      <groupId>com.mysql</groupId>
-      <artifactId>mysql-connector-j</artifactId>
-      <version>9.2.0</version>
+      <groupId>org.mariadb.jdbc</groupId>
+      <artifactId>mariadb-java-client</artifactId>
+      <version>3.5.3</version>
       <scope>compile</scope>
     </dependency>
+<!--    <dependency>-->
+<!--      <groupId>com.mysql</groupId>-->
+<!--      <artifactId>mysql-connector-j</artifactId>-->
+<!--      <version>9.2.0</version>-->
+<!--      <scope>compile</scope>-->
+<!--    </dependency>-->
     <dependency>
       <groupId>ch.vorburger.mariaDB4j</groupId>
       <artifactId>mariaDB4j</artifactId>

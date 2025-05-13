@@ -91,9 +91,9 @@
 						<id>empty-db-create-schema</id>
 						<phase>generate-resources</phase>
 						<configuration>
-							<driver>com.mysql.cj.jdbc.Driver</driver>
+							<driver>org.mariadb.jdbc.Driver</driver>
 							<changeLogFile>liquibase-schema-only.xml</changeLogFile>
-							<url><![CDATA[jdbc:mysql://127.0.0.1:33326/openmrs?autoReconnect=true&sessionVariables=storage_engine=InnoDB&useUnicode=true&characterEncoding=UTF-8]]></url>
+							<url><![CDATA[jdbc:mariadb://127.0.0.1:33326/openmrs?autoReconnect=true&sessionVariables=storage_engine=InnoDB&useUnicode=true&characterEncoding=UTF-8]]></url>
 							<username>openmrs</username>
 							<password>test</password>
 							<verbose>true</verbose>
@@ -117,9 +117,9 @@
 						<id>empty-db-add-core-data</id>
 						<phase>generate-resources</phase>
 						<configuration>
-							<driver>com.mysql.cj.jdbc.Driver</driver>
+							<driver>org.mariadb.jdbc.Driver</driver>
 							<changeLogFile>liquibase-core-data.xml</changeLogFile>
-							<url><![CDATA[jdbc:mysql://127.0.0.1:33326/openmrs?autoReconnect=true&sessionVariables=storage_engine=InnoDB&useUnicode=true&characterEncoding=UTF-8]]></url>							<username>openmrs</username>
+							<url><![CDATA[jdbc:mariadb://127.0.0.1:33326/openmrs?autoReconnect=true&sessionVariables=storage_engine=InnoDB&useUnicode=true&characterEncoding=UTF-8]]></url>							<username>openmrs</username>
 							<password>test</password>
 							<verbose>true</verbose>
 							<dropFirst>false</dropFirst>

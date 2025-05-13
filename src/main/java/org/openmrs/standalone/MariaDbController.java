@@ -19,8 +19,8 @@ public class MariaDbController {
     private static DB mariaDB;
     private static DBConfigurationBuilder mariaDBConfig;
 
-    public static String KEY_MARIADB_BASE_DIR = "mariadb.basedir";
-    public static String KEY_MARIADB_DATA_DIR = "mariadb.datadir";
+    public static String KEY_MARIADB_BASE_DIR = "connection.database.base_dir";
+    public static String KEY_MARIADB_DATA_DIR = "connection.database.data_dir";
 
     public static void startMariaDB(String port, String userPassword) throws Exception {
         startMariaDB(Integer.parseInt(port), userPassword);
