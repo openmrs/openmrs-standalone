@@ -437,6 +437,27 @@ public class StandaloneUtil {
 			// Create database if missing
 			stmt.executeUpdate("CREATE DATABASE IF NOT EXISTS openmrs DEFAULT CHARACTER SET utf8mb4;");
 
+			// Runs any .sql files found in ./database/data/ basically for demo data
+			File sqlDir = new File("database/data");
+			if (sqlDir.exists() && sqlDir.isDirectory()) {
+				File[] sqlFiles = sqlDir.listFiles((dir, name) -> name.toLowerCase().endsWith(".sql"));
+				Properties properties = OpenmrsUtil.getRuntimeProperties(getContextName());
+				String jdbcUrl = properties.getProperty("connection.url");
+				String user = properties.getProperty("connection.username");
+				String password = properties.getProperty("connection.password");
+
+				if (sqlFiles != null) {
+					for (File sqlFile : sqlFiles) {
+						try {
+							System.out.println("Executing SQL file: " + sqlFile.getName());
+							OpenmrsUtil.importSqlFile(sqlFile,jdbcUrl,user,password);
+						} catch (Exception e) {
+							System.err.println("Failed to execute SQL file " + sqlFile.getName() + ": " + e.getMessage());
+							e.printStackTrace();
+						}
+					}
+				}
+			}
 		} finally {
 			MariaDbController.stopMariaDB();
 		}

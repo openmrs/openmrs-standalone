@@ -10,7 +10,7 @@
 	<fileSets>
 		<fileSet>
 			<outputDirectory>/</outputDirectory>
-<!--			<directory>${project.build.directory}/demodatabase/data</directory>-->
+			<directory>${project.build.directory}/demodatabase/data</directory>
 		</fileSet>
 	</fileSets>
 </assembly>

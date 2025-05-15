@@ -13,13 +13,19 @@
  */
 package org.openmrs.standalone;
 
-import java.io.File;
+import org.apache.ibatis.jdbc.ScriptRunner;
+
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.UnsupportedEncodingException;
+import java.io.File;
+import java.io.Reader;
+import java.io.FileReader;
+import java.sql.Connection;
+import java.sql.DriverManager;
 import java.util.Properties;
 
 public class OpenmrsUtil {
@@ -267,6 +273,26 @@ public class OpenmrsUtil {
 	
 	public static void setDefaultOS(){
 		System.setProperty(OPERATING_SYSTEM_KEY,OPERATING_SYSTEM);
+	}
+
+	public static void importSqlFile(File sqlFile, String jdbcUrl, String user, String password) {
+		if (!sqlFile.exists()) {
+			System.err.println("❌ SQL file not found: " + sqlFile.getAbsolutePath());
+			return;
+		}
+		System.out.println("✅ Reading : " + sqlFile.getAbsolutePath());
+		try (Connection conn = DriverManager.getConnection(jdbcUrl, user, password);
+			 Reader reader = new FileReader(sqlFile)) {
+			ScriptRunner scriptRunner = new ScriptRunner(conn);
+			scriptRunner.setLogWriter(null); // Disable logs
+			scriptRunner.setStopOnError(true);
+			scriptRunner.runScript(reader);
+
+			System.out.println("✅ Successfully imported SQL: " + sqlFile.getAbsolutePath());
+		} catch (Exception e) {
+			System.err.println("❌ Error importing SQL: " + e.getMessage());
+			e.printStackTrace();
+		}
 	}
 	
 }
