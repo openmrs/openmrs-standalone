@@ -150,7 +150,7 @@ public class StandaloneUtil {
 
 				String portToken = ":" + mariaDBPort + "/";
 
-				//in a string like this: jdbc:mariadb://localhost:3316/openmrs?autoReconnect=true
+				//in a string like this: jdbc:mysql://localhost:3316/openmrs?autoReconnect=true
 				//look for something like this :3316/
 				String regex = ":[0-9]+/";
 				Pattern pattern = Pattern.compile(regex);
@@ -319,7 +319,7 @@ public class StandaloneUtil {
 
 	private static boolean setMysqlPassword(String url, String mysqlPort, String username, String newPassword) throws Exception {
 		try {
-			Class.forName("org.mariadb.jdbc.Driver").newInstance();
+			Class.forName("com.mysql.cj.jdbc.Driver").newInstance();
 
 			MariaDbController.startMariaDB(mysqlPort, properties.getProperty("connection.password", ""));
 
@@ -420,37 +420,45 @@ public class StandaloneUtil {
 	 */
 	public static void startupDatabaseToCreateDefaultUser(String mariaDBPort) throws Exception {
 		try {
-			Class.forName("org.mariadb.jdbc.Driver");
+			Class.forName("com.mysql.cj.jdbc.Driver");
 		} catch (ClassNotFoundException ex) {
-			throw new RuntimeException("cannot find mysql driver class", ex);
+			throw new RuntimeException("Cannot find MySQL driver class", ex);
 		}
+
 		Properties props = OpenmrsUtil.getRuntimeProperties(getContextName());
 		String url = props.getProperty("connection.url");
+		String username = props.getProperty("connection.username");
+		String password = props.getProperty("connection.password");
 
-		System.out.println("Opening MariaDB connection to create openmrs/test users");
+		System.out.println("Starting MariaDB on port " + mariaDBPort + "...");
+		MariaDbController.startMariaDB(mariaDBPort, password);
 
-		MariaDbController.startMariaDB(mariaDBPort, properties.getProperty("connection.password", ""));
-
-		try (Connection conn = DriverManager.getConnection(url, "root", MariaDbController.getRootPassword());
+		System.out.println("Attempting to connect to the database: " + url);
+		try (Connection conn = DriverManager.getConnection(url, username, password);
 			 Statement stmt = conn.createStatement()) {
 
-			// Create database if missing
+			// Check if connection is valid
+			if (conn.isValid(5)) {
+				System.out.println("✅ Connection to MariaDB successful.");
+			} else {
+				System.err.println("❌ Connection established, but it is not valid.");
+			}
+
+			// Create database if it doesn't exist
 			stmt.executeUpdate("CREATE DATABASE IF NOT EXISTS openmrs DEFAULT CHARACTER SET utf8mb4;");
+			System.out.println("Database 'openmrs' created or already exists.");
 
 			// Runs any .sql files found in ./database/data/ basically for demo data
 			File sqlDir = new File("database/data");
 			if (sqlDir.exists() && sqlDir.isDirectory()) {
 				File[] sqlFiles = sqlDir.listFiles((dir, name) -> name.toLowerCase().endsWith(".sql"));
 				Properties properties = OpenmrsUtil.getRuntimeProperties(getContextName());
-				String jdbcUrl = properties.getProperty("connection.url");
-				String user = properties.getProperty("connection.username");
-				String password = properties.getProperty("connection.password");
 
 				if (sqlFiles != null) {
 					for (File sqlFile : sqlFiles) {
 						try {
 							System.out.println("Executing SQL file: " + sqlFile.getName());
-							OpenmrsUtil.importSqlFile(sqlFile,jdbcUrl,user,password);
+							OpenmrsUtil.importSqlFile(sqlFile,url,username,password);
 						} catch (Exception e) {
 							System.err.println("Failed to execute SQL file " + sqlFile.getName() + ": " + e.getMessage());
 							e.printStackTrace();
@@ -459,9 +467,9 @@ public class StandaloneUtil {
 				}
 			}
 		} finally {
+			System.out.println("Stopping MariaDB...");
 			MariaDbController.stopMariaDB();
 		}
-
 	}
 
 	/**
@@ -484,7 +492,7 @@ public class StandaloneUtil {
 			String connectionString = properties.getProperty(KEY_CONNECTION_URL);
 			String portToken = ":" + mariaDBPort + "/";
 
-			//in a string like this: jdbc:mariadb://localhost:3316/openmrs?autoReconnect=true
+			//in a string like this: jdbc:mysql://localhost:3316/openmrs?autoReconnect=true
 			//look for something like this :3316/
 			String regex = ":[0-9]+/";
 			Pattern pattern = Pattern.compile(regex);
