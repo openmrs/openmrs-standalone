@@ -76,8 +76,8 @@ public class MariaDbController {
         mariaDB.run("GRANT ALL PRIVILEGES ON *.* TO 'root'@'localhost' WITH GRANT OPTION;");
 
         // Create or update the 'openmrs' user with the configured password
-        mariaDB.run("CREATE USER IF NOT EXISTS '" + DATABASE_USER_NAME + "'@'localhost' IDENTIFIED BY '" + userPassword + "';", "root", "");
-        mariaDB.run("ALTER USER '" + DATABASE_USER_NAME + "'@'localhost' IDENTIFIED BY '" + userPassword + "';", "root", "");
+        mariaDB.run("CREATE USER IF NOT EXISTS '" + DATABASE_USER_NAME + "'@'localhost' IDENTIFIED BY '" + userPassword + "';");
+        mariaDB.run("ALTER USER '" + DATABASE_USER_NAME + "'@'localhost' IDENTIFIED BY '" + userPassword + "';");
 
         // Grant privileges to openmrs user
         mariaDB.run("GRANT ALL PRIVILEGES ON *.* TO '" + DATABASE_USER_NAME + "'@'localhost';");

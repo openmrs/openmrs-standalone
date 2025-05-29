@@ -33,6 +33,11 @@ jobs:
   build-windows:
     name: on Windows (Java 21)
     runs-on: windows-latest
+
+    env:
+      DB_USER: root
+      DB_PASSWORD: ""
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
