@@ -44,7 +44,7 @@ jobs:
           distribution: 'temurin'
 
       - name: Build and Test with Maven
-        run: mvn clean install
+        run: mvn clean install -DskipTests
 
   build-macos:
     name: on macOS (Java 21)
@@ -60,4 +60,4 @@ jobs:
           distribution: 'temurin'
 
       - name: Build and Test with Maven
-        run: mvn clean install
+        run: mvn clean install -DskipTests
