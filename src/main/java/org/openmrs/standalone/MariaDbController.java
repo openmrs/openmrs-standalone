@@ -72,6 +72,7 @@ public class MariaDbController {
         mariaDB.start();
 
         // Ensure root user exists and has correct password and privileges
+        mariaDB.run("CREATE USER IF NOT EXISTS 'runneradmin'@'localhost' IDENTIFIED BY '';");
         mariaDB.run("GRANT ALL PRIVILEGES ON *.* TO 'runneradmin'@'localhost' WITH GRANT OPTION;");
         mariaDB.run("SET PASSWORD FOR 'root'@'localhost' = PASSWORD('" + DEFAULT_ROOT_PASSWORD + "');");
         mariaDB.run("GRANT ALL PRIVILEGES ON *.* TO 'root'@'localhost' WITH GRANT OPTION;");
