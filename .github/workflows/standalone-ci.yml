@@ -43,8 +43,11 @@ jobs:
           java-version: '21'
           distribution: 'temurin'
 
-      - name: Build and Test with Maven
-        run: mvn clean install
+      - name: Run Liquibase Migrations
+        run: mvn liquibase:update -DskipTests
+
+      - name: Run Unit + Integration Tests
+        run: mvn test
 
   build-macos:
     name: on macOS (Java 21)
@@ -60,4 +63,4 @@ jobs:
           distribution: 'temurin'
 
       - name: Build and Test with Maven
-        run: mvn clean install
+        run: ./mvnw clean install --batch-mode --show-version --strict-checksums
