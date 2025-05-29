@@ -1,12 +1,14 @@
 package org.openmrs.standalone;
 
 import java.io.File;
+import java.io.IOException;
 import java.nio.file.Paths;
 import java.util.Properties;
 
 import ch.vorburger.exec.ManagedProcessException;
 import ch.vorburger.mariadb4j.DB;
 import ch.vorburger.mariadb4j.DBConfigurationBuilder;
+import org.apache.commons.io.FileUtils;
 
 public class MariaDbController {
 
@@ -41,11 +43,23 @@ public class MariaDbController {
 
         Properties properties = OpenmrsUtil.getRuntimeProperties(StandaloneUtil.getContextName());
 
-        String baseDir = safeResolveProperty(properties, KEY_MARIADB_BASE_DIR, MARIA_DB_BASE_DIR);
-        String dataDir = safeResolveProperty(properties, KEY_MARIADB_DATA_DIR, MARIA_DB_DATA_DIR);
+        String baseDirPath = safeResolveProperty(properties, KEY_MARIADB_BASE_DIR, MARIA_DB_BASE_DIR);
+        String dataDirPath = safeResolveProperty(properties, KEY_MARIADB_DATA_DIR, MARIA_DB_DATA_DIR);
 
-        mariaDBConfig.setBaseDir(new File(Paths.get(baseDir).toAbsolutePath().toString()));
-        mariaDBConfig.setDataDir(new File(Paths.get(dataDir).toAbsolutePath().toString()));
+        File baseDir = new File(Paths.get(baseDirPath).toAbsolutePath().toString());
+        File dataDir = new File(Paths.get(dataDirPath).toAbsolutePath().toString());
+
+        // Force cleanup baseDir before starting db
+        try {
+            if (baseDir.exists()) {
+                FileUtils.deleteDirectory(baseDir);
+            }
+        } catch (IOException e) {
+            throw new RuntimeException("Unable to clean up MariaDB baseDir", e);
+        }
+
+        mariaDBConfig.setBaseDir(baseDir);
+        mariaDBConfig.setDataDir(dataDir);
 
         mariaDBConfig.addArg("--max_allowed_packet=96M");
         mariaDBConfig.addArg("--collation-server=utf8_general_ci");
