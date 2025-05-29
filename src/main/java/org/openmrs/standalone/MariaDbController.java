@@ -16,6 +16,7 @@ public class MariaDbController {
     private static final String MARIA_DB_BASE_DIR = "database";
     private static final String MARIA_DB_DATA_DIR = Paths.get(MARIA_DB_BASE_DIR, "data").toString();
     private static final String DATABASE_USER_NAME = "openmrs";
+    private static final String DEFAULT_PASSWORD = "test";
     private static final String DEFAULT_ROOT_PASSWORD = "";
 
     private static DB mariaDB;
@@ -102,8 +103,8 @@ public class MariaDbController {
         }
     }
 
-    public static String getRootPassword() {
+    public static String getDBPassword() {
         Properties props = OpenmrsUtil.getRuntimeProperties(StandaloneUtil.getContextName());
-        return props.getProperty("connection.root.password", DEFAULT_ROOT_PASSWORD); // fallback to default
+        return props.getProperty("connection.password", DEFAULT_PASSWORD); // fallback to default
     }
 }

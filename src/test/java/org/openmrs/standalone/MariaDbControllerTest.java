@@ -65,7 +65,7 @@ public class MariaDbControllerTest {
             when(OpenmrsUtil.getRuntimeProperties(anyString())).thenReturn(properties);
             when(OpenmrsUtil.getRuntimeProperties(Mockito.nullable(String.class))).thenReturn(properties);
 
-            MariaDbController.startMariaDB(MARIADB_PORT, MariaDbController.getRootPassword());
+            MariaDbController.startMariaDB(MARIADB_PORT, MariaDbController.getDBPassword());
 
             validateMariaDBRunning();
 
@@ -101,7 +101,7 @@ public class MariaDbControllerTest {
 
     private void validateMariaDBStopped() {
         SQLException exception = assertThrows(SQLException.class, () -> {
-            try (Connection ignored = DriverManager.getConnection(JDBC_URL, ROOT_USER, MariaDbController.getRootPassword())) {
+            try (Connection ignored = DriverManager.getConnection(JDBC_URL, ROOT_USER, MariaDbController.getDBPassword())) {
                 // Attempt to connect
             }
         });
