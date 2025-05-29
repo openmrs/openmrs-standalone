@@ -29,7 +29,6 @@ import org.mockito.Mockito;
 
 class StandaloneUtilTest {
 
-
     private static final String KEY_CONNECTION_PASSWORD = "connection.password";
     private static final String KEY_RESET_CONNECTION_PASSWORD = "reset_connection_password";
     private static final String KEY_CONNECTION_URL = "connection.url";
