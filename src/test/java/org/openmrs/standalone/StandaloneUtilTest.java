@@ -80,7 +80,7 @@ class StandaloneUtilTest {
             StandaloneUtil.startupDatabaseToCreateDefaultUser(MARIADB_PORT);
 
             MariaDbController.startMariaDB(MARIADB_PORT, properties.getProperty("connection.password", ""));
-            try (Connection connection = DriverManager.getConnection(DEFAULT_URL, "root", MariaDbController.getDBPassword())) {
+            try (Connection connection = DriverManager.getConnection(DEFAULT_URL, "root", "rootpass")) {
 
                 assertNotNull(connection, "Connection to MariaDB with 'openmrs' user should not be null");
                 assertFalse(connection.isClosed(), "Connection to MariaDB should be open");
