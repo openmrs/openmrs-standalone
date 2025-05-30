@@ -65,6 +65,7 @@ public class MariaDbController {
         mariaDBConfig.addArg("--max_allowed_packet=96M");
         mariaDBConfig.addArg("--collation-server=utf8_general_ci");
         mariaDBConfig.addArg("--character-set-server=utf8");
+        mariaDBConfig.addArg("--user=root");
 
 
         mariaDB = DB.newEmbeddedDB(mariaDBConfig.build());
@@ -72,8 +73,6 @@ public class MariaDbController {
         mariaDB.start();
 
         // Ensure root user exists and has correct password and privileges
-        mariaDB.run("CREATE USER IF NOT EXISTS 'runneradmin'@'localhost' IDENTIFIED BY 'test';");
-        mariaDB.run("GRANT ALL PRIVILEGES ON *.* TO 'runneradmin'@'localhost' WITH GRANT OPTION;");
         mariaDB.run("SET PASSWORD FOR 'root'@'localhost' = PASSWORD('" + DEFAULT_ROOT_PASSWORD + "');");
         mariaDB.run("GRANT ALL PRIVILEGES ON *.* TO 'root'@'localhost' WITH GRANT OPTION;");
 
