@@ -4,7 +4,7 @@
 	xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog/1.9
                   http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-1.9.xsd">
 	
-	<changeSet id="20111202-1601-18x" author="standalone" dbms="mysql">
+	<changeSet id="20111202-1601-18x" author="standalone" dbms="mysql,mariadb">
 		<comment>Adding demo</comment>
 		<sqlFile path="Demo-1.8.0.sql" encoding="UTF-8" />
 		
