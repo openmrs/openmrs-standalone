@@ -274,25 +274,5 @@ public class OpenmrsUtil {
 	public static void setDefaultOS(){
 		System.setProperty(OPERATING_SYSTEM_KEY,OPERATING_SYSTEM);
 	}
-
-	public static void importSqlFile(File sqlFile, String jdbcUrl, String user, String password) {
-		if (!sqlFile.exists()) {
-			System.err.println("❌ SQL file not found: " + sqlFile.getAbsolutePath());
-			return;
-		}
-		System.out.println("✅ Reading : " + sqlFile.getAbsolutePath());
-		try (Connection conn = DriverManager.getConnection(jdbcUrl, user, password);
-			 Reader reader = new FileReader(sqlFile)) {
-			ScriptRunner scriptRunner = new ScriptRunner(conn);
-			scriptRunner.setLogWriter(null); // Disable logs
-			scriptRunner.setStopOnError(true);
-			scriptRunner.runScript(reader);
-
-			System.out.println("✅ Successfully imported SQL: " + sqlFile.getAbsolutePath());
-		} catch (Exception e) {
-			System.err.println("❌ Error importing SQL: " + e.getMessage());
-			e.printStackTrace();
-		}
-	}
 	
 }
