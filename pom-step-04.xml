@@ -93,15 +93,6 @@
 					</execution>
 				</executions>
 			</plugin>
-			<plugin>
-				<groupId>org.apache.maven.plugins</groupId>
-				<artifactId>maven-surefire-plugin</artifactId>
-				<version>3.5.3</version>
-				<configuration>
-					<argLine>-Xms8g -Xmx8g -XX:MaxDirectMemorySize=4096m</argLine>
-					<trimStackTrace>false</trimStackTrace>
-				</configuration>
-			</plugin>
 
 		</plugins>
 		<pluginManagement>
