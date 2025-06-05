@@ -1,12 +1,14 @@
 package org.openmrs.standalone;
 
 import java.io.File;
+import java.io.IOException;
 import java.nio.file.Paths;
 import java.util.Properties;
 
 import ch.vorburger.exec.ManagedProcessException;
 import ch.vorburger.mariadb4j.DB;
 import ch.vorburger.mariadb4j.DBConfigurationBuilder;
+import org.apache.commons.io.FileUtils;
 
 public class MariaDbController {
 
@@ -14,7 +16,8 @@ public class MariaDbController {
     private static final String MARIA_DB_BASE_DIR = "database";
     private static final String MARIA_DB_DATA_DIR = Paths.get(MARIA_DB_BASE_DIR, "data").toString();
     private static final String DATABASE_USER_NAME = "openmrs";
-    private static final String DEFAULT_ROOT_PASSWORD = "";
+    private static final String DEFAULT_PASSWORD = "test";
+    private static final String DEFAULT_ROOT_PASSWORD = "rootpass";
 
     private static DB mariaDB;
     private static DBConfigurationBuilder mariaDBConfig;
@@ -41,28 +44,41 @@ public class MariaDbController {
 
         Properties properties = OpenmrsUtil.getRuntimeProperties(StandaloneUtil.getContextName());
 
-        String baseDir = safeResolveProperty(properties, KEY_MARIADB_BASE_DIR, MARIA_DB_BASE_DIR);
-        String dataDir = safeResolveProperty(properties, KEY_MARIADB_DATA_DIR, MARIA_DB_DATA_DIR);
+        String baseDirPath = safeResolveProperty(properties, KEY_MARIADB_BASE_DIR, MARIA_DB_BASE_DIR);
+        String dataDirPath = safeResolveProperty(properties, KEY_MARIADB_DATA_DIR, MARIA_DB_DATA_DIR);
 
-        mariaDBConfig.setBaseDir(new File(Paths.get(baseDir).toAbsolutePath().toString()));
-        mariaDBConfig.setDataDir(new File(Paths.get(dataDir).toAbsolutePath().toString()));
+        File baseDir = new File(Paths.get(baseDirPath).toAbsolutePath().toString());
+        File dataDir = new File(Paths.get(dataDirPath).toAbsolutePath().toString());
+
+        // Force cleanup baseDir before starting db
+        try {
+            if (baseDir.exists()) {
+                FileUtils.deleteDirectory(baseDir);
+            }
+        } catch (IOException e) {
+            throw new RuntimeException("Unable to clean up MariaDB baseDir", e);
+        }
+
+        mariaDBConfig.setBaseDir(baseDir);
+        mariaDBConfig.setDataDir(dataDir);
 
         mariaDBConfig.addArg("--max_allowed_packet=96M");
         mariaDBConfig.addArg("--collation-server=utf8_general_ci");
         mariaDBConfig.addArg("--character-set-server=utf8");
+        mariaDBConfig.addArg("--user=root");
 
 
         mariaDB = DB.newEmbeddedDB(mariaDBConfig.build());
 
         mariaDB.start();
 
-        // Create or update the 'openmrs' user with the configured password
-        mariaDB.run("CREATE USER IF NOT EXISTS '" + DATABASE_USER_NAME + "'@'localhost' IDENTIFIED BY '" + userPassword + "';");
-        mariaDB.run("ALTER USER '" + DATABASE_USER_NAME + "'@'localhost' IDENTIFIED BY '" + userPassword + "';");
-
         // Ensure root user exists and has correct password and privileges
         mariaDB.run("SET PASSWORD FOR 'root'@'localhost' = PASSWORD('" + DEFAULT_ROOT_PASSWORD + "');");
         mariaDB.run("GRANT ALL PRIVILEGES ON *.* TO 'root'@'localhost' WITH GRANT OPTION;");
+
+        // Create or update the 'openmrs' user with the configured password
+        mariaDB.run("CREATE USER IF NOT EXISTS '" + DATABASE_USER_NAME + "'@'localhost' IDENTIFIED BY '" + userPassword + "';");
+        mariaDB.run("ALTER USER '" + DATABASE_USER_NAME + "'@'localhost' IDENTIFIED BY '" + userPassword + "';");
 
         // Grant privileges to openmrs user
         mariaDB.run("GRANT ALL PRIVILEGES ON *.* TO '" + DATABASE_USER_NAME + "'@'localhost';");
@@ -88,8 +104,8 @@ public class MariaDbController {
         }
     }
 
-    public static String getRootPassword() {
+    public static String getDBPassword() {
         Properties props = OpenmrsUtil.getRuntimeProperties(StandaloneUtil.getContextName());
-        return props.getProperty("connection.root.password", DEFAULT_ROOT_PASSWORD); // fallback to default
+        return props.getProperty("connection.password", DEFAULT_PASSWORD); // fallback to default
     }
 }

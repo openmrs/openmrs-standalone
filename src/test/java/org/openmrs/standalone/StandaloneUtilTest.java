@@ -29,7 +29,6 @@ import org.mockito.Mockito;
 
 class StandaloneUtilTest {
 
-
     private static final String KEY_CONNECTION_PASSWORD = "connection.password";
     private static final String KEY_RESET_CONNECTION_PASSWORD = "reset_connection_password";
     private static final String KEY_CONNECTION_URL = "connection.url";
@@ -81,7 +80,7 @@ class StandaloneUtilTest {
             StandaloneUtil.startupDatabaseToCreateDefaultUser(MARIADB_PORT);
 
             MariaDbController.startMariaDB(MARIADB_PORT, properties.getProperty("connection.password", ""));
-            try (Connection connection = DriverManager.getConnection(DEFAULT_URL, "root", MariaDbController.getRootPassword())) {
+            try (Connection connection = DriverManager.getConnection(DEFAULT_URL, "root", "rootpass")) {
 
                 assertNotNull(connection, "Connection to MariaDB with 'openmrs' user should not be null");
                 assertFalse(connection.isClosed(), "Connection to MariaDB should be open");

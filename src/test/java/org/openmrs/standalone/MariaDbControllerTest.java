@@ -28,6 +28,7 @@ public class MariaDbControllerTest {
     private static final int MARIADB_PORT = 33126;
     private static final String JDBC_URL = "jdbc:mysql://127.0.0.1:" + MARIADB_PORT + "/" + MariaDbController.DATABASE_NAME;
     private static final String ROOT_USER = "root";
+    private static final String ROOT_PASSWORD = "rootpass";
 
     private static final String MARIADB_BASEDIR_NAME = "mariadb-base-dir";
 
@@ -65,7 +66,7 @@ public class MariaDbControllerTest {
             when(OpenmrsUtil.getRuntimeProperties(anyString())).thenReturn(properties);
             when(OpenmrsUtil.getRuntimeProperties(Mockito.nullable(String.class))).thenReturn(properties);
 
-            MariaDbController.startMariaDB(MARIADB_PORT, MariaDbController.getRootPassword());
+            MariaDbController.startMariaDB(MARIADB_PORT, MariaDbController.getDBPassword());
 
             validateMariaDBRunning();
 
@@ -91,7 +92,7 @@ public class MariaDbControllerTest {
     }
 
     private void validateMariaDBRunning() {
-        try (Connection conn = DriverManager.getConnection(JDBC_URL, ROOT_USER, "")) {
+        try (Connection conn = DriverManager.getConnection(JDBC_URL, ROOT_USER, ROOT_PASSWORD)) {
             assertNotNull(conn, "Connection to MariaDB should not be null");
             assertFalse(conn.isClosed(), "Connection to MariaDB should be open");
         } catch (SQLException e) {
@@ -101,7 +102,7 @@ public class MariaDbControllerTest {
 
     private void validateMariaDBStopped() {
         SQLException exception = assertThrows(SQLException.class, () -> {
-            try (Connection ignored = DriverManager.getConnection(JDBC_URL, ROOT_USER, MariaDbController.getRootPassword())) {
+            try (Connection ignored = DriverManager.getConnection(JDBC_URL, ROOT_USER, ROOT_PASSWORD)) {
                 // Attempt to connect
             }
         });
