@@ -13,13 +13,22 @@
  */
 package org.openmrs.standalone;
 
-import java.io.File;
+import org.apache.ibatis.jdbc.ScriptRunner;
+
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.UnsupportedEncodingException;
+import java.io.File;
+import java.io.Reader;
+import java.io.FileReader;
+import java.sql.Statement;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.Properties;
 
 public class OpenmrsUtil {
@@ -90,7 +99,7 @@ public class OpenmrsUtil {
 			String envVarName = applicationName.toUpperCase() + "_RUNTIME_PROPERTIES_FILE";
 			runtimePropertiesPathName = System.getenv(envVarName);
 			if (runtimePropertiesPathName != null) {
-				System.out.println("Atempting to load runtime properties from: " + runtimePropertiesPathName);
+				System.out.println("Attempting to load runtime properties from: " + runtimePropertiesPathName);
 				try {
 					propertyStream = new FileInputStream(runtimePropertiesPathName);
 				}
@@ -268,5 +277,40 @@ public class OpenmrsUtil {
 	public static void setDefaultOS(){
 		System.setProperty(OPERATING_SYSTEM_KEY,OPERATING_SYSTEM);
 	}
-	
+
+	public static void importSqlFile(File sqlFile, String jdbcUrl, String user, String password) {
+		if (!sqlFile.exists()) {
+			System.err.println(":x: SQL file not found: " + sqlFile.getAbsolutePath());
+			return;
+		}
+
+		System.out.println("✅ Checking if demo data already exists...");
+		try (Connection conn = DriverManager.getConnection(jdbcUrl, user, password)) {
+			// Check if demo data is already present
+			try (Statement stmt = conn.createStatement();
+				 ResultSet rs = stmt.executeQuery("SELECT COUNT(*) FROM scheduler_task_config")) {
+
+				if (rs.next() && rs.getInt(1) > 0) {
+					System.out.println("✅ Demo data already imported. Skipping import.");
+					return;
+				}
+			} catch (SQLException checkEx) {
+				System.out.println("⚠️  Could not check existing data: " + checkEx.getMessage());
+			}
+
+			System.out.println("📥 Importing SQL from: " + sqlFile.getAbsolutePath());
+			try (Reader reader = new FileReader(sqlFile)) {
+				ScriptRunner scriptRunner = new ScriptRunner(conn);
+				scriptRunner.setLogWriter(null); // Disable logs
+				scriptRunner.setStopOnError(true);
+				scriptRunner.runScript(reader);
+				System.out.println("✅ Successfully imported SQL: " + sqlFile.getAbsolutePath());
+			}
+
+		} catch (Exception e) {
+			System.err.println("❌ Error importing SQL: " + e.getMessage());
+			e.printStackTrace();
+		}
+	}
+
 }
