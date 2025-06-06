@@ -37,7 +37,7 @@
 					</execution>
 					<execution>
 						<id>stop-demo-database</id>
-						<phase>process-resources</phase>
+						<phase>verify</phase>
 						<goals>
 							<goal>stop</goal>
 						</goals>
@@ -62,12 +62,36 @@
 				</executions>
 			</plugin>
 			<plugin>
+				<groupId>org.codehaus.mojo</groupId>
+				<artifactId>exec-maven-plugin</artifactId>
+				<executions>
+					<execution>
+						<id>import-demo-sql</id>
+						<phase>process-classes</phase>
+						<goals>
+							<goal>java</goal>
+						</goals>
+						<configuration>
+							<mainClass>org.openmrs.standalone.DbInitializer</mainClass>
+							<classpathScope>runtime</classpathScope>
+							<arguments>
+								<argument>${project.basedir}/Demo-1.9.0.sql</argument>
+								<argument>jdbc:mysql://localhost:33328/openmrs</argument>
+								<argument>openmrs</argument>
+								<argument>test</argument>
+							</arguments>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
+
+			<plugin>
 				<groupId>org.liquibase</groupId>
 				<artifactId>${liquibase.plugin.artifactId}</artifactId>
 				<executions>
 					<execution>
 						<id>demo-db-add-data</id>
-						<phase>generate-resources</phase>
+						<phase>process-resources</phase>
 						<configuration>
 							<driver>com.mysql.cj.jdbc.Driver</driver>
 							<changeLogFile>${liquibase.demodata.filename}</changeLogFile>

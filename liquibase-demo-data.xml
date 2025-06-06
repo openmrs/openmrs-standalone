@@ -8,7 +8,6 @@
 	
 	<changeSet id="20111202-1601" author="standalone" dbms="mysql,mariadb">
 		<comment>Adding demo data and updating the 'liquibasechangelog' table to work with version 2.0.x</comment>
-		<sqlFile path="Demo-1.9.0.sql" encoding="UTF-8" />
 		
 		<!-- 
 			We need to make the liquibasechangelog table modifications to 2.0.x within this changeset because

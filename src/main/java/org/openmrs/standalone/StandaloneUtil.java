@@ -444,10 +444,6 @@ public class StandaloneUtil {
 				System.err.println("❌ Connection established, but it is not valid.");
 			}
 
-			// Create database if it doesn't exist
-			stmt.executeUpdate("CREATE DATABASE IF NOT EXISTS openmrs DEFAULT CHARACTER SET utf8mb4;");
-			System.out.println("Database 'openmrs' created or already exists.");
-
 		} finally {
 			System.out.println("Stopping MariaDB...");
 			MariaDbController.stopMariaDB();

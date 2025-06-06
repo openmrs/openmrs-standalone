@@ -1,14 +1,12 @@
 package org.openmrs.standalone;
 
 import java.io.File;
-import java.io.IOException;
 import java.nio.file.Paths;
 import java.util.Properties;
 
 import ch.vorburger.exec.ManagedProcessException;
 import ch.vorburger.mariadb4j.DB;
 import ch.vorburger.mariadb4j.DBConfigurationBuilder;
-import org.apache.commons.io.FileUtils;
 
 public class MariaDbController {
 
@@ -50,15 +48,6 @@ public class MariaDbController {
         File baseDir = new File(Paths.get(baseDirPath).toAbsolutePath().toString());
         File dataDir = new File(Paths.get(dataDirPath).toAbsolutePath().toString());
 
-        // Force cleanup baseDir before starting db
-        try {
-            if (baseDir.exists()) {
-                FileUtils.deleteDirectory(baseDir);
-            }
-        } catch (IOException e) {
-            throw new RuntimeException("Unable to clean up MariaDB baseDir", e);
-        }
-
         mariaDBConfig.setBaseDir(baseDir);
         mariaDBConfig.setDataDir(dataDir);
 
@@ -66,7 +55,6 @@ public class MariaDbController {
         mariaDBConfig.addArg("--collation-server=utf8_general_ci");
         mariaDBConfig.addArg("--character-set-server=utf8");
         mariaDBConfig.addArg("--user=root");
-
 
         mariaDB = DB.newEmbeddedDB(mariaDBConfig.build());
 
