@@ -27,6 +27,9 @@ jobs:
           java-version: '21'
           distribution: 'temurin'
 
+      - name: Set MAVEN_OPTS
+        run: echo "MAVEN_OPTS=-Xms4g -Xmx6g -XX:MaxDirectMemorySize=2g" >> $GITHUB_ENV
+
       - name: Build and Test with Maven
         run: mvn clean install
 
@@ -44,6 +47,9 @@ jobs:
           java-version: '21'
           distribution: 'temurin'
 
+      - name: Set MAVEN_OPTS
+        run: echo "MAVEN_OPTS=-Xms4g -Xmx6g -XX:MaxDirectMemorySize=2g" >> $env:GITHUB_ENV
+
       - name: Build and Test with Maven
         run: mvn clean install
 
@@ -59,6 +65,9 @@ jobs:
         with:
           java-version: '21'
           distribution: 'temurin'
+
+      - name: Set MAVEN_OPTS
+        run: echo "MAVEN_OPTS=-Xms4g -Xmx6g -XX:MaxDirectMemorySize=2g" >> $GITHUB_ENV
 
       - name: Build and Test with Maven
         run: mvn clean install
