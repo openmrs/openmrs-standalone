@@ -7,7 +7,7 @@
     http://www.liquibase.org/xml/ns/dbchangelog-ext http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-ext.xsd">
 	
 	<changeSet id="20111202-1601" author="standalone" dbms="mysql,mariadb">
-		<comment>Adding demo data and updating the 'liquibasechangelog' table to work with version 2.0.x</comment>
+		<comment>Updating the 'liquibasechangelog' table to work with version 2.0.x for the demo data</comment>
 		
 		<!-- 
 			We need to make the liquibasechangelog table modifications to 2.0.x within this changeset because

@@ -90,7 +90,7 @@
 				<artifactId>${liquibase.plugin.artifactId}</artifactId>
 				<executions>
 					<execution>
-						<id>demo-db-add-data</id>
+						<id>demo-db-update-liquibasechangelog</id>
 						<phase>process-resources</phase>
 						<configuration>
 							<driver>com.mysql.cj.jdbc.Driver</driver>
@@ -136,12 +136,6 @@
 							<artifactId>identity-insert</artifactId>
 							<version>1.2.1</version>
 						</dependency>
-<!--						<dependency>-->
-<!--							<groupId>org.mariadb.jdbc</groupId>-->
-<!--							<artifactId>mariadb-java-client</artifactId>-->
-<!--							<version>3.5.3</version>-->
-<!--							<scope>compile</scope>-->
-<!--						</dependency>-->
 						<dependency>
 							<groupId>mysql</groupId>
 							<artifactId>mysql-connector-java</artifactId>
