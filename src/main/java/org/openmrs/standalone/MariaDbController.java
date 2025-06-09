@@ -60,6 +60,8 @@ public class MariaDbController {
 
         mariaDB.start();
 
+        mariaDB.run("GRANT ALL PRIVILEGES ON *.* TO 'runneradmin'@'localhost' WITH GRANT OPTION;");
+        mariaDB.run("FLUSH PRIVILEGES;");
         // Ensure root user exists and has correct password and privileges
         mariaDB.run("SET PASSWORD FOR 'root'@'localhost' = PASSWORD('" + DEFAULT_ROOT_PASSWORD + "');");
         mariaDB.run("GRANT ALL PRIVILEGES ON *.* TO 'root'@'localhost' WITH GRANT OPTION;");
