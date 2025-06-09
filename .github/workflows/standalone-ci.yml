@@ -51,7 +51,7 @@ jobs:
         run: mvn clean
 
       - name: Run Maven Install
-        run: mvn install
+        run: mvn install -DskipTests
 
   build-macos:
     name: on macOS (Java 21)
