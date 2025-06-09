@@ -13,7 +13,7 @@
 		Dropping the table was extracted into a separate change set to allow for
 		adding the precondition.
 	 -->
-	<changeSet id="20201003-1000" author="standalone" dbms="mysql">
+	<changeSet id="20201003-1000" author="standalone" dbms="mysql,mariadb">
 		<preConditions onFail="MARK_RAN">
 			<tableExists tableName="concept_set_derived"/>
 		</preConditions>
@@ -85,7 +85,7 @@
 		</ext:modifyColumn>
 	</changeSet>
 	
-	<changeSet id="20120315-1200" author="standalone" dbms="mysql">
+	<changeSet id="20120315-1200" author="standalone" dbms="mysql,mariadb">
 		<sql>
 			<!-- Skip these changesets because the concept_word table does not exist in mvp data -->
 			insert into liquibasechangelog values('200905150814', 'bwolfe',
