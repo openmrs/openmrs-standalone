@@ -34,29 +34,10 @@
 						<goals>
 							<goal>start</goal>
 						</goals>
-						<configuration>
-							<driver>com.mysql.cj.jdbc.Driver</driver>
-							<changeLogFile>${project.build.directory}/liquibase/${liquibase.cieldata.filename}</changeLogFile>
-							<url><![CDATA[jdbc:mysql://127.0.0.1:33326/openmrs?autoReconnect=true&sessionVariables=storage_engine=InnoDB&useUnicode=true&characterEncoding=UTF-8&server.initialize-user=true&createDatabaseIfNotExist=true&server.basedir=${project.build.directory}/emptydatabase&server.datadir=${project.build.directory}/emptydatabase/data&server.collation-server=utf8_general_ci&server.character-set-server=utf8&server.max_allowed_packet=32M]]></url>
-							<username>openmrs</username>
-							<password>test</password>
-							<verbose>true</verbose>
-							<dropFirst>false</dropFirst>
-							<systemProperties>
-								<property>
-									<name>liquibase.databaseChangeLogTableName</name>
-									<value>liquibasechangelog</value>
-								</property>
-								<property>
-									<name>liquibase.databaseChangeLogLockTableName</name>
-									<value>liquibasechangeloglock</value>
-								</property>
-							</systemProperties>
-						</configuration>
 					</execution>
 					<execution>
 						<id>stop-empty-database</id>
-						<phase>process-resources</phase>
+						<phase>verify</phase>
 						<goals>
 							<goal>stop</goal>
 						</goals>
@@ -87,15 +68,38 @@
 				</executions>
 			</plugin>
 			<plugin>
+				<groupId>org.codehaus.mojo</groupId>
+				<artifactId>exec-maven-plugin</artifactId>
+				<executions>
+					<execution>
+						<id>import-ciel-sql</id>
+						<phase>process-classes</phase>
+						<goals>
+							<goal>java</goal>
+						</goals>
+						<configuration>
+							<mainClass>org.openmrs.standalone.DbInitializer</mainClass>
+							<classpathScope>runtime</classpathScope>
+							<arguments>
+								<argument>${project.basedir}/openmrs_concepts_${ciel.dictionary.openmrs.version}_${ciel.dictionary.version}.sql</argument>
+								<argument><![CDATA[jdbc:mysql://127.0.0.1:33326/openmrs?autoReconnect=true&sessionVariables=storage_engine=InnoDB&useUnicode=true&characterEncoding=UTF-8]]></argument>
+								<argument>openmrs</argument>
+								<argument>test</argument>
+							</arguments>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
+			<plugin>
 				<groupId>org.liquibase</groupId>
 				<artifactId>${liquibase.plugin.artifactId}</artifactId>
 				<executions>
 					<execution>
 						<id>empty-db-add-ciel-data</id>
-						<phase>generate-resources</phase>
+						<phase>process-resources</phase>
 						<configuration>
 							<driver>com.mysql.cj.jdbc.Driver</driver>
-							<changeLogFile>${project.build.directory}/liquibase/${liquibase.cieldata.filename}</changeLogFile>
+							<changeLogFile>target/liquibase/${liquibase.cieldata.filename}</changeLogFile>
 							<url><![CDATA[jdbc:mysql://127.0.0.1:33326/openmrs?autoReconnect=true&sessionVariables=storage_engine=InnoDB&useUnicode=true&characterEncoding=UTF-8]]></url>
 							<username>openmrs</username>
 							<password>test</password>

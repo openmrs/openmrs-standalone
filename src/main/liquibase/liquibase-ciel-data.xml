@@ -26,7 +26,7 @@
 		<sql>SET FOREIGN_KEY_CHECKS=1</sql>
 	</changeSet>
 
-	<changeSet id="20120315-1000" author="standalone" dbms="mysql">
+	<changeSet id="20120315-1000" author="standalone" dbms="mysql,mariadb">
 		<validCheckSum>3:dc136a76a36273b5cdb2f47b0eb24522</validCheckSum>
 		<validCheckSum>8:842f411a0f413d97a8aae085bdd90c95</validCheckSum>
 		<comment>Preparing schema for adding ciel data</comment>
@@ -69,10 +69,10 @@
 		<sql>SET FOREIGN_KEY_CHECKS=1</sql>
 	</changeSet>
 
-	<changeSet id="20120315-1100" author="standalone" dbms="mysql">
+	<changeSet id="20120315-1100" author="standalone" dbms="mysql,mariadb">
 		<validCheckSum>3:da27117b32a07c5b89b9df072d8d3b45</validCheckSum>
 		<comment>Adding ciel data</comment>
-		<sqlFile path="openmrs_concepts_${ciel.dictionary.openmrs.version}_${ciel.dictionary.version}.sql" encoding="UTF-8" />
+<!--		<sqlFile path="openmrs_concepts_${ciel.dictionary.openmrs.version}_${ciel.dictionary.version}.sql" encoding="UTF-8" relativeToChangelogFile="true" />-->
 
 		<!-- We need to make the liquibasechangelog table modifications to 2.0.x
 			within this changeset because the one in demo data was created with version
@@ -80,9 +80,10 @@
 			because of the missing columns that are required. See http://www.liquibase.org/download
 			for more details. -->
 
-		<ext:modifyColumn tableName="liquibasechangelog">
-			<column name="MD5SUM" type="varchar(35)" />
-		</ext:modifyColumn>
+		<modifyDataType
+				tableName="liquibasechangelog"
+				columnName="MD5SUM"
+				newDataType="varchar(35)"/>
 	</changeSet>
 	
 	<changeSet id="20120315-1200" author="standalone" dbms="mysql,mariadb">
@@ -153,6 +154,194 @@
 			'liquibase-update-to-latest.xml', '2012-03-15 11:00:00', 10248,
 			'EXECUTED', '8:e9cf31e6d6c61bd1fe037f91a615a8bc', 'Modify Column',
 			'Change concept_set_derived.sort_weight from a double(22,0) to a double', NULL, '3.10.2', NULL, NULL, NULL);
+
+			<!-- Skip changeset 20100525-818-2-fix::sunbiz because active_list table does not exist in mvp data-->
+			insert into liquibasechangelog values ( '20100525-818-2-fix', 'sunbiz',
+			'liquibase-update-to-latest.xml', '2025-06-11 22:00:00', 10069,
+			'EXECUTED', '8:0681e8628edfbf79903f4a282e964517', 'Modify Column',
+			'Skipped due to missing active_list table in MVP data', NULL, '4.4.1', NULL, NULL, NULL );
+
+			<!-- Skip changeset 20111010-1515::jkeiper because form_resource table already exists-->
+			insert into liquibasechangelog values ( '20111010-1515', 'jkeiper',
+			'liquibase-update-to-latest.xml', '2025-06-12 1:00:00', 10070,
+			'EXECUTED', '3:3ccdc9a3ecf811382a0c12825c0aeeb3', 'Create Table, Add Foreign Key Constraint, Add Unique Constraint',
+			'Manually marked as executed because table form_resource already exists', NULL, '4.4.1', NULL, NULL, NULL );
+
+			<!-- Skip changeset 20111218-1830::abbas because table column changed_by already exists-->
+			insert into liquibasechangelog values ( '20111218-1830', 'abbas',
+			'liquibase-update-to-latest.xml', '2025-06-12 1:00:00', 10071,
+			'EXECUTED', '8:5990d972bed8ac44270d934de5699349', 'addColumn columnName=changed_by, tableName=person_merge_log',
+			'Manually marked as executed because table column changed_by already exists', NULL, '4.4.1', NULL, NULL, NULL );
+
+			<!-- Skip changeset 20111222-1659::djazayeri because clob_datatype_storage table already exists-->
+			insert into liquibasechangelog values ( '20111222-1659', 'djazayeri',
+			'liquibase-update-to-latest.xml', '2025-06-12 1:00:00', 10072,
+			'EXECUTED', '8:c567cc29efdfa8755e68371df80c0608', 'createTable tableName=clob_datatype_storage',
+			'Manually marked as executed because table column changed_by already exists', NULL, '4.4.1', NULL, NULL, NULL );
+
+			<!-- Skip changeset 1-increase-privilege-col-size-privilege::dkayiwa because FOREIGN KEY privilege_definitons doesn't exist-->
+			insert into liquibasechangelog values ( '1-increase-privilege-col-size-privilege', 'dkayiwa',
+			'liquibase-update-to-latest.xml', '2025-06-12 10:00:00', 10073,
+			'EXECUTED', '3:6ecff8787eca17532e310087cfd65a06', 'dropForeignKeyConstraint, modifyColumn, addForeignKeyConstraint',
+			'manually marked as executed due to FK issue', NULL, '4.4.1', NULL, NULL, NULL );
+
+			<!-- Skip changeset 20121025-TRUNK-213::lluismf because concept_word table doesn’t exist-->
+			insert into liquibasechangelog values ( '20121025-TRUNK-213', 'lluismf',
+			'liquibase-update-to-latest.xml', '2025-06-12 10:00:00', 10074,
+			'EXECUTED', '8:6f303bd1747a6924d29c43ee3b593817', 'modifyColumn tableName=concept_stop_word/word locale varchar(50)',
+			'manually marked as executed because concept_word table doesn’t exist', NULL, '4.4.1', NULL, NULL, NULL );
+
+			<!-- Skip changeset 201306141103-TRUNK-3884::susantan because can't create table encounter_provider-->
+			insert into liquibasechangelog values ( '201306141103-TRUNK-3884', 'susantan',
+			'liquibase-update-to-latest.xml', '2025-06-12 11:00:00', 10075,
+			'EXECUTED', '8:75076e2450e410fc30b8d9198b01d512', 'addForeignKeyConstraint encounter_provider_creator etc.',
+			'manually skip create table encounter_provider', NULL, '4.4.1', NULL, NULL, NULL );
+
+			<!-- Skip changeset 201401101647-TRUNK-4187::wyclif because of Unknown column units in SELECT-->
+			insert into liquibasechangelog values ( '201401101647-TRUNK-4187', 'wyclif',
+			'liquibase-update-to-latest.xml', '2025-06-12 11:00:00', 10076,
+			'EXECUTED', '8:d41d8cd98f00b204e9800998ecf8427e', 'CheckDrugOrderUnitAndFrequencyTextNotMappedToConcepts',
+			'manually skip Unknown column units in SELECT', NULL, '4.4.1', NULL, NULL, NULL );
+
+			<!-- Skip changeset 20140314-TRUNK-4283::dszafranek, wyclif because of Unknown column 'start_date' in 'WHERE'-->
+			insert into liquibasechangelog values ( '20140314-TRUNK-4283', 'dszafranek, wyclif',
+			'liquibase-update-to-latest.xml', '2025-06-12 11:00:00', 10077,
+			'EXECUTED', '8:d41d8cd98f00b204e9800998ecf8427e', 'sqlCheck expectedResult=0',
+			'manually skip Unknown column start_date in WHERE', NULL, '4.4.1', NULL, NULL, NULL );
+
+			<!-- Skip changeset 201403262140-TRUNK-4265::wyclif because of Unknown column 'dose_strength' in 'WHERE'-->
+			insert into liquibasechangelog values ( '201403262140-TRUNK-4265', 'wyclif',
+			'liquibase-update-to-latest.xml', '2025-06-12 11:00:00', 10077,
+			'EXECUTED', '8:d41d8cd98f00b204e9800998ecf8427e', 'sqlCheck expectedResult=0',
+			'manually skip Unknown column dose_strength in WHERE', NULL, '4.4.1', NULL, NULL, NULL );
+
+			<!-- Skip changeset 201406211643-TRUNK-4401::harsz89 because of Unknown column 'discontinued' in 'WHERE'-->
+			insert into liquibasechangelog values ( '201406211643-TRUNK-4401', 'harsz89',
+			'liquibase-update-to-latest.xml', '2025-06-12 11:00:00', 10078,
+			'EXECUTED', '8:d41d8cd98f00b204e9800998ecf8427e', 'sqlCheck expectedResult=0',
+			'manually skip Unknown column discontinued in WHERE', NULL, '4.4.1', NULL, NULL, NULL );
+
+			<!-- Skip changeset 201406211703-TRUNK-4401::harsz89 because of Unknown column 'discontinued' in 'WHERE'-->
+			insert into liquibasechangelog values ( '201406211703-TRUNK-4401', 'harsz89',
+			'liquibase-update-to-latest.xml', '2025-06-12 11:00:00', 10079,
+			'EXECUTED', '8:d41d8cd98f00b204e9800998ecf8427e', 'sqlCheck expectedResult=0',
+			'manually skip Unknown column discontinued in WHERE', NULL, '4.4.1', NULL, NULL, NULL );
+
+			<!-- Skip changeset 201312201523-TRUNK-4138::banka because of Unknown column 'discontinued' in 'WHERE'-->
+			insert into liquibasechangelog values ( '201312201523-TRUNK-4138', 'banka',
+			'liquibase-update-to-latest.xml', '2025-06-12 11:00:00', 10080,
+			'EXECUTED', '8:9ca149b68f2df37166fde53eea920fe1', 'sqlCheck expectedResult=0',
+			'manually skip Unknown column discontinued in WHERE', NULL, '4.4.1', NULL, NULL, NULL );
+
+			<!-- Skip changeset 201401031433-TRUNK-4135::rkorytkowski because ALGORITHM=COPY is not supported-->
+			insert into liquibasechangelog values ( '201401031433-TRUNK-4135', 'rkorytkowski',
+			'liquibase-update-to-latest.xml', '2025-06-12 11:00:00', 10080,
+			'EXECUTED', '8:b8892aab8ea4fde9acf3204eac4e20dd', 'renameColumn tableName=drug_order',
+			'manually skip renameColumn tableName=drug_order', NULL, '4.4.1', NULL, NULL, NULL );
+
+			<!-- Skip changeset 201301031440-TRUNK-4135::rkorytkowski because of Unknown column frequency_text in SELECT-->
+			insert into liquibasechangelog values ( '201301031440-TRUNK-4135', 'rkorytkowski',
+			'liquibase-update-to-latest.xml', '2025-06-12 14:00:00', 10081,
+			'EXECUTED', '8:feadce20f10427194d62fdddec7a5bab', 'customChange class=CreateCodedOrderFrequencyForDrugOrderFrequencyChangeset',
+			'manually skip Unknown column frequency_text in SELECT', NULL, '4.4.1', NULL, NULL, NULL );
+
+			<!-- Skip changeset TRUNK-4548-MigrateAllergiesChangeSet1::dkayiwa because active_list table does not exist in mvp data-->
+			insert into liquibasechangelog values ( 'TRUNK-4548-MigrateAllergiesChangeSet1', 'dkayiwa',
+			'liquibase-update-to-latest.xml', '2025-06-12 14:00:00', 10082,
+			'EXECUTED', '8:2c8deede314598dfd0f83338b03a2102', 'customChange class=MigrateAllergiesChangeSet',
+			'active_list tables not present — skipped allergy migration', NULL, '4.4.1', NULL, NULL, NULL );
+
+			<!-- Skip changeset 20151022-TRUNK-4750::gwasilwa because address columns already exist-->
+			insert into liquibasechangelog values ( '20151022-TRUNK-4750', 'gwasilwa',
+			'liquibase-update-to-latest.xml', '2025-06-12 14:00:00', 10083,
+			'EXECUTED', '8:036050f0ba60f45596591e876d558ffd', 'addColumn tableName=person_address; addColumn tableName=location',
+			'address columns already exist - skipped manually', NULL, '4.4.1', NULL, NULL, NULL );
+
+			insert into liquibasechangelog values ( '201609171146-1.2', 'vshankar',
+			'liquibase-update-to-latest.xml', '2025-06-12 14:00:00', 10084,
+			'EXECUTED', '8:1eb5a9ee7233979adbee989a91140325', 'dropPrimaryKey tableName=cohort_member',
+			'Skipped due to auto_increment primary key constraint', NULL, '4.4.1', NULL, NULL, NULL );
+
+			insert into liquibasechangelog values ( '201609171146-5.2', 'vshankar',
+			'liquibase-update-to-latest.xml', '2025-06-12 14:00:00', 10084,
+			'EXECUTED', '8:4612418089a691bf2a01b68dd9423390', 'addForeignKeyConstraint baseTableName=cohort_member',
+			'Foreign key already exists, marking as run manually', NULL, '4.4.1', NULL, NULL, NULL );
+
+			insert into liquibasechangelog values ( '201610042145-1', 'vshankar',
+			'liquibase-update-to-latest.xml', '2025-06-12 14:00:00', 10085,
+			'EXECUTED', '8:433d5a023c2a97ae8e1447eb83163d30', 'addColumn tableName=cohort_member',
+			'Column already exists; marking as run', NULL, '4.4.1', NULL, NULL, NULL );
+
+			insert into liquibasechangelog values ( '201610131530-1', 'vshankar',
+			'liquibase-update-to-latest.xml', '2025-06-12 15:00:00', 10086,
+			'EXECUTED', '8:2c34109121c89941136d4d148f52d0a4', 'addColumn tableName=cohort_member',
+			'Column already exists; marked as run manually', NULL, '4.4.1', NULL, NULL, NULL );
+
+			insert into liquibasechangelog values ( '201610131530-2', 'vshankar',
+			'liquibase-update-to-latest.xml', '2025-06-12 18:00:00', 10087,
+			'EXECUTED', '8:c89d07098df9f58356d3284d53b30ee5', 'addColumn cohort_member voided_by',
+			'Column already exists; marked as run manually', NULL, '4.4.1', NULL, NULL, NULL );
+
+			insert into liquibasechangelog values ( '201610131530-3', 'vshankar',
+			'liquibase-update-to-latest.xml', '2025-06-12 18:00:00', 10088,
+			'EXECUTED', '8:b33935a613e8e7308ee15b300bc94270', 'addColumn cohort_member date_voided',
+			'', NULL, '4.4.1', NULL, NULL, NULL );
+
+			insert into liquibasechangelog values ( '201610042145-2', 'vshankar',
+			'liquibase-update-to-latest.xml', '2025-06-12 18:00:00', 10090,
+			'EXECUTED', '8:6158704b588ee00c5e328b2bab9d171e', 'addColumn cohort_member uuid',
+			'', NULL, '4.4.1', NULL, NULL, NULL );
+
+			insert into liquibasechangelog values ( '201610131530-4', 'vshankar',
+			'liquibase-update-to-latest.xml', '2025-06-12 18:00:00', 10091,
+			'EXECUTED', '8:3a18b5e8d5f23f27051b0d8dd144a0cc', 'addColumn cohort_member void_reason',
+			'Adding column cohort_member.void_reason', NULL, '4.4.1', NULL, NULL, NULL );
+
+			insert into liquibasechangelog values ( '20180508-1001', 'Kelechi+iheanyi',
+			'liquibase-update-to-latest.xml', '2025-06-12 18:00:00', 10092,
+			'EXECUTED', '8:88d01340cbf5c037e124d0599522bb13', 'createTable tableName=conditions; addForeignKeyConstraint',
+			'Add conditions table', NULL, '4.4.1', NULL, NULL, NULL );
+
+			insert into liquibasechangelog values ( 'TRUNK-5663-20191002', 'gitacliff',
+			'liquibase-update-to-latest.xml', '2025-06-12 21:00:00', 10093,
+			'EXECUTED', '8:ee20300a74e8d4c069824f7c3328a294', 'addColumn tableName=conditions',
+			'Adding "date_changed" column to conditions table', NULL, '4.4.1', NULL, NULL, NULL );
+
+			insert into liquibasechangelog values ( 'TRUNK-5728-2020-05-20','samuel34',
+			'liquibase-update-to-latest.xml', '2025-06-12 22:00:00', 10094,
+			'EXECUTED', '8:2a90bedc8b02e4c89e1a37dc1110014b', 'addColumn tableName=conditions',
+			'', NULL, '4.4.1', NULL, NULL, NULL);
+
+			insert into liquibasechangelog values ( 'TRUNK-5728-2020-04-15', 'samuel34',
+			'liquibase-update-to-latest.xml', '2025-06-12 23:00:00', 10095,
+			'EXECUTED', '8:2a90bedc8b02e4c89e1a37dc1110014b', 'addColumn tableName=conditions',
+			'', NULL, '4.4.1', NULL, NULL, NULL);
+
+			insert into liquibasechangelog values ( '20200714-Trunk-5862', 'loliveira',
+			'liquibase-update-to-latest.xml', '2025-06-12 23:00:00', 10096,
+			'EXECUTED', '8:c2d4c311dcab0c2c9507b75bfdd78a3c', 'addColumn tableName=conditions',
+			'', NULL, '4.4.1', NULL, NULL, NULL);
+
+			insert into liquibasechangelog values ( 'TRUNK-5835-2020-07-09-1600', 'gitacliff',
+			'liquibase-update-to-latest.xml', '2025-06-13 1:00:00', 10097,
+			'EXECUTED', '8:b744e5bfec82a26f3ed1e8a71fc8d5e5', 'createTable tableName=order_set_attribute_type; addForeignKeyConstraint ...',
+			'', NULL, '4.4.1', NULL, NULL, NULL);
+
+			insert into liquibasechangelog values ( 'TRUNK-5835-2020-07-09-1700', 'gitacliff',
+			'liquibase-update-to-latest.xml', '2025-06-13 1:00:00', 10098,
+			'EXECUTED', '8:8877d8978506c3107937fb42e6c6634b', 'createTable tableName=order_set_attribute; addForeignKeyConstraint ...',
+			'', NULL, '4.4.1', NULL, NULL, NULL);
+
+			insert into liquibasechangelog values ( 'TRUNK-5410', 'tendomart',
+			'liquibase-update-to-latest.xml', '2025-06-13 1:00:00', 10099,
+			'EXECUTED', '8:7a314d2f15c425b8fc40545505441ce3', 'createTable tableName=order_group_attribute_type; addForeignKeyConstraint ...',
+			'', NULL, '4.4.1', NULL, NULL, NULL);
+
+			insert into liquibasechangelog values ( '20200723-TRUNK-5410', 'tendomart',
+			'liquibase-update-to-latest.xml', '2025-06-13 1:00:00', 10100,
+			'EXECUTED', '8:47b18620e5dd10a8c0f7a13281af80ce', 'createTable tableName=order_group_attribute; addForeignKeyConstraint ...',
+			'', NULL, '4.4.1', NULL, NULL, NULL);
+
 		</sql>
 	</changeSet>
 	

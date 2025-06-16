@@ -284,19 +284,8 @@ public class OpenmrsUtil {
 			return;
 		}
 
-		System.out.println("✅ Checking if demo data already exists...");
+		System.out.println("✅ Preparing to import "+sqlFile+" data");
 		try (Connection conn = DriverManager.getConnection(jdbcUrl, user, password)) {
-			// Check if demo data is already present
-			try (Statement stmt = conn.createStatement();
-				 ResultSet rs = stmt.executeQuery("SELECT COUNT(*) FROM scheduler_task_config")) {
-
-				if (rs.next() && rs.getInt(1) > 0) {
-					System.out.println("✅ Demo data already imported. Skipping import.");
-					return;
-				}
-			} catch (SQLException checkEx) {
-				System.out.println("⚠️  Could not check existing data: " + checkEx.getMessage());
-			}
 
 			System.out.println("📥 Importing SQL from: " + sqlFile.getAbsolutePath());
 			try (Reader reader = new FileReader(sqlFile)) {
