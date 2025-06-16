@@ -54,7 +54,6 @@ public class MariaDbController {
         mariaDBConfig.addArg("--max_allowed_packet=96M");
         mariaDBConfig.addArg("--collation-server=utf8_general_ci");
         mariaDBConfig.addArg("--character-set-server=utf8");
-        mariaDBConfig.addArg("--user=root");
 
         mariaDB = DB.newEmbeddedDB(mariaDBConfig.build());
 

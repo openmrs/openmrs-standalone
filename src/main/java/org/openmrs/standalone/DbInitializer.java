@@ -10,7 +10,7 @@ public class DbInitializer {
         Class.forName("com.mysql.cj.jdbc.Driver").newInstance();
 
         File sqlFilePath = new File("Demo-1.9.0.sql");
-        String jdbcUrl = "jdbc:mysql://127.0.0.1:33328/openmrs?autoReconnect=true&sessionVariables=storage_engine=InnoDB&useUnicode=true&characterEncoding=UTF-8&zeroDateTimeBehavior=convertToNull";
+        String jdbcUrl = "jdbc:mysql://127.0.0.1:33328/openmrs?autoReconnect=true&useUnicode=true&characterEncoding=UTF-8&zeroDateTimeBehavior=convertToNull";
         String username = "openmrs";
         String password = "test";
 

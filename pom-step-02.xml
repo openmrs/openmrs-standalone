@@ -34,25 +34,6 @@
 						<goals>
 							<goal>start</goal>
 						</goals>
-						<configuration>
-							<driver>com.mysql.cj.jdbc.Driver</driver>
-							<changeLogFile>${project.build.directory}/liquibase/${liquibase.cieldata.filename}</changeLogFile>
-							<url><![CDATA[jdbc:mysql://127.0.0.1:33326/openmrs?autoReconnect=true&sessionVariables=storage_engine=InnoDB&useUnicode=true&characterEncoding=UTF-8&server.initialize-user=true&createDatabaseIfNotExist=true&server.basedir=${project.build.directory}/emptydatabase&server.datadir=${project.build.directory}/emptydatabase/data&server.collation-server=utf8_general_ci&server.character-set-server=utf8&server.max_allowed_packet=32M]]></url>
-							<username>openmrs</username>
-							<password>test</password>
-							<verbose>true</verbose>
-							<dropFirst>false</dropFirst>
-							<systemProperties>
-								<property>
-									<name>liquibase.databaseChangeLogTableName</name>
-									<value>liquibasechangelog</value>
-								</property>
-								<property>
-									<name>liquibase.databaseChangeLogLockTableName</name>
-									<value>liquibasechangeloglock</value>
-								</property>
-							</systemProperties>
-						</configuration>
 					</execution>
 					<execution>
 						<id>stop-empty-database</id>
@@ -96,7 +77,7 @@
 						<configuration>
 							<driver>com.mysql.cj.jdbc.Driver</driver>
 							<changeLogFile>${project.build.directory}/liquibase/${liquibase.cieldata.filename}</changeLogFile>
-							<url><![CDATA[jdbc:mysql://127.0.0.1:33326/openmrs?autoReconnect=true&sessionVariables=storage_engine=InnoDB&useUnicode=true&characterEncoding=UTF-8]]></url>
+							<url><![CDATA[jdbc:mysql://127.0.0.1:33326/openmrs?autoReconnect=true&useUnicode=true&characterEncoding=UTF-8]]></url>
 							<username>openmrs</username>
 							<password>test</password>
 							<verbose>true</verbose>
