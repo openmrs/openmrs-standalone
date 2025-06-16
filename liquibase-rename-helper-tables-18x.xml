@@ -11,7 +11,7 @@
 		 DATABASECHANGELOG and then named back before openmrs starts. 
 	 -->
 	
-	<changeSet id="20111202-1602-18x" author="standalone" dbms="mysql"> 
+	<changeSet id="20111202-1602-18x" author="standalone" dbms="mysql,mariadb">
 		<comment>Renaming liquibase helper tables to the standard openmrs names</comment>
 		
 		<renameTable newTableName="liquibasechangelog" oldTableName="DATABASECHANGELOG"/>

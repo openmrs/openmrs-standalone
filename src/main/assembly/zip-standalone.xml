@@ -11,7 +11,7 @@
 		<file>
 			<source>${project.build.directory}/openmrs.war</source>
 			<outputDirectory>${project.build.finalName}/tomcat/webapps</outputDirectory>
-			<destName>openmrs-standalone.war</destName>
+			<destName>openmrs.war</destName>
 		</file>
 	</files>
 	<fileSets>

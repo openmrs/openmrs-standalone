@@ -19,14 +19,18 @@ cd $name
 cp ../target/*database.zip .
 ln -s ../tomcat tomcat
 cp ../*.png .
-cp ../openmrs-standalone-runtime.properties .
+cp ../openmrs-runtime.properties .
 cp ../target/*.jar .
-cp ../target/openmrs-standalone.war tomcat/webapps/openmrs-standalone.war
+cp ../target/openmrs.war tomcat/webapps/openmrs.war
 
 # TODO: Add an "if statement" here to look for this property?
 
-echo "application_data_directory=appdata" >> openmrs-standalone-runtime.properties
-echo "reset_connection_password=true" >> openmrs-standalone-runtime.properties
+echo "application_data_directory=appdata" >> openmrs-runtime.properties
+echo "reset_connection_password=true" >> openmrs-runtime.properties
+echo "tomcatport=8081" >> openmrs-runtime.properties
+echo "connection.url=jdbc:mysql://localhost:3316/openmrs?" >> openmrs-runtime.properties
+echo "connection.username=openmrs" >> openmrs-runtime.properties
+echo "connection.password=Admin123" >> openmrs-runtime.properties
 
 cd ..
 
