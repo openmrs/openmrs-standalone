@@ -68,6 +68,30 @@
 				</executions>
 			</plugin>
 			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-dependency-plugin</artifactId>
+				<executions>
+					<execution>
+						<id>unpack-ciel-dictionary</id>
+						<phase>generate-resources</phase>
+						<goals>
+							<goal>unpack</goal>
+						</goals>
+						<configuration>
+							<artifactItems>
+								<artifactItem>
+									<groupId>org.openmrs.contrib</groupId>
+									<artifactId>ciel-dictionary</artifactId>
+									<version>${ciel.dictionary.openmrs.version}-${ciel.dictionary.version}</version>
+									<type>zip</type>
+									<outputDirectory>${project.build.directory}/ciel-sql</outputDirectory>
+								</artifactItem>
+							</artifactItems>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
+			<plugin>
 				<groupId>org.codehaus.mojo</groupId>
 				<artifactId>exec-maven-plugin</artifactId>
 				<executions>
@@ -81,7 +105,7 @@
 							<mainClass>org.openmrs.standalone.DbInitializer</mainClass>
 							<classpathScope>runtime</classpathScope>
 							<arguments>
-								<argument>${project.basedir}/openmrs_concepts_${ciel.dictionary.openmrs.version}_${ciel.dictionary.version}.sql</argument>
+								<argument>${project.build.directory}/ciel-sql/openmrs_concepts_${ciel.dictionary.openmrs.version}_${ciel.dictionary.version}.sql</argument>
 								<argument><![CDATA[jdbc:mysql://127.0.0.1:33326/openmrs?autoReconnect=true&useUnicode=true&characterEncoding=UTF-8]]></argument>
 								<argument>openmrs</argument>
 								<argument>test</argument>
