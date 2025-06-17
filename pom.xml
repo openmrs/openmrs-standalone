@@ -108,7 +108,6 @@
       <artifactId>mybatis</artifactId>
       <version>3.5.19</version>
     </dependency>
-
   </dependencies>
 
   <build>

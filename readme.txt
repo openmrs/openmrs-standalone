@@ -140,12 +140,12 @@ splashscreen-loading.png			 This is the splash screen displayed on startup. It c
 
 ............... DATABASE CONNECTION STRING.......................
 
-jdbc:mysql://127.0.0.1:3316/openmrs?autoReconnect=true&sessionVariables=storage_engine=InnoDB&useUnicode=true&characterEncoding=UTF-8
+jdbc:mysql://127.0.0.1:3316/openmrs?autoReconnect=true&useUnicode=true&characterEncoding=UTF-8
 
 The above default database connection string has all in the openmrs mysql default database connection string used for a MariaDB
 connection
 
-						   
+
 NOTE: When creating a new database using the openmrs database setup wizard, remember to replace the default connection string
 	  with the one above in the "Database Connection:" text field.
 	  

@@ -226,7 +226,7 @@ NOTE: Without this folder structure, you will get errors while trying to run the
 
 ## DATABASE CONNECTION STRING
 
-	jdbc:mysql://127.0.0.1:3316/openmrs?autoReconnect=true&sessionVariables=storage_engine=InnoDB&useUnicode=true&characterEncoding=UTF-8
+	jdbc:mysql://127.0.0.1:3316/openmrs?autoReconnect=true&useUnicode=true&characterEncoding=UTF-8
 The above default database connection string has all in the openmrs mysql default database connection and is used for the MariaDB connection.
 
 						   
@@ -264,8 +264,6 @@ NOTE: With database (either with or without demo data) means the user will not r
 SUMMARY: Using a single package for all (most) platforms approximately tripples the download size.
          Including an empty database without demo data increases the size by only around 3 MB
          Including a database with demo data increases the size by only around 6 MB
-
-
 
 MariaDB4j documentation can be found at:
 https://github.com/MariaDB4j/MariaDB4j
