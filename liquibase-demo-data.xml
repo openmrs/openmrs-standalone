@@ -21,9 +21,5 @@
 				columnName="MD5SUM"
 				newDataType="varchar(35)"/>
 	</changeSet>
-
-	<changeSet id="20090402-1200" author="standalone" dbms="mysql,mariadb">
-		<validCheckSum>ANY</validCheckSum>
-	</changeSet>
 	   
 </databaseChangeLog>
