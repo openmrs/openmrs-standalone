@@ -265,7 +265,5 @@ SUMMARY: Using a single package for all (most) platforms approximately tripples 
          Including an empty database without demo data increases the size by only around 3 MB
          Including a database with demo data increases the size by only around 6 MB
 
-
-
 MariaDB4j documentation can be found at:
 https://github.com/MariaDB4j/MariaDB4j

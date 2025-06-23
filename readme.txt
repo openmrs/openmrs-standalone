@@ -145,7 +145,7 @@ jdbc:mysql://127.0.0.1:3316/openmrs?autoReconnect=true&useUnicode=true&character
 The above default database connection string has all in the openmrs mysql default database connection string used for a MariaDB
 connection
 
-						   
+
 NOTE: When creating a new database using the openmrs database setup wizard, remember to replace the default connection string
 	  with the one above in the "Database Connection:" text field.
 	  

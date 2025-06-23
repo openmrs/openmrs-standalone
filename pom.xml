@@ -23,11 +23,11 @@
     <maven.compiler.source>1.8</maven.compiler.source>
     <maven.compiler.target>1.8</maven.compiler.target>
 
-    <ciel.dictionary.openmrs.version>2.6.0</ciel.dictionary.openmrs.version>
-    <ciel.dictionary.version>20221104</ciel.dictionary.version>
+    <ciel.dictionary.openmrs.version>2.5.5</ciel.dictionary.openmrs.version>
+    <ciel.dictionary.version>20250512</ciel.dictionary.version>
 
     <liquibase.plugin.artifactId>liquibase-maven-plugin</liquibase.plugin.artifactId>
-    <liquibase.plugin.version.3.x>4.4.1</liquibase.plugin.version.3.x>
+    <liquibase.plugin.version.3.x>4.32.0</liquibase.plugin.version.3.x>
 
     <liquibase.demodata.archive>Demo-1.9.0.sql.zip</liquibase.demodata.archive>
     <liquibase.cieldata.filename>liquibase-ciel-data.xml</liquibase.cieldata.filename>
@@ -35,7 +35,7 @@
     <liquibase.demodata.followup.filename>liquibase-empty-changelog.xml</liquibase.demodata.followup.filename>
     <liquibase.emptydb.followup.filename>liquibase-empty-changelog.xml</liquibase.emptydb.followup.filename>
 
-    <openmrs.version>2.8.0-SNAPSHOT</openmrs.version>
+    <openmrs.version>2.7.4-SNAPSHOT</openmrs.version>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <tomcat.version>7.0.109</tomcat.version>
     <junitVersion>5.12.2</junitVersion>
@@ -108,7 +108,6 @@
       <artifactId>mybatis</artifactId>
       <version>3.5.19</version>
     </dependency>
-
   </dependencies>
 
   <build>

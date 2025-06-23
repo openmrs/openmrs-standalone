@@ -9,11 +9,11 @@ public class DbInitializer {
     public static void main(String[] args) throws Exception {
         Class.forName("com.mysql.cj.jdbc.Driver").newInstance();
 
-        File sqlFilePath = new File("Demo-1.9.0.sql");
-        String jdbcUrl = "jdbc:mysql://127.0.0.1:33328/openmrs?autoReconnect=true&useUnicode=true&characterEncoding=UTF-8&zeroDateTimeBehavior=convertToNull";
-        String username = "openmrs";
-        String password = "test";
+        String sqlFilePath = args[0];
+        String jdbcUrl = args[1];
+        String username = args[2];
+        String password = args[3];
 
-        importSqlFile(sqlFilePath, jdbcUrl, username, password);
+        importSqlFile(new File(sqlFilePath), jdbcUrl, username, password);
     }
 }

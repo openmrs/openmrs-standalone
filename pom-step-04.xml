@@ -84,7 +84,6 @@
 					</execution>
 				</executions>
 			</plugin>
-
 			<plugin>
 				<groupId>org.liquibase</groupId>
 				<artifactId>${liquibase.plugin.artifactId}</artifactId>
@@ -117,7 +116,6 @@
 					</execution>
 				</executions>
 			</plugin>
-
 		</plugins>
 		<pluginManagement>
 			<plugins>
