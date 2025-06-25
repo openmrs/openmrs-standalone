@@ -41,6 +41,7 @@ class StandaloneUtilTest {
 
     private static final String MARIADB_BASEDIR_NAME = "mariadb-base-dir";
     private static final String DATA_DIR_NAME = "data";
+    private static final String ROOT_USER = "root";
 
     private Properties properties;
     private Path tempBaseDir;
@@ -80,7 +81,7 @@ class StandaloneUtilTest {
             StandaloneUtil.startupDatabaseToCreateDefaultUser(MARIADB_PORT);
 
             MariaDbController.startMariaDB(MARIADB_PORT, properties.getProperty("connection.password", ""));
-            try (Connection connection = DriverManager.getConnection(DEFAULT_URL, "root", "rootpass")) {
+            try (Connection connection = DriverManager.getConnection(DEFAULT_URL, ROOT_USER, MariaDbController.getRootPassword())) {
 
                 assertNotNull(connection, "Connection to MariaDB with 'root' user should not be null");
                 assertFalse(connection.isClosed(), "Connection to MariaDB should be open");
@@ -104,8 +105,8 @@ class StandaloneUtilTest {
                         String grant = resultSet.getString(1);
                         // Check if the grant statement contains the expected privileges
                         if (grant.toLowerCase().contains("grant create user on *.* to") &&
-                                grant.contains("openmrs") &&
-                                grant.contains("localhost")) {
+                                grant.toLowerCase().contains("openmrs") &&
+                                grant.toLowerCase().contains("localhost")) {
                             privilegesCorrect = true;
                             break;
                         }

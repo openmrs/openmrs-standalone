@@ -54,7 +54,8 @@ public class StandaloneUtil {
 	 * The maximum number of server port number.
 	 */
 	public static final int MAX_PORT_NUMBER = 49151;
-	
+	private static final String ROOT_USER = "root";
+
 	private static String CONTEXT_NAME;
 
 	static Properties properties = OpenmrsUtil.getRuntimeProperties(StandaloneUtil.getContextName());
@@ -325,7 +326,7 @@ public class StandaloneUtil {
 
 			String sql = "ALTER USER '" + username + "'@'localhost' IDENTIFIED BY '" + newPassword + "';";
 
-			try (Connection connection = DriverManager.getConnection(url,"root", "rootpass");
+			try (Connection connection = DriverManager.getConnection(url, ROOT_USER, MariaDbController.getRootPassword());
 				 Statement statement = connection.createStatement()) {
 
 				statement.execute(sql); // Change password
@@ -427,14 +428,13 @@ public class StandaloneUtil {
 
 		Properties props = OpenmrsUtil.getRuntimeProperties(getContextName());
 		String url = props.getProperty("connection.url");
-		String username = props.getProperty("connection.username");
 		String password = props.getProperty("connection.password");
 
 		System.out.println("Starting MariaDB on port " + mariaDBPort + "...");
 		MariaDbController.startMariaDB(mariaDBPort, password);
 
 		System.out.println("Attempting to connect to the database: " + url);
-		try (Connection conn = DriverManager.getConnection(url, "root", "rootpass");
+		try (Connection conn = DriverManager.getConnection(url, ROOT_USER, MariaDbController.getRootPassword());
 			 Statement stmt = conn.createStatement()) {
 
 			// Check if connection is valid
@@ -442,7 +442,7 @@ public class StandaloneUtil {
 				String createUserSQL = "CREATE USER IF NOT EXISTS 'openmrs'@'localhost' IDENTIFIED BY 'test';";
 				stmt.executeUpdate(createUserSQL);
 
-				// Only grant on openmrs DB wit
+				// Only grant on openmrs DB
 				String grantPrivilegesSQL = "GRANT ALL PRIVILEGES ON `openmrs`.* TO 'openmrs'@'localhost' WITH GRANT OPTION;";
 
 				stmt.executeUpdate(grantPrivilegesSQL);
