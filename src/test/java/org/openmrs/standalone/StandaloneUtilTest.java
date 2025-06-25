@@ -33,7 +33,7 @@ class StandaloneUtilTest {
     private static final String KEY_RESET_CONNECTION_PASSWORD = "reset_connection_password";
     private static final String KEY_CONNECTION_URL = "connection.url";
     private static final String KEY_CONNECTION_USERNAME = "connection.username";
-    private static final String TEST_PASSWORD = "";
+    private static final String TEST_PASSWORD = "test";
 
     private static final String USERNAME = "openmrs";
     private static final String MARIADB_PORT = "33126";
@@ -41,6 +41,7 @@ class StandaloneUtilTest {
 
     private static final String MARIADB_BASEDIR_NAME = "mariadb-base-dir";
     private static final String DATA_DIR_NAME = "data";
+    private static final String ROOT_USER = "root";
 
     private Properties properties;
     private Path tempBaseDir;
@@ -80,9 +81,9 @@ class StandaloneUtilTest {
             StandaloneUtil.startupDatabaseToCreateDefaultUser(MARIADB_PORT);
 
             MariaDbController.startMariaDB(MARIADB_PORT, properties.getProperty("connection.password", ""));
-            try (Connection connection = DriverManager.getConnection(DEFAULT_URL, "root", "rootpass")) {
+            try (Connection connection = DriverManager.getConnection(DEFAULT_URL, ROOT_USER, MariaDbController.getRootPassword())) {
 
-                assertNotNull(connection, "Connection to MariaDB with 'openmrs' user should not be null");
+                assertNotNull(connection, "Connection to MariaDB with 'root' user should not be null");
                 assertFalse(connection.isClosed(), "Connection to MariaDB should be open");
 
                 try (Statement stmt = connection.createStatement()) {
@@ -102,7 +103,10 @@ class StandaloneUtilTest {
                     boolean privilegesCorrect = false;
                     while (resultSet.next()) {
                         String grant = resultSet.getString(1);
-                        if (grant.equals("GRANT ALL PRIVILEGES ON *.* TO `openmrs`@`localhost`")) {
+                        // Check if the grant statement contains the expected privileges
+                        if (grant.toLowerCase().contains("grant create user on *.* to") &&
+                                grant.toLowerCase().contains("openmrs") &&
+                                grant.toLowerCase().contains("localhost")) {
                             privilegesCorrect = true;
                             break;
                         }

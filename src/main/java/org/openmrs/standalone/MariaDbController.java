@@ -13,9 +13,8 @@ public class MariaDbController {
     public static final String DATABASE_NAME = "openmrs";
     private static final String MARIA_DB_BASE_DIR = "database";
     private static final String MARIA_DB_DATA_DIR = Paths.get(MARIA_DB_BASE_DIR, "data").toString();
-    private static final String DATABASE_USER_NAME = "openmrs";
-    private static final String DEFAULT_PASSWORD = "test";
-    private static final String DEFAULT_ROOT_PASSWORD = "rootpass";
+    private static final String ROOT_USER = "root";
+    private static final String ROOT_PASSWORD = "rootpass";
 
     private static DB mariaDB;
     private static DBConfigurationBuilder mariaDBConfig;
@@ -60,19 +59,11 @@ public class MariaDbController {
         mariaDB.start();
 
         // Ensure root user exists and has correct password and privileges
-        mariaDB.run("ALTER USER 'root'@'localhost' IDENTIFIED BY '" + DEFAULT_ROOT_PASSWORD + "';");
+        mariaDB.run("ALTER USER 'root'@'localhost' IDENTIFIED BY '" + ROOT_PASSWORD + "';");
         mariaDB.run("GRANT ALL PRIVILEGES ON *.* TO 'root'@'localhost' WITH GRANT OPTION;");
 
-        // Create or update the 'openmrs' user with the configured password
-        mariaDB.run("CREATE USER IF NOT EXISTS '" + DATABASE_USER_NAME + "'@'localhost' IDENTIFIED BY '" + userPassword + "';");
-        mariaDB.run("ALTER USER '" + DATABASE_USER_NAME + "'@'localhost' IDENTIFIED BY '" + userPassword + "';");
-
-        // Grant privileges to openmrs user
-        mariaDB.run("GRANT ALL PRIVILEGES ON *.* TO '" + DATABASE_USER_NAME + "'@'localhost';");
-        mariaDB.run("FLUSH PRIVILEGES;");
-
         // Create the OpenMRS database schema if it doesn't exist
-        mariaDB.createDB(DATABASE_NAME, DATABASE_USER_NAME, userPassword);
+        mariaDB.createDB(DATABASE_NAME, ROOT_USER, ROOT_PASSWORD);
     }
 
     private static String safeResolveProperty(Properties properties, String key, String defaultValue) {
@@ -91,8 +82,7 @@ public class MariaDbController {
         }
     }
 
-    public static String getDBPassword() {
-        Properties props = OpenmrsUtil.getRuntimeProperties(StandaloneUtil.getContextName());
-        return props.getProperty("connection.password", DEFAULT_PASSWORD); // fallback to default
+    public static String getRootPassword() {
+        return ROOT_PASSWORD;
     }
 }

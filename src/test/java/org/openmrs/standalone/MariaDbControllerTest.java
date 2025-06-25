@@ -66,7 +66,7 @@ public class MariaDbControllerTest {
             when(OpenmrsUtil.getRuntimeProperties(anyString())).thenReturn(properties);
             when(OpenmrsUtil.getRuntimeProperties(Mockito.nullable(String.class))).thenReturn(properties);
 
-            MariaDbController.startMariaDB(MARIADB_PORT, MariaDbController.getDBPassword());
+            MariaDbController.startMariaDB(MARIADB_PORT, ROOT_PASSWORD);
 
             validateMariaDBRunning();
 
