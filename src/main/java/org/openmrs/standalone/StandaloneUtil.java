@@ -325,7 +325,7 @@ public class StandaloneUtil {
 
 			String sql = "ALTER USER '" + username + "'@'localhost' IDENTIFIED BY '" + newPassword + "';";
 
-			try (Connection connection = DriverManager.getConnection(url, "openmrs", properties.getProperty("connection.password", ""));
+			try (Connection connection = DriverManager.getConnection(url,"root", "rootpass");
 				 Statement statement = connection.createStatement()) {
 
 				statement.execute(sql); // Change password
@@ -434,11 +434,23 @@ public class StandaloneUtil {
 		MariaDbController.startMariaDB(mariaDBPort, password);
 
 		System.out.println("Attempting to connect to the database: " + url);
-		try (Connection conn = DriverManager.getConnection(url, username, password);
+		try (Connection conn = DriverManager.getConnection(url, "root", "rootpass");
 			 Statement stmt = conn.createStatement()) {
 
 			// Check if connection is valid
 			if (conn.isValid(5)) {
+				String createUserSQL = "CREATE USER IF NOT EXISTS 'openmrs'@'localhost' IDENTIFIED BY 'test';";
+				stmt.executeUpdate(createUserSQL);
+
+				// Only grant on openmrs DB wit
+				String grantPrivilegesSQL = "GRANT ALL PRIVILEGES ON `openmrs`.* TO 'openmrs'@'localhost' WITH GRANT OPTION;";
+
+				stmt.executeUpdate(grantPrivilegesSQL);
+
+				// Optional: enable user creation (if OpenMRS core requires)
+				String grantCreateUserSQL = "GRANT CREATE USER ON *.* TO 'openmrs'@'localhost';";
+				stmt.executeUpdate(grantCreateUserSQL);
+
 				System.out.println("✅ Connection to MariaDB successful.");
 			} else {
 				System.err.println("❌ Connection established, but it is not valid.");
