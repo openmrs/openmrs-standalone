@@ -34,7 +34,7 @@
 
     <openmrs.version>2.7.4-SNAPSHOT</openmrs.version>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    <tomcat.version>7.0.109</tomcat.version>
+    <tomcat.version>9.0.106</tomcat.version>
     <junitVersion>5.12.2</junitVersion>
     <mockitoVersion>3.12.4</mockitoVersion>
     <mariadb4jVersion>3.2.0</mariadb4jVersion>
