@@ -23,6 +23,11 @@
 		The original insert statement broke the build after upgrading Liquibase from version 2.0.5 to version 3.8.9.
 	-->
 	<changeSet author="wolf (hand-rolled)" id="1582473679024-24">
+		<preConditions onFail="MARK_RAN" onError="MARK_RAN">
+			<sqlCheck expectedResult="0">
+				SELECT COUNT(*) FROM scheduler_task_config WHERE task_config_id = 2
+			</sqlCheck>
+		</preConditions>
 		<insert tableName="scheduler_task_config">
 			<column name="task_config_id" valueNumeric="2"/>
 			<column name="name" value="Auto Close Visits Task"/>

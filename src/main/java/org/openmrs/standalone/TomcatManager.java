@@ -13,6 +13,7 @@
  */
 package org.openmrs.standalone;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.InetAddress;
@@ -22,19 +23,18 @@ import java.net.Socket;
 import java.security.AccessControlException;
 import java.util.Random;
 
+import ch.vorburger.exec.ManagedProcessException;
 import org.apache.catalina.Context;
-import org.apache.catalina.Engine;
-import org.apache.catalina.Host;
 import org.apache.catalina.LifecycleException;
 import org.apache.catalina.connector.Connector;
-import org.apache.catalina.startup.Embedded;
+import org.apache.catalina.startup.Tomcat;
 
 /**
  * Manages an embedded tomcat instance.
  */
 public class TomcatManager {
-	
-	private Embedded container = null;
+
+	private Tomcat container = null;
 	
 	/**
 	 * The port number on which we wait for shutdown commands.
@@ -66,36 +66,27 @@ public class TomcatManager {
 	public TomcatManager(String contextName, int port) {
 		
 		// create server
-		container = new Embedded();
-		container.setCatalinaHome("tomcat");
+		container = new Tomcat();
+		container.setPort(port);
+		container.setBaseDir("tomcat");
 		
 		// create context
-		Context rootContext = container.createContext("/" + contextName, contextName);
+		String warPath = "tomcat/webapps/" + contextName + ".war";
+		File warFile = new File(warPath);
+		Context rootContext = container.addWebapp("/" + contextName, warFile.getAbsolutePath());
 		rootContext.setReloadable(true);
 		
-		// create host
-		Host localHost = container.createHost("localhost", "webapps");
-		localHost.addChild(rootContext);
-		
-		// create engine
-		Engine engine = container.createEngine();
-		engine.setService(container);
-		engine.setName("Catalina");
-		engine.addChild(localHost);
-		engine.setDefaultHost(localHost.getName());
-		container.addEngine(engine);
-		
 		// create http connector
-		Connector httpConnector = container.createConnector((InetAddress) null, port, false);
+		Connector httpConnector = new Connector();
+		httpConnector.setPort(port);
 		httpConnector.setURIEncoding("UTF-8");
-		container.addConnector(httpConnector);
+		container.getService().addConnector(httpConnector);
 	}
 	
 	/**
 	 * Starts the embedded Tomcat server.
 	 */
 	public void run() throws LifecycleException, MalformedURLException {
-		container.setAwait(true);
 		container.start();
 	}
 	
@@ -120,9 +111,16 @@ public class TomcatManager {
 		}
 		
 		//stop mysql.
-		if(stopMySql)
-			StandaloneUtil.stopMySqlServer();
-		
+		if(stopMySql) {
+			try {
+				MariaDbController.stopMariaDB();
+			} catch (ManagedProcessException e) {
+				System.out.println("Failed to stop MariaDB: " + e.getMessage());
+				e.printStackTrace();
+			}
+		}
+
+
 		return true;
 	}
 	
