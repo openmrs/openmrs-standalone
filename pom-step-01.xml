@@ -171,33 +171,6 @@
                     </execution>
                 </executions>
             </plugin>
-<!--            <plugin>-->
-<!--                <groupId>org.apache.maven.plugins</groupId>-->
-<!--                <artifactId>maven-dependency-plugin</artifactId>-->
-<!--                <version>3.6.0</version>-->
-<!--                <executions>-->
-<!--                    <execution>-->
-<!--                        <id>copy-nashorn-to-libcache</id>-->
-<!--                        <phase>package</phase>-->
-<!--                        <goals>-->
-<!--                            <goal>copy</goal>-->
-<!--                        </goals>-->
-<!--                        <configuration>-->
-<!--                            <artifactItems>-->
-<!--                                <artifactItem>-->
-<!--                                    <groupId>org.openjdk.nashorn</groupId>-->
-<!--                                    <artifactId>nashorn-core</artifactId>-->
-<!--                                    <version>15.4</version>-->
-<!--                                    <outputDirectory>-->
-<!--                                        ${project.build.directory}/distro/appdata/.openmrs-lib-cache/appframework/lib-->
-<!--                                    </outputDirectory>-->
-<!--                                    <destFileName>nashorn-core-15.4.jar</destFileName>-->
-<!--                                </artifactItem>-->
-<!--                            </artifactItems>-->
-<!--                        </configuration>-->
-<!--                    </execution>-->
-<!--                </executions>-->
-<!--            </plugin>-->
         </plugins>
         <pluginManagement>
             <plugins>

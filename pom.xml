@@ -63,11 +63,6 @@
 		    <version>1</version>
 		    <scope>compile</scope>
 		</dependency>
-		<dependency>
-			<groupId>org.openjdk.nashorn</groupId>
-			<artifactId>nashorn-core</artifactId>
-			<version>15.4</version>
-		</dependency>
 	</dependencies>
 
 	<build>

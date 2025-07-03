@@ -36,12 +36,5 @@
 			<directory>${project.build.directory}/distro/web/openmrs_owas</directory>
 			<outputDirectory>${project.build.finalName}/appdata/owa</outputDirectory>
 		</fileSet>
-		<fileSet>
-			<directory>${project.build.directory}/distro/web/</directory>
-			<outputDirectory>${project.build.finalName}/appdata/</outputDirectory>
-			<includes>
-				<include>openmrs-distro.properties</include>
-			</includes>
-		</fileSet>
 	</fileSets>
 </assembly>
