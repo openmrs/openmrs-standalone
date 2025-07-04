@@ -5,7 +5,7 @@
     xmlns:ext="http://www.liquibase.org/xml/ns/dbchangelog-ext"
     xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-2.0.xsd
     http://www.liquibase.org/xml/ns/dbchangelog-ext http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-ext.xsd">
-	
+
 	<changeSet id="referenceapp-set-admin-password" author="raff">
         <update tableName="users">
             <column name="password" value="d236e99e705d338e654fa8bac5168a685a23c4cb59d3b6de6448cfff1dad45af4100227aabd13edbaf83b71c225da90695a2bf9f06c4cfa3bf7ad56ec7028edc"/>
@@ -13,17 +13,27 @@
             <where>system_id = 'admin'</where>
         </update>
     </changeSet>
-	
-	<changeSet id="referenceapp-set-scheduler-username" author="raff">
-		<insert tableName="global_property">
+
+    <changeSet id="referenceapp-set-scheduler-username" author="raff">
+        <preConditions onFail="MARK_RAN" onError="MARK_RAN">
+            <sqlCheck expectedResult="0">
+                SELECT COUNT(*) FROM global_property WHERE property = 'scheduler.username'
+            </sqlCheck>
+        </preConditions>
+        <insert tableName="global_property">
             <column name="property" value="scheduler.username"/>
             <column name="property_value" value="admin"/>
             <column name="description" value="Username for the OpenMRS user that will perform the scheduler activities"/>
             <column name="uuid" value="9a11ca60-47a9-11e6-beb8-9e71128cae77"/>
         </insert>
     </changeSet>
-	
-	<changeSet id="referenceapp-set-scheduler-password" author="raff">
+
+    <changeSet id="referenceapp-set-scheduler-password" author="raff">
+        <preConditions onFail="MARK_RAN" onError="MARK_RAN">
+            <sqlCheck expectedResult="0">
+                SELECT COUNT(*) FROM global_property WHERE property = 'scheduler.username'
+            </sqlCheck>
+        </preConditions>
         <insert tableName="global_property">
             <column name="property" value="scheduler.password"/>
             <column name="property_value" value="Admin123"/>

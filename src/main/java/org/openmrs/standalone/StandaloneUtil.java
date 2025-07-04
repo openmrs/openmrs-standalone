@@ -28,6 +28,7 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.sql.Connection;
 import java.sql.DriverManager;
+import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.Date;
 import java.util.HashMap;
@@ -37,7 +38,7 @@ import java.util.Random;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import com.mysql.management.driverlaunched.ServerLauncherSocketFactory;
+import ch.vorburger.exec.ManagedProcessException;
 
 /**
  * Utility routines used by the standalone application.
@@ -59,9 +60,12 @@ public class StandaloneUtil {
 	 * The maximum number of server port number.
 	 */
 	public static final int MAX_PORT_NUMBER = 49151;
+	private static final String ROOT_USER = "root";
 	
 	private static String CONTEXT_NAME;
-	
+
+	static Properties properties = OpenmrsUtil.getRuntimeProperties(StandaloneUtil.getContextName());
+
 	/**
 	 * Checks to see if a specific port is available.
 	 * 
@@ -112,103 +116,114 @@ public class StandaloneUtil {
 			catch (IOException e) {}
 		}
 	}
+
+	private static String generateSecurePassword() {
+		// intentionally left out these characters: ufsb$() to prevent certain words forming randomly
+		String chars = "acdeghijklmnopqrtvwxyzACDEGHIJKLMNOPQRTVWXYZ0123456789.|~@^&";
+		StringBuilder sb = new StringBuilder();
+		Random r = new Random();
+		for (int x = 0; x < 12; x++) {
+			sb.append(chars.charAt(r.nextInt(chars.length())));
+		}
+		return sb.toString();
+	}
 	
 	/**
-	 * Changes the MySQL and tomcat ports in the run time properties file and also changes the mysql
+	 * Changes the MariaDB and tomcat ports in the run time properties file and also changes the mariaDB
 	 * password if it is "test".
-	 * 
-	 * @param mySqlPort the mysql port number.
+	 *
+	 * @param mariaDBPort the mariaDB port number.
 	 * @param tomcatPort the tomcat port number.
 	 * @return the mysql port number. If supplied in the parameter, it will be the same, else the
 	 *         one in the connection string.
 	 */
-	public static String setPortsAndMySqlPassword(String mySqlPort, String tomcatPort) {
-		
+	public static String setPortsAndMySqlPassword(String mariaDBPort, String tomcatPort) {
+
 		InputStream input = null;
 		boolean propertiesFileChanged = false;
 		
 		try {
 			Properties properties = OpenmrsUtil.getRuntimeProperties(getContextName()); //new Properties();
-			
-			String connectionString = properties.getProperty(KEY_CONNECTION_URL);
-			String password = properties.getProperty(KEY_CONNECTION_PASSWORD);
-			String username = properties.getProperty(KEY_CONNECTION_USERNAME);
-			String resetConnectionPassword = properties.getProperty(KEY_RESET_CONNECTION_PASSWORD);
-			
-			//We change the mysql password only if it is test.
-			//if (password != null && password.toLowerCase().equals("test")) {
-			
-			//Change the mysql password if instructed to.
-			if ("true".equalsIgnoreCase(resetConnectionPassword)) {
-				String newPassword = "";
-				// intentionally left out these characters: ufsb$() to prevent certain words forming randomly
-				String chars = "acdeghijklmnopqrtvwxyzACDEGHIJKLMNOPQRTVWXYZ0123456789.|~@^&";
-				Random r = new Random();
-				for (int x = 0; x < 12; x++) {
-					newPassword += chars.charAt(r.nextInt(chars.length()));
+
+			if (properties != null) {
+				String connectionString = properties.getProperty(KEY_CONNECTION_URL);
+				String username = properties.getProperty(KEY_CONNECTION_USERNAME);
+				String resetConnectionPassword = properties.getProperty(KEY_RESET_CONNECTION_PASSWORD);
+
+				String portToken = ":" + mariaDBPort + "/";
+
+				//in a string like this: jdbc:mysql://localhost:3316/openmrs?autoReconnect=true
+				//look for something like this :3316/
+				String regex = ":[0-9]+/";
+				Pattern pattern = Pattern.compile(regex);
+				Matcher matcher = pattern.matcher(connectionString);
+
+				//Check if we have a port number to set.
+				if (mariaDBPort != null) {
+					//If the port has changed, then update the properties file with the new one.
+					if (!connectionString.contains(portToken)) {
+						connectionString = matcher.replaceAll(portToken);
+						properties.put(KEY_CONNECTION_URL, connectionString);
+
+						propertiesFileChanged = true;
+					}
+				} else {
+					//Extract the port number in the connection string, for returning to the caller.
+					if (matcher.find()) {
+						mariaDBPort = matcher.group();
+						mariaDBPort = mariaDBPort.replace(":", "");
+						mariaDBPort = mariaDBPort.replace("/", "");
+					}
 				}
-				
-				if (setMysqlPassword(connectionString, username, password, newPassword)) {
-					properties.put(KEY_CONNECTION_PASSWORD, newPassword);
-					
-					//Now remove the reset connection password property such that we do not change the password again.
-					properties.remove(KEY_RESET_CONNECTION_PASSWORD);
-					
-					propertiesFileChanged = true;
+
+				//We change the mysql password only if it is test.
+				//if (password != null && password.toLowerCase().equals("test")) {
+
+				//Change the mysql password if instructed to.
+				if ("true".equalsIgnoreCase(resetConnectionPassword)) {
+					String newPassword = generateSecurePassword();
+
+					boolean passwordChanged = setMysqlPassword(connectionString, mariaDBPort, username, newPassword);
+
+					if (passwordChanged) {
+						properties.put(KEY_CONNECTION_PASSWORD, newPassword);
+						//Now remove the reset connection password property such that we do not change the password again.
+						properties.remove(KEY_RESET_CONNECTION_PASSWORD);
+						propertiesFileChanged = true;
+						System.out.println("✅ New password persisted.");
+					} else {
+						System.err.println("❌ Password not changed. Keeping existing configuration.");
+					}
+				}
+
+				if (tomcatPort != null) {
+					if (!tomcatPort.equals(properties.get(KEY_TOMCAT_PORT))) {
+						properties.put(KEY_TOMCAT_PORT, tomcatPort);
+						propertiesFileChanged = true;
+					}
+				}
+
+				//Write back properties file only if changed.
+				if (propertiesFileChanged) {
+					writeRuntimeProperties(properties);
+
+
 				}
 			}
-			
-			String portToken = ":" + mySqlPort + "/";
-			
-			//in a string like this: jdbc:mysql:mxj://localhost:3306/openmrs?autoReconnect=true
-			//look for something like this :3306/
-			String regex = ":[0-9]+/";
-			Pattern pattern = Pattern.compile(regex);
-			Matcher matcher = pattern.matcher(connectionString);
-			
-			//Check if we have a port number to set.
-			if (mySqlPort != null) {
-				
-				//If the port has changed, then update the properties file with the new one.
-				if (!connectionString.contains(portToken)) {
-					connectionString = matcher.replaceAll(portToken);
-					properties.put(KEY_CONNECTION_URL, connectionString);
-					
-					propertiesFileChanged = true;
-				}
-			} else {
-				//Extract the port number in the connection string, for returning to the caller.
-				if (matcher.find()) {
-					mySqlPort = matcher.group();
-					mySqlPort = mySqlPort.replace(":", "");
-					mySqlPort = mySqlPort.replace("/", "");
-				}
-			}
-			
-			if (tomcatPort != null) {
-				if (!tomcatPort.equals(properties.get(KEY_TOMCAT_PORT))) {
-					properties.put(KEY_TOMCAT_PORT, tomcatPort);
-					propertiesFileChanged = true;
-				}
-			}
-			
-			//Write back properties file only if changed.
-			if (propertiesFileChanged) {
-				writeRuntimeProperties(properties);
-			}
-			
-		}
-		finally {
+
+		} catch (Exception e) {
+			throw new RuntimeException(e);
+		} finally {
 			try {
-				if (input != null)
+				if (input != null){
 					input.close();
+				}
 			}
 			catch (Exception ex) {}
 		}
-		
-		return mySqlPort;
+		return mariaDBPort;
 	}
-	
+
 	/**
      * Auto generated method comment
      * 
@@ -303,45 +318,51 @@ public class StandaloneUtil {
 		
 		return CONTEXT_NAME;
 	}
-	
-	private static boolean setMysqlPassword(String url, String username, String oldPassword, String newPassword) {
-		
-		Connection connection = null;
+
+	/**
+	 * Sets the MySQL password for the given user.
+	 *
+	 * @param url the MySQL connection URL.
+	 * @param mysqlPort the MySQL port number.
+	 * @param username the MySQL username.
+	 * @param newPassword the new password to set.
+	 * @return true if the password was successfully changed, false otherwise.
+	 * @throws Exception if an error occurs while setting the password.
+	 */
+	private static boolean setMysqlPassword(String url, String mysqlPort, String username, String newPassword) throws Exception {
 		try {
-			Class.forName("com.mysql.jdbc.Driver").newInstance();
-			
-			String sql = "update mysql.user set password=PASSWORD('" + newPassword + "') where User='" + username + "';";
-			connection = DriverManager.getConnection(url, username, oldPassword);
-			Statement statement = connection.createStatement();
-			statement.executeUpdate(sql);
-			
-			StandaloneUtil.stopMySqlServer();
-			
-			return true;
-		}
-		catch (Exception ex) {
-			ex.printStackTrace();
-		}
-		finally {
-			try {
-				if (connection != null) {
-					connection.close();
-				}
-			}
-			catch (Exception ex) {
+			Class.forName("com.mysql.cj.jdbc.Driver").newInstance();
+
+			MariaDbController.startMariaDB(mysqlPort, properties.getProperty("connection.password", ""));
+
+			String sql = "ALTER USER '" + username + "'@'localhost' IDENTIFIED BY '" + newPassword + "';";
+
+			try (Connection connection = DriverManager.getConnection(url, ROOT_USER, MariaDbController.getRootPassword());
+				 Statement statement = connection.createStatement()) {
+
+				statement.execute(sql); // Change password
+				statement.execute("FLUSH PRIVILEGES;");
+
+				System.out.println("✅ Password changed successfully.");
+				return true;
+
+			} catch (SQLException ex) {
+				System.err.println("❌ Failed to update password.");
 				ex.printStackTrace();
+				return false;
 			}
-		}
-		
-		return false;
-	}
-	
-	public static void stopMySqlServer() {
-		try {
-			ServerLauncherSocketFactory.shutdown(new File("database"), new File("database/data"));
-		}
-		catch (Exception exception) {
-			System.out.println("Cannot Stop MySQL" + exception.getMessage());
+		} catch (Exception ex) {
+			System.err.println("❌ Exception while setting MySQL password.");
+			ex.printStackTrace();
+			return false;
+
+		} finally {
+			try {
+				MariaDbController.stopMariaDB();
+			} catch (ManagedProcessException e) {
+				System.out.println("Failed to stop MariaDB: " + e.getMessage());
+				e.printStackTrace();
+			}
 		}
 	}
 	
@@ -404,38 +425,62 @@ public class StandaloneUtil {
 	
 	
 	/**
-	 * Starts and stops MySQL, so that mxj can create the default user
+	 * Starts and stops MySQL, so that MariaDB can create the default user
 	 * @throws Exception 
 	 */
-	public static void startupDatabaseToCreateDefaultUser() throws Exception {
-    	try {
-    		Class.forName("com.mysql.jdbc.Driver");
-    	} catch (ClassNotFoundException ex) {
-    		throw new RuntimeException("cannot find mysql driver class");
-    	}
-    	Properties props = OpenmrsUtil.getRuntimeProperties(getContextName());
-    	String url = props.getProperty("connection.url");
-    	if (!url.contains("server.initialize-user=true"))
-    		throw new RuntimeException("connection.url in runtime properties must contain server.initialize-user=true");
+	public static void startupDatabaseToCreateDefaultUser(String mariaDBPort) throws Exception {
+		try {
+			Class.forName("com.mysql.cj.jdbc.Driver");
+		} catch (ClassNotFoundException ex) {
+			throw new RuntimeException("Cannot find MySQL driver class", ex);
+		}
 
-		System.out.println("Working directory is " + new File(".").getAbsolutePath());
-		System.out.println("Opening MySQL connection to create openmrs/test users");
-    	Connection conn = DriverManager.getConnection(url, "openmrs", "test");
-    	conn.close();
-    	System.out.println("closed MySQL connection");
-    	stopMySqlServer();
-    }
+		Properties props = OpenmrsUtil.getRuntimeProperties(getContextName());
+		String url = props.getProperty("connection.url");
+		String password = props.getProperty("connection.password");
+
+		System.out.println("Starting MariaDB on port " + mariaDBPort + "...");
+		MariaDbController.startMariaDB(mariaDBPort, password);
+
+		System.out.println("Attempting to connect to the database: " + url);
+		try (Connection conn = DriverManager.getConnection(url, ROOT_USER, MariaDbController.getRootPassword());
+			 Statement stmt = conn.createStatement()) {
+
+			// Check if connection is valid
+			if (conn.isValid(5)) {
+				String createUserSQL = "CREATE USER IF NOT EXISTS 'openmrs'@'localhost' IDENTIFIED BY 'test';";
+				stmt.executeUpdate(createUserSQL);
+
+				// Only grant on openmrs DB
+				String grantPrivilegesSQL = "GRANT ALL PRIVILEGES ON `openmrs`.* TO 'openmrs'@'localhost' WITH GRANT OPTION;";
+
+				stmt.executeUpdate(grantPrivilegesSQL);
+
+				// Optional: enable user creation (if OpenMRS core requires)
+				String grantCreateUserSQL = "GRANT CREATE USER ON *.* TO 'openmrs'@'localhost';";
+				stmt.executeUpdate(grantCreateUserSQL);
+
+				System.out.println("✅ Connection to MariaDB successful.");
+			} else {
+				System.err.println("❌ Connection established, but it is not valid.");
+			}
+
+		} finally {
+			System.out.println("Stopping MariaDB...");
+			MariaDbController.stopMariaDB();
+		}
+	}
 	
 	
 	/**
 	 * Sets the MySQL and Tomcat ports in the run time properties file.
-	 * 
-	 * @param mySqlPort the mysql port number to set.
+	 *
+	 * @param mariaDBPort the mariaDB port number to set.
 	 * @param tomcatPort the Tomcat port number to set.
 	 * @return the mysql port number. If supplied in the parameter, it will be the same, else the
 	 *         one in the connection string.
 	 */
-	public static String setRuntimePropertiesFileMysqlAndTomcatPorts(String mySqlPort, String tomcatPort) {
+	public static String setRuntimePropertiesFileMysqlAndTomcatPorts(String mariaDBPort, String tomcatPort) {
 		
 		InputStream input = null;
 		boolean propertiesFileChanged = false;
@@ -443,16 +488,16 @@ public class StandaloneUtil {
 		try {
 			Properties properties = OpenmrsUtil.getRuntimeProperties(getContextName()); //new Properties();
 			String connectionString = properties.getProperty(KEY_CONNECTION_URL);
-			String portToken = ":" + mySqlPort + "/";
-			
-			//in a string like this: jdbc:mysql:mxj://localhost:3306/openmrs?autoReconnect=true
-			//look for something like this :3306/
+			String portToken = ":" + mariaDBPort + "/";
+
+			//in a string like this: jdbc:mysql://localhost:3316/openmrs?autoReconnect=true
+			//look for something like this :3316/
 			String regex = ":[0-9]+/";
 			Pattern pattern = Pattern.compile(regex);
 			Matcher matcher = pattern.matcher(connectionString);
 			
 			//Check if we have a mysql port number to set.
-			if (mySqlPort != null) {
+			if (mariaDBPort != null) {
 				
 				//If the mysql port has changed, then update the properties file with the new one.
 				if (!connectionString.contains(portToken)) {
@@ -464,9 +509,9 @@ public class StandaloneUtil {
 			} else {
 				//Extract the mysql port number in the connection string, for returning to the caller.
 				if (matcher.find()) {
-					mySqlPort = matcher.group();
-					mySqlPort = mySqlPort.replace(":", "");
-					mySqlPort = mySqlPort.replace("/", "");
+					mariaDBPort = matcher.group();
+					mariaDBPort = mariaDBPort.replace(":", "");
+					mariaDBPort = mariaDBPort.replace("/", "");
 				}
 			}
 			
@@ -491,8 +536,8 @@ public class StandaloneUtil {
 			}
 			catch (Exception ex) {}
 		}
-		
-		return mySqlPort;
+
+		return mariaDBPort;
 	}
 
 	public static String getRefappVersion() {

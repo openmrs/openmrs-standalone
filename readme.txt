@@ -1,14 +1,12 @@
 
 ...............QUICK SUMMARY FOR BUILDING THE STANDALONE.....................
-* Increase the maven memory: e.g. export MAVEN_OPTS="-Xms1012m -Xmx2024m -XX:PermSize=556m -XX:MaxPermSize=1012m"
-* mvn clean package -Dopenmrs.version=1.10.0 -Drefapp.version=2.1 -Ddistro.directory=/Projects/openmrs/openmrs-distro-referenceapplication/package/target/distro
-Remember to replace the above path for -Ddistro.directory to match the one with your reference application modules.
--Drefapp.version points to the version of the reference application that is to be released.
-* If you are building standalone for OpenMRS 1.8.x you need to append the above command with -P1.8.x 
-and put in the main directory the Demo-1.8.0.sql file from https://wiki.openmrs.org/display/RES/Demo+Data
-* If running a second time, ALWAYS check to make sure mysql processes on port 3326 and 3328 are stopped. 
-  If you DON'T do that, then the "mvn clean" will not really clean. 
-  A good command to use is: "pkill -f standalone"  (kills anything with "standalone" in the path) 
+* Increase the maven memory: e.g. export MAVEN_OPTS="-Xms1012m -Xmx2024m"
+* mvn clean
+* mvn package -Dopenmrs.version=2.8.0-SNAPSHOT -Drefapp.version=2.14.0-SNAPSHOT
+* You can also use mvn package to build the default version on openmrs.version=2.8.0-SNAPSHOT and refapp.version=2.14.0-SNAPSHOT
+* If running a second time, ALWAYS check to make sure mysql processes on port 3326 and 3328 are stopped.
+  If you DON'T do that, then the "mvn clean" will not really clean.
+  A good command to use is: "pkill -f standalone"  (kills anything with "standalone" in the path)
 
 -> output is in the target folder, as openmrs-standalone-(openmrs.version).zip
 -> the contents of that zip are in the similarly-named folder under /target, if you want to test in-place
@@ -22,7 +20,7 @@ and put in the main directory the Demo-1.8.0.sql file from https://wiki.openmrs.
 
 -	Copy your war file into the "tomcat/webapps" folder. Where the tomcat folder is at the root of the project.
 If you already have openmrs installed and do not want to interfere with it, just rename
-your war file to something different from openmrs.war. Examples are openmrs-1.6.1.war, openmrs-1.9.0.war, etc
+your war file to something different from openmrs.war. Examples are openmrs-2.8.0-SNAPSHOT.war, etc which suppoort Java 17 and above.
 
 -	Right click on the project and select Run As -> Run Configurations
 
@@ -39,13 +37,13 @@ increasing memory as advised at http://wiki.openmrs.org/display/docs/Out+Of+Memo
 You can build this right from eclipse by:
 
 -	Right clicking on the project and then select Export -> Java -> Runnable JAR file.
-  	The name of this jar file needs to be standalone-0.0.1-SNAPSHOT.jar because it is hard coded in the Bootstrap class as so.
+  	The name of this jar file needs to be standalone.jar because it is hard coded in the Bootstrap class as so.
   
 - 	In the "Runnable Jar File Specification" window that shows up, select the launch configuration that you 
 	created above. (e.g OpenMRS Standalone)
 	
 -	In the "Export Destination" field you can supply the root folder of your project.
-	e.g openmrs/standalone/standalone-0.0.1-SNAPSHOT.jar
+	e.g openmrs/standalone/standalone.jar
 	
 - 	For "Library handling", select "Extract required libraries into generated JAR".
 
@@ -106,10 +104,10 @@ contextname-runtime.properties       e.g openmrs-runtime.properties, openmrs-1.6
 									 the openmrs runtime properties file search order which will only look in the current application folder
 									 as the last resort if no runtime properties file has been found in any of the other possible locations.
 
-standalone-0.0.1-SNAPSHOT.jar        This is the output executable jar for this standalone project. 
+standalone.jar        This is the output executable jar for this standalone project.
 									 You can build this right from eclipse by right clicking on the project
 									 and then select Export -> Java -> Runnable JAR file.
-									 The name of this jar file needs to be standalone-0.0.1-SNAPSHOT.jar because it is 
+									 The name of this jar file needs to be standalone.jar because it is
 									 hard coded in the Bootstrap class as so.
                                         
 tomcat/conf/web.xml                  This has the jsp servlet mapping, mime mappings, and other parameters shared
@@ -141,31 +139,9 @@ splashscreen-loading.png			 This is the splash screen displayed on startup. It c
 
 ............... DATABASE CONNECTION STRING.......................
 
-jdbc:mysql:mxj://localhost:3316/openmrs?autoReconnect=true&sessionVariables=storage_engine=InnoDB&useUnicode=true&characterEncoding=UTF-8&server.initialize-user=true&createDatabaseIfNotExist=true&server.basedir=database&server.datadir=database/data&server.collation-server=utf8_general_ci&server.character-set-server=utf8
+jdbc:mysql://127.0.0.1:3316/openmrs?autoReconnect=true&useUnicode=true&characterEncoding=UTF-8&zeroDateTimeBehavior=convertToNull
 
-The above default database connection string has all in the openmrs mysql default database connection string plus a 
-few additional parameters as explained below:
-
-mxj             This is required for the MySQL Connector/MXJ utility which we use for embedding mysql
-				More information about it can be found at: http://dev.mysql.com/doc/refman/5.1/en/connector-mxj.html
-				
-server.initialize-user      	The value of true tells the database engine to create the user account that will be specified
-						    	in the openmrs web database setup. This is the account referred to as 
-						    	connection.username & connection.password in the runtime properties file.
-						   
-createDatabaseIfNotExist    	The value of true tells the database engine to create the database if it does not exist.
-
-server.basedir 			    	This is the directory where the mysql database server will be installed. The default value
-						    	is a database folder in the current directory where the executable jar file is located.
-			
-server.datadir    		    	This is the dirrectory where mysql stores the database. The default value is the data folder
-						    	under the database folder in the current directory where the executable jar file is located.
-						   
-server.collation-server     	This sets the collation of the database server. If you do not set it to this value, you will
-						    	get problems running the openmrs liquibase files. This is because the default value is swedish
-						    	collation yet openmrs uses utf8
-					
-server.character-set-server 	This is the character set used by the database server.
+The above default database connection string has all in the openmrs mysql default database connection and is used for the MariaDB connection.
 
 						   
 NOTE: When creating a new database using the openmrs database setup wizard, remember to replace the default connection string
@@ -178,18 +154,20 @@ NOTE: When creating a new database using the openmrs database setup wizard, reme
 .......................APPLICATION USER INTERFACE.....................
 
 Tomcat Port					This is the port at which to run tomcat.
-MySQL Port					This is the port at which to run mysql
+MySQL Port					This is the port at which to run mariaDB4j (embedded mariadb database engine).
+							You can change this port to any other port you want, but make sure that it is not already in use.
+							Also make sure that the port you set here is the same as the one in the runtime properties file.
 
-File -> Quit				This menu item stops tomcat and mysql and then closes the application.
+File -> Quit				This menu item stops tomcat and mariadb and then closes the application.
 File -> Launch Browser		This menu item opens the openmrs login page for the current web application context.
 File -> Clear Output		This clears the output log in the user interface text area. But does not clear the log file
 							written on the file system.
 
-Start						This button runs tomcat, which will automatically start the mysql database engine if it
-							was not already running. For the embedded mysql, the first connection automatically starts
+Start						This button runs tomcat, which will automatically start the mariadb database engine if it
+							was not already running. For the embedded mariadb, the first connection automatically starts
 							the mysql engine.
-							
-Stop						This button stops tomcat and then also stops the mysql database engine, without closing the application.
+
+Stop						This button stops tomcat and then also stops the mariadb database engine, without closing the application.
 
 
 NOTE: Minimizing or Maximizing the application window does not have any effect on the server. The window close icon will stop
@@ -201,7 +179,7 @@ NOTE: Minimizing or Maximizing the application window does not have any effect o
 ...................HOW TO RUN FROM COMMAND LINE....................................
 
 Running from command line requires the -commandline switch.
-e.g. java -jar standalone-0.0.1-SNAPSHOT.jar -commandline
+e.g. java -jar standalone.jar -commandline
 
 -mysqlport: 	Use to override the mysql port in the runtime properties file.
 -tomcatport: 	Use to override the tomcat port in the runtime properties file.
@@ -214,16 +192,13 @@ browser			Use to launch a new browser instance.
 ...................HOW TO GENERATE A DATABASE TO INCLUDE WITH A DISTIBUTION.....................
 
 1- Make sure you have no runtime properties file that the web application will find.
-2- Make sure you have no extra moduls that the web application will find
-3- Run the standalone-0.0.1-SNAPSHOT.jar. You can just double click it, or run from command line as above.
-4- This will take you through the openmrs setup wizard (because the runtime properties file was not found) and 
-   respond to it as per the instructions above under "HOW TO RESPOND TO THE OPENMRS SETUP WIZARD"
-5- After the wizard completes, copy the generated runtime properties file and put it in the root folder of the distribution
-   as per the above instructions under "DISTRIBUTION FOLDER STRUCTURE"
-6- Run packagezip.sh to create the distributable zip file
-NOTE: The default location of the "database" folder is that where the standalone-0.0.1-SNAPSHOT.jar file is.
-      Also remember to include the runtime properties file in the root folder of the distribution if you want this
-      database to be used.
+2- Make sure you have no extra modules that the web application will find located in the appdata/modules folder.
+3- Run the standalone.jar. You can just double click it, or run from command line as above.
+4- The application will start the tomcat server and then the mariadb4j database engine.
+5- Follow the steps in the openmrs setup wizard to select where you want the demo database distribution or ciel database distribution to be created.
+6- After the setup wizard is done, you will have a database created in the location you selected.
+7- Open your browser and go to the openmrs setup wizard at http://localhost:8080/openmrs
+NOTE: The default location of the "database" folder is that where the standalone.jar file is.
       You should also add the application_data_directory key to the runtime properties file. Something like this:
       application_data_directory=appdata 
 
@@ -252,9 +227,4 @@ SUMMARY: Using a single package for all (most) platforms approximately tripples 
          
          
      
-MySQL MXJ documentation can be found at:
-http://dev.mysql.com/doc/refman/5.1/en/connector-mxj.html
-
-Details on how to add or remove platform specific databases can be found at: 
-http://dev.mysql.com/doc/refman/5.1/en/connector-mxj-usagenotes-packaging.html
-http://blog.teamlazerbeez.com/2011/10/03/embedded-mysql-on-java-with-connectormxj-and-64-bit-linux/
+MariaDB4j documentation can be found at: https://github.com/MariaDB4j/MariaDB4j
