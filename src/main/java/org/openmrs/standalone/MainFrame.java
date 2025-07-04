@@ -485,7 +485,7 @@ public class MainFrame extends javax.swing.JFrame implements ActionListener, Use
 		
 		content.add(exitPanel, BorderLayout.SOUTH);
 		
-		configDialog.setPreferredSize(new Dimension(800, 600));
+		configDialog.setPreferredSize(new Dimension(700, 500));
 		configDialog.pack();
 		configDialog.setLocationRelativeTo(this);
 		configDialog.setVisible(true);
