@@ -35,13 +35,6 @@
 							<goal>start</goal>
 						</goals>
 					</execution>
-					<execution>
-						<id>stop-demo-database</id>
-						<phase>verify</phase>
-						<goals>
-							<goal>stop</goal>
-						</goals>
-					</execution>
 				</executions>
 			</plugin>
 			<plugin>
