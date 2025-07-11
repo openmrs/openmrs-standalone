@@ -13,6 +13,16 @@
 			<outputDirectory>${project.build.finalName}/tomcat/webapps</outputDirectory>
 			<destName>openmrs.war</destName>
 		</file>
+		<file>
+			<source>${project.build.directory}/distro/web/spa-build-config.json</source>
+			<outputDirectory>${project.build.finalName}/appdata/</outputDirectory>
+			<destName>spa-build-config.json</destName>
+		</file>
+		<file>
+			<source>${project.build.directory}/distro/web/openmrs-distro.properties</source>
+			<outputDirectory>${project.build.finalName}/appdata/</outputDirectory>
+			<destName>openmrs-distro.properties</destName>
+		</file>
 	</files>
 	<fileSets>
 		<fileSet>
@@ -35,6 +45,14 @@
 		<fileSet>
 			<directory>${project.build.directory}/distro/web/openmrs_owas</directory>
 			<outputDirectory>${project.build.finalName}/appdata/owa</outputDirectory>
+		</fileSet>
+		<fileSet>
+			<directory>${project.build.directory}/distro/web/openmrs_config</directory>
+			<outputDirectory>${project.build.finalName}/appdata/configuration</outputDirectory>
+		</fileSet>
+		<fileSet>
+			<directory>${project.build.directory}/distro/web/openmrs_spa</directory>
+			<outputDirectory>${project.build.finalName}/appdata/frontend</outputDirectory>
 		</fileSet>
 	</fileSets>
 </assembly>

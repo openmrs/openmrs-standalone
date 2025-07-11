@@ -2,8 +2,8 @@
 ...............QUICK SUMMARY FOR BUILDING THE STANDALONE.....................
 * Increase the maven memory: e.g. export MAVEN_OPTS="-Xms1012m -Xmx2024m"
 * mvn clean
-* mvn package -Dopenmrs.version=2.8.0-SNAPSHOT -Drefapp.version=2.14.0-SNAPSHOT
-* You can also use mvn package to build the default version on openmrs.version=2.8.0-SNAPSHOT and refapp.version=2.14.0-SNAPSHOT
+* mvn package -Dopenmrs.version=2.7.4 -Drefapp.version=3.4.0
+* You can also use mvn package to build the default version on openmrs.version=2.7.4 and refapp.version=3.4.0
 * If running a second time, ALWAYS check to make sure mysql processes on port 3326 and 3328 are stopped.
   If you DON'T do that, then the "mvn clean" will not really clean.
   A good command to use is: "pkill -f standalone"  (kills anything with "standalone" in the path)
@@ -12,7 +12,7 @@
 -> the contents of that zip are in the similarly-named folder under /target, if you want to test in-place
 
 
-.......................OpenMRS Standalone README............................
+.......................OpenMRS Standalone 3.x README............................
 
 
 
@@ -20,7 +20,7 @@
 
 -	Copy your war file into the "tomcat/webapps" folder. Where the tomcat folder is at the root of the project.
 If you already have openmrs installed and do not want to interfere with it, just rename
-your war file to something different from openmrs.war. Examples are openmrs-2.8.0-SNAPSHOT.war, etc which suppoort Java 17 and above.
+your war file to something different from openmrs.war. Examples are openmrs-2.7.4.war, etc which suppoort Java 17 and above.
 
 -	Right click on the project and select Run As -> Run Configurations
 
@@ -197,7 +197,7 @@ browser			Use to launch a new browser instance.
 4- The application will start the tomcat server and then the mariadb4j database engine.
 5- Follow the steps in the openmrs setup wizard to select where you want the demo database distribution or ciel database distribution to be created.
 6- After the setup wizard is done, you will have a database created in the location you selected.
-7- Open your browser and go to the openmrs setup wizard at http://localhost:8080/openmrs
+7- Open your browser and go to the openmrs setup wizard at http://localhost:8080/openmrs/spa
 NOTE: The default location of the "database" folder is that where the standalone.jar file is.
       You should also add the application_data_directory key to the runtime properties file. Something like this:
       application_data_directory=appdata 

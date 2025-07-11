@@ -4,7 +4,7 @@
 
 	<groupId>org.openmrs</groupId>
 	<artifactId>referenceapplication-standalone</artifactId>
-	<version>2.6.0-SNAPSHOT</version>
+	<version>3.0.0-SNAPSHOT</version>
 
 	<name>referenceapplication-standalone</name>
 	<url>https://github.com/openmrs/openmrs-standalone/</url>
@@ -22,8 +22,8 @@
 		<liquibase.plugin.version>4.23.2</liquibase.plugin.version>
 
 		<tomcat.version>9.0.106</tomcat.version>
-		<openmrs.version>2.8.0-SNAPSHOT</openmrs.version>
-		<refapp.version>2.14.0-SNAPSHOT</refapp.version>
+		<openmrs.version>2.7.4</openmrs.version>
+		<refapp.version>3.4.0</refapp.version>
 		<mariadb4jVersion>3.2.0</mariadb4jVersion>
 		<junitVersion>5.12.2</junitVersion>
 		<mockitoVersion>3.12.4</mockitoVersion>
@@ -125,14 +125,14 @@
 								<requireProperty>
 									<property>refapp.version</property>
 									<message>refapp.version property is missing. This should be
-										something like 2.4, 2.5 Add
-										-Drefapp.version=2.5</message>
+										something like 3.4, 3.5 Add
+										-Drefapp.version=3.5</message>
 								</requireProperty>
 								<requireProperty>
 									<property>openmrs.version</property>
 									<message>openmrs.version property is missing. This should be
-										something like 2.0.2, 2.0.5 Add
-										-Dopenmrs.version=2.0.5</message>
+										something like 3.4.0, 3.3.1 Add
+										-Dopenmrs.version=3.4.1-SNAPSHOT</message>
 								</requireProperty>
 							</rules>
 							<fail>true</fail>
