@@ -176,9 +176,6 @@ public class StandaloneUtil {
 					}
 				}
 
-				//We change the mysql password only if it is test.
-				//if (password != null && password.toLowerCase().equals("test")) {
-
 				//Change the mysql password if instructed to.
 				if ("true".equalsIgnoreCase(resetConnectionPassword)) {
 					String newPassword = generateSecurePassword();
@@ -278,7 +275,7 @@ public class StandaloneUtil {
 				Desktop desktop = Desktop.getDesktop();
 				
 				if (desktop.isSupported(Desktop.Action.BROWSE)) {
-					desktop.browse(new URI("http://localhost:" + port + "/" + contextName));
+					desktop.browse(new URI("http://localhost:" + port + "/" + contextName + "/spa"));
 					return true;
 				}
 			}
