@@ -452,17 +452,18 @@ public class StandaloneUtil {
 
 				// Find sql if exist to preload DB
 				File dataDir = new File("database/data");
-				// Find the first .sql file in the unzipped folder
-				File[] sqlFiles = dataDir.listFiles((dir, name) -> name.toLowerCase().endsWith(".sql"));
-				if (sqlFiles == null || sqlFiles.length == 0) {
-					throw new FileNotFoundException("No .sql file found in: " + dataDir.getAbsolutePath());
+
+				if (dataDir.exists() && dataDir.isDirectory()) {
+					// Find the first .sql file in the unzipped folder
+					File[] sqlFiles = dataDir.listFiles((dir, name) -> name.toLowerCase().endsWith(".sql"));
+					if (sqlFiles != null && sqlFiles.length != 0) {
+						// Run the first found SQL file
+						File sqlFile = sqlFiles[0];
+
+						System.out.println(url + " :us : " + username + " :ps : " + password);
+						importSqlFile(sqlFile, url, username, password);
+					}
 				}
-
-				// Run the first found SQL file
-				File sqlFile = sqlFiles[0];
-
-				System.out.println(url + " :us : " + username + " :ps : " + password);
-				importSqlFile(sqlFile, url, username, password);
 			} else {
 				System.err.println("❌ Connection established, but it is not valid.");
 			}
