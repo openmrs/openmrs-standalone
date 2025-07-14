@@ -35,6 +35,9 @@ jobs:
       - name: Check mysqldump version
         run: mysqldump --version
 
+      - name: Run Maven Clean
+        run: mvn clean
+
       - name: Run Maven Install
         run: mvn install
 
