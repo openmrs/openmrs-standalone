@@ -27,7 +27,7 @@
     <ciel.dictionary.version>20250512</ciel.dictionary.version>
 
     <liquibase.plugin.artifactId>liquibase-maven-plugin</liquibase.plugin.artifactId>
-    <liquibase.plugin.version.3.x>4.32.0</liquibase.plugin.version.3.x>
+    <liquibase.plugin.version.4.x>4.32.0</liquibase.plugin.version.4.x>
 
     <liquibase.demodata.archive>large-demo-data-2-7-0.sql.zip</liquibase.demodata.archive>
     <liquibase.cieldata.filename>liquibase-ciel-data.xml</liquibase.cieldata.filename>
@@ -207,7 +207,7 @@
                       liquibase-maven-plugin
                     </artifactId>
                     <versionRange>
-                      [${liquibase.plugin.version.3.x},)
+                      [${liquibase.plugin.version.4.x},)
                     </versionRange>
                     <goals>
                       <goal>update</goal>

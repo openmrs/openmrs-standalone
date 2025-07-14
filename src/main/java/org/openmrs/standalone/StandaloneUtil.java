@@ -459,8 +459,6 @@ public class StandaloneUtil {
 					if (sqlFiles != null && sqlFiles.length != 0) {
 						// Run the first found SQL file
 						File sqlFile = sqlFiles[0];
-
-						System.out.println(url + " :us : " + username + " :ps : " + password);
 						importSqlFile(sqlFile, url, username, password);
 					}
 				}
