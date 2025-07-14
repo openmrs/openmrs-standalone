@@ -27,8 +27,13 @@ jobs:
           java-version: '21'
           distribution: 'temurin'
 
-      - name: Install MySQL client
-        run: sudo apt-get install mysql-client
+      - name: Install MySQL client (with mysqldump)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y mysql-client
+
+      - name: Check mysqldump version
+        run: mysqldump --version
 
       - name: Run Maven Install
         run: mvn install
