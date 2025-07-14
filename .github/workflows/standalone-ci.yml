@@ -28,9 +28,7 @@ jobs:
           distribution: 'temurin'
 
       - name: Install MySQL client
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y mysql-client        
+        run: sudo apt-get install mysql-client
 
       - name: Run Maven Install
         run: mvn install
@@ -51,9 +49,7 @@ jobs:
 
       - name: Install MySQL Client
         shell: powershell
-        run: |
-          choco install mysql --version=8.0.31 --no-progress
-          $env:Path += ";C:\Program Files\MySQL\MySQL Server 8.0\bin"
+        run: choco install mysql
 
       - name: Run Maven Clean
         run: mvn clean
