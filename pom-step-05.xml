@@ -80,16 +80,15 @@
 							<goal>exec</goal>
 						</goals>
 						<configuration>
-							<executable>sh</executable>
+							<executable>mysqldump</executable>
 							<arguments>
-								<argument>-c</argument>
-								<argument>
-									<![CDATA[
-									  DUMP=$(command -v mysqldump)
-									  if [ -z "$DUMP" ]; then echo "❌ mysqldump not found"; exit 1; fi
-									  "$DUMP" --host=127.0.0.1 --port=33328 --user=openmrs --password=test --skip-lock-tables openmrs --result-file=target/openmrs-demo-dump.sql
-									]]>
-								</argument>
+								<argument>--host=127.0.0.1</argument>
+								<argument>--port=33328</argument>
+								<argument>--user=openmrs</argument>
+								<argument>--password=test</argument>
+								<argument>--skip-lock-tables</argument>
+								<argument>openmrs</argument>
+								<argument>--result-file=${project.build.directory}/openmrs-demo-dump.sql</argument>
 							</arguments>
 						</configuration>
 					</execution>
