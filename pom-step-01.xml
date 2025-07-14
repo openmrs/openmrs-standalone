@@ -52,13 +52,6 @@
 							<goal>start</goal>
 						</goals>
 					</execution>
-					<execution>
-						<id>stop-empty-database</id>
-						<phase>process-resources</phase>
-						<goals>
-							<goal>stop</goal>
-						</goals>
-					</execution>
 				</executions>
 			</plugin>
 			<plugin>

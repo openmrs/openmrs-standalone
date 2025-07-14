@@ -14,13 +14,7 @@
 package org.openmrs.standalone;
 
 import java.awt.Desktop;
-import java.io.BufferedWriter;
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStreamWriter;
-import java.io.Writer;
+import java.io.*;
 import java.net.DatagramSocket;
 import java.net.ServerSocket;
 import java.net.Socket;
@@ -39,6 +33,8 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import ch.vorburger.exec.ManagedProcessException;
+
+import static org.openmrs.standalone.OpenmrsUtil.importSqlFile;
 
 /**
  * Utility routines used by the standalone application.
@@ -429,6 +425,7 @@ public class StandaloneUtil {
 		Properties props = OpenmrsUtil.getRuntimeProperties(getContextName());
 		String url = props.getProperty("connection.url");
 		String password = props.getProperty("connection.password");
+		String username = props.getProperty("connection.username");
 
 		System.out.println("Starting MariaDB on port " + mariaDBPort + "...");
 		MariaDbController.startMariaDB(mariaDBPort, password);
@@ -452,6 +449,20 @@ public class StandaloneUtil {
 				stmt.executeUpdate(grantCreateUserSQL);
 
 				System.out.println("✅ Connection to MariaDB successful.");
+
+				// Find sql if exist to preload DB
+				File dataDir = new File("database/data");
+				// Find the first .sql file in the unzipped folder
+				File[] sqlFiles = dataDir.listFiles((dir, name) -> name.toLowerCase().endsWith(".sql"));
+				if (sqlFiles == null || sqlFiles.length == 0) {
+					throw new FileNotFoundException("No .sql file found in: " + dataDir.getAbsolutePath());
+				}
+
+				// Run the first found SQL file
+				File sqlFile = sqlFiles[0];
+
+				System.out.println(url + " :us : " + username + " :ps : " + password);
+				importSqlFile(sqlFile, url, username, password);
 			} else {
 				System.err.println("❌ Connection established, but it is not valid.");
 			}

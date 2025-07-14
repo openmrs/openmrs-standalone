@@ -26,16 +26,6 @@
 					<baseDir>${project.build.directory}/emptydatabase</baseDir>
 					<dataDir>${project.build.directory}/emptydatabase/data</dataDir>
 				</configuration>
-
-				<executions>
-					<execution>
-						<id>start-empty-database</id>
-						<phase>initialize</phase>
-						<goals>
-							<goal>start</goal>
-						</goals>
-					</execution>
-				</executions>
 			</plugin>
 			<plugin>
 				<artifactId>maven-resources-plugin</artifactId>

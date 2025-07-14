@@ -36,25 +36,6 @@
 	<build>
 		<plugins>
 			<plugin>
-				<groupId>ch.vorburger.mariaDB4j</groupId>
-				<artifactId>mariaDB4j-maven-plugin</artifactId>
-				<configuration>
-					<port>33326</port>
-					<baseDir>${project.build.directory}/emptydatabase</baseDir>
-					<dataDir>${project.build.directory}/emptydatabase/data</dataDir>
-				</configuration>
-
-				<executions>
-					<execution>
-						<id>stop-empty-database</id>
-						<phase>verify</phase>
-						<goals>
-							<goal>stop</goal>
-						</goals>
-					</execution>
-				</executions>
-			</plugin>
-			<plugin>
 				<groupId>org.liquibase</groupId>
 				<artifactId>${liquibase.plugin.artifactId}</artifactId>
 				<executions>
@@ -82,6 +63,53 @@
 						</configuration>
 						<goals>
 							<goal>update</goal>
+						</goals>
+					</execution>
+				</executions>
+			</plugin>
+
+			<!-- Exec: Empty Dump DB to SQL -->
+			<plugin>
+				<groupId>org.codehaus.mojo</groupId>
+				<artifactId>exec-maven-plugin</artifactId>
+				<executions>
+					<execution>
+						<id>dump-empty-database</id>
+						<phase>verify</phase>
+						<goals>
+							<goal>exec</goal>
+						</goals>
+						<configuration>
+							<executable>mysqldump</executable>
+							<arguments>
+								<argument>--host=127.0.0.1</argument>
+								<argument>--port=33326</argument>
+								<argument>--user=openmrs</argument>
+								<argument>--password=test</argument>
+								<argument>--skip-lock-tables</argument>
+								<argument>openmrs</argument>
+								<argument>--result-file=${project.build.directory}/openmrs-empty-dump.sql</argument>
+							</arguments>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
+
+			<plugin>
+				<groupId>ch.vorburger.mariaDB4j</groupId>
+				<artifactId>mariaDB4j-maven-plugin</artifactId>
+				<configuration>
+					<port>33326</port>
+					<baseDir>${project.build.directory}/emptydatabase</baseDir>
+					<dataDir>${project.build.directory}/emptydatabase/data</dataDir>
+				</configuration>
+
+				<executions>
+					<execution>
+						<id>stop-empty-database</id>
+						<phase>verify</phase>
+						<goals>
+							<goal>stop</goal>
 						</goals>
 					</execution>
 				</executions>

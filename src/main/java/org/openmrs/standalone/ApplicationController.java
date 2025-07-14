@@ -15,12 +15,7 @@ package org.openmrs.standalone;
 
 import ch.vorburger.exec.ManagedProcessException;
 
-import java.io.BufferedInputStream;
-import java.io.BufferedOutputStream;
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.FileWriter;
-import java.io.IOException;
+import java.io.*;
 import java.lang.management.ManagementFactory;
 import java.util.Enumeration;
 import java.util.Properties;
@@ -28,6 +23,7 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
 import static org.openmrs.standalone.MariaDbController.stopMariaDB;
+import static org.openmrs.standalone.OpenmrsUtil.importSqlFile;
 
 /**
  * Manages the application workflow.

@@ -231,7 +231,7 @@ public class OpenmrsUtil {
 	 * Convenience method used to load properties from the given file.
 	 * 
 	 * @param props the properties object to be loaded into
-	 * @param propertyFile the properties file to read
+	 * @param inputStream the properties file to read
 	 */
 	private static void loadProperties(Properties props, InputStream inputStream) {
 		try {
