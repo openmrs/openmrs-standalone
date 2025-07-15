@@ -14,6 +14,7 @@
 package org.openmrs.standalone;
 
 import ch.vorburger.exec.ManagedProcessException;
+import org.openmrs.api.context.Context;
 
 
 import java.io.BufferedInputStream;
@@ -256,12 +257,14 @@ public class ApplicationController {
 				deleteActiveDatabase();
 				StandaloneUtil.resetConnectionPassword();
 				StandaloneUtil.startupDatabaseToCreateDefaultUser(mySqlPort);
+				Context.updateSearchIndex();
 				System.out.println("Database mode using wizard: " + applyDatabaseChange );
 			} else if (applyDatabaseChange == DatabaseMode.EMPTY_DATABASE) {
 				deleteActiveDatabase();
 				unzipDatabase(new File("emptydatabase.zip"));
 				StandaloneUtil.resetConnectionPassword();
 				StandaloneUtil.startupDatabaseToCreateDefaultUser(mySqlPort);
+				Context.updateSearchIndex();
 				System.out.println("Database mode using empty: " + applyDatabaseChange );
 			} else if (applyDatabaseChange == DatabaseMode.DEMO_DATABASE) {
 				deleteActiveDatabase();
