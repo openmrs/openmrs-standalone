@@ -24,6 +24,8 @@ import java.io.UnsupportedEncodingException;
 import java.io.File;
 import java.io.Reader;
 import java.io.FileReader;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.util.Properties;
@@ -296,6 +298,19 @@ public class OpenmrsUtil {
 		} catch (Exception e) {
 			System.err.println("❌ Error importing SQL: " + e.getMessage());
 			e.printStackTrace();
+		}
+	}
+
+	public static String findDumpExecutable(String baseDir, String dbDir) {
+		String os = System.getProperty("os.name").toLowerCase();
+		boolean isWindows = os.contains("win");
+
+		Path mariadbDump = Paths.get(baseDir, dbDir, "bin", isWindows ? "mysqldump.exe" : "mariadb-dump");
+
+		if (mariadbDump.toFile().exists()) {
+			return mariadbDump.toString();
+		} else {
+			throw new RuntimeException("❌ Neither mariadb-dump nor mysqldump found in: " + mariadbDump.getParent());
 		}
 	}
 

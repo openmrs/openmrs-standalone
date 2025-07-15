@@ -77,14 +77,22 @@
 						<id>dump-empty-database</id>
 						<phase>verify</phase>
 						<goals>
-							<goal>exec</goal>
+							<goal>java</goal>
 						</goals>
 						<configuration>
-							<executable>bash</executable>
+							<mainClass>org.openmrs.standalone.DatabaseDumper</mainClass>
 							<arguments>
-								<argument>${basedir}/scripts/empty-dump-wrapper.sh</argument>
 								<argument>${project.build.directory}</argument>
+								<argument>emptydatabase</argument>
+								<argument>--port=33326</argument>
+								<argument>--user=openmrs</argument>
+								<argument>--password=test</argument>
+								<argument>--skip-lock-tables</argument>
+								<argument>--ssl=0</argument>
+								<argument>openmrs</argument>
+								<argument>--result-file=${project.build.directory}/openmrs-empty-dump.sql</argument>
 							</arguments>
+							<classpathScope>compile</classpathScope>
 						</configuration>
 					</execution>
 				</executions>
