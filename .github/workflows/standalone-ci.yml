@@ -27,14 +27,6 @@ jobs:
           java-version: '21'
           distribution: 'temurin'
 
-      - name: Install MySQL client (with mysqldump)
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y mysql-client
-
-      - name: Check mysqldump version
-        run: mysqldump --version
-
       - name: Run Maven Install
         run: mvn install
 
@@ -51,10 +43,6 @@ jobs:
         with:
           java-version: '21'
           distribution: 'temurin'
-
-      - name: Install MySQL Client
-        shell: powershell
-        run: choco install mysql
 
       - name: Run Maven Clean
         run: mvn clean
@@ -74,10 +62,6 @@ jobs:
         with:
           java-version: '21'
           distribution: 'temurin'
-
-      - name: Install MySQL client (for mysqldump)
-        run: |
-          brew install mysql
 
       - name: Run Maven Clean
         run: mvn clean

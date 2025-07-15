@@ -80,14 +80,13 @@
 							<goal>exec</goal>
 						</goals>
 						<configuration>
-							<executable>mysqldump</executable>
+							<executable>${project.build.directory}/emptydatabase/bin/mariadb-dump</executable>
 							<arguments>
 								<argument>--host=127.0.0.1</argument>
 								<argument>--port=33326</argument>
 								<argument>--user=openmrs</argument>
 								<argument>--password=test</argument>
 								<argument>--skip-lock-tables</argument>
-								<argument>--column-statistics=0</argument>
 								<argument>openmrs</argument>
 								<argument>--result-file=${project.build.directory}/openmrs-empty-dump.sql</argument>
 							</arguments>
