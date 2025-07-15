@@ -88,6 +88,7 @@
 								<argument>--user=openmrs</argument>
 								<argument>--password=test</argument>
 								<argument>--skip-lock-tables</argument>
+								<argument>--skip-extended-insert</argument>
 								<argument>--ssl=0</argument>
 								<argument>openmrs</argument>
 								<argument>--result-file=${project.build.directory}/openmrs-demo-dump.sql</argument>
