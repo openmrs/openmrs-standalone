@@ -30,7 +30,6 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
 import static org.openmrs.standalone.MariaDbController.stopMariaDB;
-import static org.openmrs.standalone.OpenmrsUtil.importSqlFile;
 
 /**
  * Manages the application workflow.
