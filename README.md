@@ -17,7 +17,7 @@ Depending on what OpenMRS software artifact you are releasing, you may need to c
 * If you are building OpenMRS Platform => use the `master` branch
 * If you are building OpenMRS Reference Application => use the `openmrs-emr2` branch
 
-## Building openmrs-standalone for OpenMRS version 2.4 or later
+## Building openmrs-standalone for OpenMRS version 2.7 or later
 
 ### Increasing maven memory
 
@@ -30,16 +30,14 @@ argument to use --add-exports=java.desktop/com.apple.eawt=ALL-UNNAMED
 
 Building openmrs-standalone is decomposed into five steps as different steps use different version of the Liquibase Maven plugin.
 
-Openmrs-core is using Liquibase 3.x as of OpenMRS version 2.4.x. However, Liquibase version 3.x *fails* to load
-large sql files such as the CIEL concept dictionary. Liquibase version 2.x successfully loads large sql files.
+Openmrs-core is using Liquibase 4.x as of OpenMRS version 2.6.x. However, Liquibase version 4.x *fails* to load
+large sql files such as the CIEL concept dictionary. instead we use the script runner tracing in DbInitializer which loads large sql files.
 
-* Steps 1, 3, and 5 use version 3.10.2 of the plugin as they depend on openmrs-core version 2.4.x  or later.
-
-* Steps 2 and 4 load large sql files and continue to use Liquibase version 2.0.1.
+* Steps 1, 3, and 5 use version 4.32.0 of the plugin as they depend on openmrs-core version 2.7.x  or later.
 
 When running
  
-    $ mvn clean package -Dopenmrs.version=2.4.0
+    $ mvn clean package -Dopenmrs.version=2.7.4-SNAPSHOT
 
 the `clean` step is executed for each module. This means that the folder 
 
@@ -50,7 +48,7 @@ is deleted at the beginning of step 2 and the database created in step 1 is no l
 To avoid that, `mvn clean` needs to be run separately before the rest of the build:
 
     $ mvn clean
-    $ mvn package -Dopenmrs.version=2.4.0
+    $ mvn package -Dopenmrs.version=2.7.4-SNAPSHOT
     
 ### Choosing demo data
 
@@ -65,17 +63,17 @@ just downloaded
 
 ### Choosing CIEL data
 
-* Download the latest CIEL for OpenMRS 1.9.x (use 1.9.x regardless of the maintenance release version) as described [here](https://wiki.openmrs.org/x/ww4JAg).
+* Download the latest CIEL for OpenMRS 2.5.5 (use 2.5.x regardless of the maintenance release version) as described [here](https://wiki.openmrs.org/x/ww4JAg).
 
 * Upload it to mavenrepo by running (adjust the version and the file parameters to match the downloaded version of CIEL):
-`mvn deploy:deploy-file -DgroupId=org.openmrs.contrib -DartifactId=ciel-dictionary -Dversion=1.9.9-20170409 -Dpackaging=zip -Dfile=openmrs_concepts_1.9.9_20170409.sql.zip -DrepositoryId=openmrs-repo-contrib -Durl=https://mavenrepo.openmrs.org/nexus/content/repositories/contrib`
+`mvn deploy:deploy-file -DgroupId=org.openmrs.contrib -DartifactId=ciel-dictionary -Dversion=2.5.5-20250512 -Dpackaging=zip -Dfile=openmrs_concepts_2.5.5_20250512.sql.zip -DrepositoryId=openmrs-repo-contrib -Durl=https://mavenrepo.openmrs.org/nexus/content/repositories/contrib`
 
 * Update the CIEL version in pom.xml.
 
 ### Other tips 
 
-* If running `mvn clean` and `mvn package` second time, ALWAYS check to make sure mariaDB processes on port 3326 and/or 
-3328 and/or 33326 are stopped. If you DON'T do that, then the `mvn clean` will not really clean.
+* If running `mvn clean` and `mvn package` second time, ALWAYS check to make sure mariaDB processes on port 3316 and/or
+  33326 and/or 33328 are stopped. If you DON'T do that, then the `mvn clean` will not really clean.
 
 * A good command to use is: "pkill -f standalone"  (kills anything with "standalone" in the path) 
 
@@ -86,7 +84,7 @@ permission failures since by default linux may fail to modify privileges on non 
 -> output is in the target folder, as openmrs-standalone-(openmrs.version).zip
 -> the contents of that zip are in the similarly-named folder under /target, if you want to test in-place
 
-## Building openmrs-standalone for OpenMRS version 2.3 or earlier
+## Building openmrs-standalone for OpenMRS version 2.7 or earlier
 
 Please note that this version of openmrs-standalone cannot be used for openmrs-core 2.3.x or earlier. 
 
@@ -207,7 +205,7 @@ NOTE: Without this folder structure, you will get errors while trying to run the
 * contextname-runtime.properties 
  * e.g openmrs-runtime.properties, openmrs-1.6.1-runtime.properties, openmrs-1.9.0-runtime.properties, etc
  * If you want to use this runtime properties file, make sure that the web application context name does not match with any existing runtime properties file in say the user's home folder. This is because of the openmrs runtime properties file search order which will only look in the current application folder as the last resort if no runtime properties file has been found in any of the other possible locations.
-* standalone-0.0.1-SNAPSHOT.jar
+* standalone.jar
  * This is the output executable jar for this standalone project.
  * You can build this right from eclipse by right clicking on the project and then select Export -> Java -> Runnable JAR file.
  * The name of this jar file needs to be standalone-0.0.1-SNAPSHOT.jar because it is hard coded in the Bootstrap class as so.
@@ -235,14 +233,6 @@ NOTE: When creating a new database using the openmrs database setup wizard, reme
 	  
 	  The embedded MariaDB4j database engine is a fully functional database engine that you can connect too using any database 
 	  GUI query tools like Navicat, EMS MySQL Manager, etc
-
-
-
-
- 
- 
-
-
 	  
 ## SOME ROUGH STATISTICS SO FAR
 

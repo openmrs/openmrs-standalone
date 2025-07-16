@@ -52,13 +52,6 @@
 							<goal>start</goal>
 						</goals>
 					</execution>
-					<execution>
-						<id>stop-empty-database</id>
-						<phase>process-resources</phase>
-						<goals>
-							<goal>stop</goal>
-						</goals>
-					</execution>
 				</executions>
 			</plugin>
 			<plugin>
@@ -146,7 +139,7 @@
 				<plugin>
 					<groupId>org.liquibase</groupId>
 					<artifactId>${liquibase.plugin.artifactId}</artifactId>
-					<version>${liquibase.plugin.version.3.x}</version>
+					<version>${liquibase.plugin.version.4.x}</version>
 					<dependencies>
 						<dependency>
 							<groupId>org.openmrs.api</groupId>
