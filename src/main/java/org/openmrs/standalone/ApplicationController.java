@@ -256,7 +256,6 @@ public class ApplicationController {
 				deleteActiveDatabase();
 				StandaloneUtil.resetConnectionPassword();
 				StandaloneUtil.startupDatabaseToCreateDefaultUser(mySqlPort);
-				Context.updateSearchIndex();
 				System.out.println("Database mode using wizard: " + applyDatabaseChange );
 			} else if (applyDatabaseChange == DatabaseMode.EMPTY_DATABASE) {
 				deleteActiveDatabase();
@@ -270,6 +269,7 @@ public class ApplicationController {
 				unzipDatabase(new File("demodatabase.zip"));
 				StandaloneUtil.resetConnectionPassword();
 				StandaloneUtil.startupDatabaseToCreateDefaultUser(mySqlPort);
+				Context.updateSearchIndex();
 				System.out.println("Database mode using demo database: " + applyDatabaseChange );
 			}
 			
