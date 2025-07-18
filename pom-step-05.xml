@@ -197,7 +197,7 @@
 					</execution>
 					<execution>
 						<id>zip-standalone</id>
-						<phase>verify</phase>
+						<phase>package</phase>
 						<goals>
 							<goal>single</goal>
 						</goals>
