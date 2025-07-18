@@ -169,9 +169,6 @@ public class ApplicationController {
 				} else {
 					userInterface.setStatus(UserInterface.STATUS_MESSAGE_STOPPED);
 				}
-				
-				//userInterface.enableStart(value == null);
-				//userInterface.enableStop(value != null);
 			}
 		};
 		
