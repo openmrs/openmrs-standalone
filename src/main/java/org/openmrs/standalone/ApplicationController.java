@@ -14,7 +14,6 @@
 package org.openmrs.standalone;
 
 import ch.vorburger.exec.ManagedProcessException;
-import org.openmrs.api.context.Context;
 
 
 import java.io.BufferedInputStream;
@@ -262,14 +261,14 @@ public class ApplicationController {
 				unzipDatabase(new File("emptydatabase.zip"));
 				StandaloneUtil.resetConnectionPassword();
 				StandaloneUtil.startupDatabaseToCreateDefaultUser(mySqlPort);
-				Context.updateSearchIndex();
+			//	Context.updateSearchIndex();
 				System.out.println("Database mode using empty: " + applyDatabaseChange );
 			} else if (applyDatabaseChange == DatabaseMode.DEMO_DATABASE) {
 				deleteActiveDatabase();
 				unzipDatabase(new File("demodatabase.zip"));
 				StandaloneUtil.resetConnectionPassword();
 				StandaloneUtil.startupDatabaseToCreateDefaultUser(mySqlPort);
-				Context.updateSearchIndex();
+				//Context.updateSearchIndex();
 				System.out.println("Database mode using demo database: " + applyDatabaseChange );
 			}
 			
@@ -338,7 +337,7 @@ public class ApplicationController {
 	 */
 	private void unzipDatabase(File zipFile) throws IOException {
 		System.out.println("Unzipping database from " + zipFile.getName());
-		File dest = new File("database");
+		File dest = new File("db");
 		dest.mkdir();
 		unzip(zipFile, dest);
 	}
