@@ -330,8 +330,6 @@ public class StandaloneUtil {
 				statement.execute(sqlCreate); // ensure user exists
 				statement.execute(sqlAlter);  // change password
 				statement.execute(sqlFlush);  // apply changes
-				System.out.println("✅ Openmrs User created after password.");
-				System.out.println("✅ Password changed successfully.");
 				return true;
 
 			} catch (SQLException ex) {

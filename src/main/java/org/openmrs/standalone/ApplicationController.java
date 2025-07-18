@@ -14,6 +14,7 @@
 package org.openmrs.standalone;
 
 import ch.vorburger.exec.ManagedProcessException;
+import org.apache.commons.io.FileUtils;
 
 
 import java.io.BufferedInputStream;
@@ -24,6 +25,7 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.lang.management.ManagementFactory;
 import java.util.Enumeration;
+import java.util.Objects;
 import java.util.Properties;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
@@ -251,6 +253,14 @@ public class ApplicationController {
 		}
 		
 		if (applyDatabaseChange != null) {
+
+			File dest = new File("db");
+			if (dest.exists()) {
+				if (dest.isDirectory() && dest.listFiles() != null && Objects.requireNonNull(dest.listFiles()).length > 0) {
+					FileUtils.cleanDirectory(dest);
+				}
+			}
+
 			if (applyDatabaseChange == DatabaseMode.USE_INITIALIZATION_WIZARD) {
 				deleteActiveDatabase();
 				StandaloneUtil.resetConnectionPassword();

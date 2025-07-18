@@ -37,6 +37,9 @@ public class MariaDbController {
             userPassword = "";
         }
 
+        String os = System.getProperty("os.name").toLowerCase();
+        boolean isWindows = os.contains("win");
+
         // Build DB configuration
         mariaDBConfig = DBConfigurationBuilder.newBuilder();
         mariaDBConfig.setPort(port);
@@ -57,15 +60,25 @@ public class MariaDbController {
         mariaDBConfig.addArg("--collation-server=utf8_general_ci");
         mariaDBConfig.addArg("--character-set-server=utf8");
 
-        mariaDB = ReusableDB.openEmbeddedDB(mariaDBConfig.build());
-//        mariaDB = DB.newEmbeddedDB(mariaDBConfig.build());
+        if(isWindows){
+            // For Windows, we use the ReusableDB class
+            mariaDB = ReusableDB.openEmbeddedDB(mariaDBConfig.build());
+            mariaDB.start();
 
-        mariaDB.start();
+            Connection conn = DriverManager.getConnection("jdbc:mysql://localhost:" + port + "/", ROOT_USER, ROOT_PASSWORD);
+            try (Statement stmt = conn.createStatement()) {
+                stmt.execute("ALTER USER 'root'@'localhost' IDENTIFIED BY '" + ROOT_PASSWORD + "';");
+                stmt.execute("GRANT ALL PRIVILEGES ON *.* TO 'root'@'localhost' WITH GRANT OPTION;");
+            }
 
-        Connection conn = DriverManager.getConnection("jdbc:mysql://localhost:" + port + "/", "root", "");
-        try (Statement stmt = conn.createStatement()) {
-            stmt.execute("ALTER USER 'root'@'localhost' IDENTIFIED BY '" + ROOT_PASSWORD + "';");
-            stmt.execute("GRANT ALL PRIVILEGES ON *.* TO 'root'@'localhost' WITH GRANT OPTION;");
+        } else {
+            // For Linux and macOS, we use the standard DB class
+            mariaDB = DB.newEmbeddedDB(mariaDBConfig.build());
+            mariaDB.start();
+
+            // Ensure root user exists and has correct password and privileges
+            mariaDB.run("ALTER USER 'root'@'localhost' IDENTIFIED BY '" + ROOT_PASSWORD + "';");
+            mariaDB.run("GRANT ALL PRIVILEGES ON *.* TO 'root'@'localhost' WITH GRANT OPTION;");
         }
 
         // Create the OpenMRS database schema if it doesn't exist
@@ -77,17 +90,14 @@ public class MariaDbController {
                 // Create user if not exists
                 String createUserSQL = "CREATE USER IF NOT EXISTS 'openmrs'@'localhost' IDENTIFIED BY '" + userPassword + "';";
                 stmt.executeUpdate(createUserSQL);
-                System.out.println("✅ Created user `openmrs` with password" + userPassword);
 
                 // Grant privileges on the openmrs DB
                 String grantPrivilegesSQL = "GRANT ALL PRIVILEGES ON `" + DATABASE_NAME + "`.* TO 'openmrs'@'localhost' WITH GRANT OPTION;";
                 stmt.executeUpdate(grantPrivilegesSQL);
-                System.out.println("✅ Granted DB privileges to `openmrs`");
 
                 // (Optional) Allow openmrs to create users
                 String grantCreateUserSQL = "GRANT CREATE USER ON *.* TO 'openmrs'@'localhost';";
                 stmt.executeUpdate(grantCreateUserSQL);
-                System.out.println("✅ Granted CREATE USER to `openmrs`");
             }
         }
     }
