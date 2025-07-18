@@ -17,6 +17,7 @@ import ch.vorburger.exec.ManagedProcessException;
 import org.apache.commons.io.FileUtils;
 
 
+
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.File;
@@ -168,9 +169,6 @@ public class ApplicationController {
 				} else {
 					userInterface.setStatus(UserInterface.STATUS_MESSAGE_STOPPED);
 				}
-				
-				//userInterface.enableStart(value == null);
-				//userInterface.enableStop(value != null);
 			}
 		};
 		
@@ -271,14 +269,12 @@ public class ApplicationController {
 				unzipDatabase(new File("emptydatabase.zip"));
 				StandaloneUtil.resetConnectionPassword();
 				StandaloneUtil.startupDatabaseToCreateDefaultUser(mySqlPort);
-			//	Context.updateSearchIndex();
 				System.out.println("Database mode using empty: " + applyDatabaseChange );
 			} else if (applyDatabaseChange == DatabaseMode.DEMO_DATABASE) {
 				deleteActiveDatabase();
 				unzipDatabase(new File("demodatabase.zip"));
 				StandaloneUtil.resetConnectionPassword();
 				StandaloneUtil.startupDatabaseToCreateDefaultUser(mySqlPort);
-				//Context.updateSearchIndex();
 				System.out.println("Database mode using demo database: " + applyDatabaseChange );
 			}
 			

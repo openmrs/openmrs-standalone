@@ -15,7 +15,8 @@ Make sure your file structure reflects the file structure specified in "DISTRIBU
 Depending on what OpenMRS software artifact you are releasing, you may need to check out a different branch of this code:
 
 * If you are building OpenMRS Platform => use the `master` branch
-* If you are building OpenMRS Reference Application => use the `openmrs-emr2` branch
+* If you are building OpenMRS Reference Application 2.x => use the `openmrs-emr2` branch
+* If you are building OpenMRS Reference Application 3.x => use the `openmrs-emr3` branch
 
 ## Building openmrs-standalone for OpenMRS version 2.7 or later
 
@@ -257,3 +258,26 @@ SUMMARY: Using a single package for all (most) platforms approximately tripples 
 
 MariaDB4j documentation can be found at:
 https://github.com/MariaDB4j/MariaDB4j
+
+## 🛠️ Reusable Embedded MariaDB (ReusableDB.java)
+
+To improve startup robustness and cross-platform compatibility, especially on Windows, the OpenMRS Standalone project uses a custom wrapper around the `DB` class from MariaDB4j called `ReusableDB`.
+
+#### 🔍 Purpose
+
+`ReusableDB` avoids deleting the `dataDir` when the database is already initialized. This:
+- Prevents startup failures due to locked files on Windows.
+- Supports seamless restarts of the Standalone without losing data.
+- Makes switching between demo and empty databases more reliable.
+
+#### ✅ How it Works
+- Checks for the presence of the `openmrs` database directory inside `dataDir`.
+- If not found, triggers the initial MariaDB install process.
+- Otherwise, starts MariaDB using the existing configuration and data files.
+
+#### 📦 Usage Example
+
+```java
+DBConfigurationBuilder config = DBConfigurationBuilder.newBuilder();
+config.setPort(3316);
+ReusableDB db = ReusableDB.openEmbeddedDB(config.build());
