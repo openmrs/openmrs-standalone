@@ -28,7 +28,7 @@ public class MariaDbControllerTest {
     private static final int MARIADB_PORT = 33126;
     private static final String JDBC_URL = "jdbc:mysql://127.0.0.1:" + MARIADB_PORT + "/" + MariaDbController.DATABASE_NAME;
     private static final String ROOT_USER = "root";
-    private static final String ROOT_PASSWORD = "rootpass";
+    private static final String ROOT_PASSWORD = "";
 
     private static final String MARIADB_BASEDIR_NAME = "mariadb-base-dir";
 
