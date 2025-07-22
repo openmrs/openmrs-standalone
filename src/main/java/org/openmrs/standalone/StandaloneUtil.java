@@ -320,15 +320,16 @@ public class StandaloneUtil {
 
 			MariaDbController.startMariaDB(mysqlPort, properties.getProperty("connection.password", ""));
 
-			String sql = "ALTER USER '" + username + "'@'localhost' IDENTIFIED BY '" + newPassword + "';";
+			String sqlCreate = "CREATE USER IF NOT EXISTS '" + username + "'@'localhost' IDENTIFIED BY '" + newPassword + "';";
+			String sqlAlter = "ALTER USER '" + username + "'@'localhost' IDENTIFIED BY '" + newPassword + "';";
+			String sqlFlush = "FLUSH PRIVILEGES;";
 
 			try (Connection connection = DriverManager.getConnection(url, ROOT_USER, MariaDbController.getRootPassword());
 				 Statement statement = connection.createStatement()) {
 
-				statement.execute(sql); // Change password
-				statement.execute("FLUSH PRIVILEGES;");
-
-				System.out.println("✅ Password changed successfully.");
+				statement.execute(sqlCreate); // ensure user exists
+				statement.execute(sqlAlter);  // change password
+				statement.execute(sqlFlush);  // apply changes
 				return true;
 
 			} catch (SQLException ex) {
@@ -436,22 +437,11 @@ public class StandaloneUtil {
 
 			// Check if connection is valid
 			if (conn.isValid(5)) {
-				String createUserSQL = "CREATE USER IF NOT EXISTS 'openmrs'@'localhost' IDENTIFIED BY 'test';";
-				stmt.executeUpdate(createUserSQL);
-
-				// Only grant on openmrs DB
-				String grantPrivilegesSQL = "GRANT ALL PRIVILEGES ON `openmrs`.* TO 'openmrs'@'localhost' WITH GRANT OPTION;";
-
-				stmt.executeUpdate(grantPrivilegesSQL);
-
-				// Optional: enable user creation (if OpenMRS core requires)
-				String grantCreateUserSQL = "GRANT CREATE USER ON *.* TO 'openmrs'@'localhost';";
-				stmt.executeUpdate(grantCreateUserSQL);
 
 				System.out.println("✅ Connection to MariaDB successful.");
 
 				// Find sql if exist to preload DB
-				File dataDir = new File("database/data");
+				File dataDir = new File("db/data");
 
 				if (dataDir.exists() && dataDir.isDirectory()) {
 					// Find the first .sql file in the unzipped folder

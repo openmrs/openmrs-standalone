@@ -75,7 +75,7 @@
 				<executions>
 					<execution>
 						<id>dump-empty-database</id>
-						<phase>package</phase>
+						<phase>prepare-package</phase>
 						<goals>
 							<goal>java</goal>
 						</goals>
