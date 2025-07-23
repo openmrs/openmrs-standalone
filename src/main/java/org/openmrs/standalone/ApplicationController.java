@@ -76,6 +76,8 @@ public class ApplicationController {
 		if (properties != null) {
 			tomcatPort = properties.getProperty("tomcatport");
 		}
+
+		OpenmrsUtil.PLATFORM_VERSION = StandaloneUtil.getPlatformVersion();
 		
 		//Some users may prefer command line to having the GUI, by providing the -commandline switch.
 		//Command line args can always override the values in the runtime properties file.
