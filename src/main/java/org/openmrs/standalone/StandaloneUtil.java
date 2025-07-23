@@ -531,4 +531,14 @@ public class StandaloneUtil {
 		
 		return mariaDBPort;
 	}
+
+	public static String getPlatformVersion() {
+		Properties properties = new Properties();
+		try (InputStream inputStream = StandaloneUtil.class.getResourceAsStream("/org/openmrs/standalone/standalone.properties")){
+			properties.load(inputStream);
+		} catch (IOException e) {
+			throw new RuntimeException(e);
+		}
+		return (String) properties.get("openmrs.version");
+	}
 }

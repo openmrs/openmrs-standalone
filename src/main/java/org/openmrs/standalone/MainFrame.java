@@ -542,7 +542,7 @@ public class MainFrame extends javax.swing.JFrame implements ActionListener, Use
 	 * @see org.openmrs.standalone.UserInterface#showInitialConfig()
 	 */
 	public void showInitialConfig() {
-		final JDialog configDialog = new JDialog(this, "Configure your OpenMRS Installation", true);
+		final JDialog configDialog = new JDialog(this, "Configure your OpenMRS Platform "+ OpenmrsUtil.PLATFORM_VERSION +" Installation", true);
 		JPanel content = new JPanel();
 		content.setBorder(BorderFactory.createEmptyBorder(15, 15, 15, 15));
 		content.setLayout(new BorderLayout(10, 10)); //10,10 = hgap, vgap
@@ -553,17 +553,17 @@ public class MainFrame extends javax.swing.JFrame implements ActionListener, Use
 		final JButton useCurrent = new JButton("Do Not Modify the Database");
 		
 		final JButton demoDatabase = new JButton(
-		        "<html><h3>Demonstration mode</h3>Configures OpenMRS with a demonstration database. This is the quickest way to start up OpenMRS with some sample data to evaluate the system or experiment with features</html>",
+		        "<html><h3>Demonstration mode</h3>Configures OpenMRS Platform "+ OpenmrsUtil.PLATFORM_VERSION +" with a demonstration database. This is the quickest way to start up OpenMRS Platform "+ OpenmrsUtil.PLATFORM_VERSION +" with some sample data to evaluate the system or experiment with features</html>",
 		        new ImageIcon(getClass().getResource("demonstration_mode.png")));
 		colorHelper(demoDatabase, new Color(136, 235, 148));
 		
 		final JButton emptyDatabase = new JButton(
-		        "<html><h3>Starter Implementation</h3>Configures OpenMRS with the CIEL dictionary, but without any patient data. If you are familiar with OpenMRS and want to start a new system, this is a good place to start.</html>",
+		        "<html><h3>Starter Implementation</h3>Configures OpenMRS Platform "+ OpenmrsUtil.PLATFORM_VERSION +" with the CIEL dictionary, but without any patient data. If you are familiar with OpenMRS Platform  "+ OpenmrsUtil.PLATFORM_VERSION +" and want to start a new system, this is a good place to start.</html>",
 		        new ImageIcon(getClass().getResource("starter_impl.png")));
 		colorHelper(emptyDatabase, new Color(255, 243, 136));
 		
 		final JButton expertMode = new JButton(
-		        "<html><h3>Expert Mode</h3>Go through the initial setup wizard yourself. You will add all content, including dictionary concepts, to the system after it is running.</html>",
+		        "<html><h3>Expert Mode</h3>Go through the initial setup wizard yourself. You will add all content, including dictionary concepts, to the system of Openmrs Platform "+ OpenmrsUtil.PLATFORM_VERSION + " after it is running.</html>",
 		        new ImageIcon(getClass().getResource("expert.png")));
 		colorHelper(expertMode, new Color(255, 138, 138));
 		
@@ -597,7 +597,7 @@ public class MainFrame extends javax.swing.JFrame implements ActionListener, Use
 		}
 		
 		JLabel instructions = new JLabel(
-		        "<html><b>Welcome to OpenMRS! OpenMRS can be configured in one of " + buttonList.size() + " ways, depending on your needs. Please click on the configuration that best meets your needs.</b><br/>(You will not see this next time you run OpenMRS)</html>");
+		        "<html><b>Welcome to OpenMRS Platform "+ OpenmrsUtil.PLATFORM_VERSION +"! OpenMRS Platform "+ OpenmrsUtil.PLATFORM_VERSION +" can be configured in one of " + buttonList.size() + " ways, depending on your needs. Please click on the configuration that best meets your needs.</b><br/>(You will not see this next time you run OpenMRS Platform "+ OpenmrsUtil.PLATFORM_VERSION +")</html>");
 		instructions.setFont(font);
 		
 		JButton exitButton = new JButton("Exit");
