@@ -31,6 +31,8 @@ import java.sql.DriverManager;
 import java.util.Properties;
 
 public class OpenmrsUtil {
+
+	public static String PLATFORM_VERSION;
 	
 	private static final String OPERATING_SYSTEM_KEY = "os.name";
 	
@@ -250,6 +252,10 @@ public class OpenmrsUtil {
 		} else {
 			throw new RuntimeException("❌ Neither mariadb-dump nor mysqldump found in: " + mariadbDump.getParent());
 		}
+	}
+
+	public static String getTitle() {
+		return "OpenMRS Platform " + PLATFORM_VERSION + " Standalone";
 	}
 
 }
