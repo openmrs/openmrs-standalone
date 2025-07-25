@@ -16,8 +16,6 @@ package org.openmrs.standalone;
 import ch.vorburger.exec.ManagedProcessException;
 import org.apache.commons.io.FileUtils;
 
-
-
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.File;
@@ -151,6 +149,7 @@ public class ApplicationController {
 			}
 			
 			public void finished() {
+				String resourceUrl = "http://localhost:" + userInterface.getTomcatPort() + "/" + contextName;
 				Object value = workerThread.get();
 				
 				userInterface.enableStart(value == null);
@@ -162,6 +161,9 @@ public class ApplicationController {
 					//else block with the await call such that we do not exit tomcat
 					if (!commandLineMode) {
 						StandaloneUtil.launchBrowser(userInterface.getTomcatPort(), contextName);
+						if (applyDatabaseChange != DatabaseMode.USE_INITIALIZATION_WIZARD) {
+							OpenmrsUtil.rebuildEntireSearchIndex(resourceUrl);
+						}
 					}
 					
 					//if in non interactive mode, block such that tomcat does not exit

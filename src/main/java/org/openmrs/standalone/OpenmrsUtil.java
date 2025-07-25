@@ -24,11 +24,16 @@ import java.io.UnsupportedEncodingException;
 import java.io.File;
 import java.io.Reader;
 import java.io.FileReader;
+import java.io.OutputStream;
+import java.net.HttpURLConnection;
+import java.net.URL;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.util.Properties;
+import java.util.Base64;
 
 public class OpenmrsUtil {
 
@@ -258,4 +263,40 @@ public class OpenmrsUtil {
 		return "OpenMRS Platform " + PLATFORM_VERSION + " Standalone";
 	}
 
+	public static void rebuildEntireSearchIndex(String resourceUrl) {
+		final String SEARCH_INDEX_URL = resourceUrl + "/ws/rest/v1/searchindexupdate";
+		try {
+			URL url = new URL(SEARCH_INDEX_URL);
+			HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+
+			// Basic Auth
+			String username = "admin";
+			String password = "test";
+			String auth = username + ":" + password;
+			String encodedAuth = Base64.getEncoder().encodeToString(auth.getBytes(StandardCharsets.UTF_8));
+			String authHeader = "Basic " + encodedAuth;
+
+			conn.setRequestMethod("POST");
+			conn.setRequestProperty("Content-Type", "application/json");
+			conn.setRequestProperty("Authorization", authHeader);
+			conn.setDoOutput(true);
+
+			// Prepare the request body
+			String body = "{}";
+			try (OutputStream os = conn.getOutputStream()) {
+				byte[] input = body.getBytes("utf-8");
+				os.write(input, 0, input.length);
+			}
+
+			int responseCode = conn.getResponseCode();
+			if (responseCode == HttpURLConnection.HTTP_NO_CONTENT) {
+				System.out.println("✅ Search index rebuild triggered successfully on startup.");
+			} else {
+				System.err.println("❌ Failed to trigger rebuild. Status: " + responseCode);
+			}
+			conn.disconnect();
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+	}
 }
