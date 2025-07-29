@@ -95,6 +95,11 @@
 			<version>${mockitoVersion}</version>
 			<scope>test</scope>
 		</dependency>
+		<dependency>
+			<groupId>org.mybatis</groupId>
+			<artifactId>mybatis</artifactId>
+			<version>3.5.19</version>
+		</dependency>
 	</dependencies>
 
 	<build>
