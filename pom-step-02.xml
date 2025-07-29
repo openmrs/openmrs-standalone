@@ -180,6 +180,36 @@
                     </execution>
                 </executions>
             </plugin>
+            <!-- Exec: Demo Dump DB to SQL -->
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>exec-maven-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>dump-demo-database</id>
+                        <phase>prepare-package</phase>
+                        <goals>
+                            <goal>java</goal>
+                        </goals>
+                        <configuration>
+                            <mainClass>org.openmrs.standalone.DatabaseDumper</mainClass>
+                            <arguments>
+                                <argument>${project.build.directory}</argument>
+                                <argument>demodatabase</argument>
+                                <argument>--port=33328</argument>
+                                <argument>--user=openmrs</argument>
+                                <argument>--password=test</argument>
+                                <argument>--skip-lock-tables</argument>
+                                <argument>--skip-extended-insert</argument>
+                                <argument>--ssl=0</argument>
+                                <argument>openmrs</argument>
+                                <argument>--result-file=${project.build.directory}/openmrs-demo-dump.sql</argument>
+                            </arguments>
+                            <classpathScope>compile</classpathScope>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-assembly-plugin</artifactId>
@@ -206,7 +236,7 @@
                     </execution>
                     <execution>
                         <id>zip-demo-database</id>
-                        <phase>prepare-package</phase>
+                        <phase>package</phase>
                         <goals>
                             <goal>single</goal>
                         </goals>
@@ -221,7 +251,7 @@
                     </execution>
                     <execution>
                         <id>zip-empty-database</id>
-                        <phase>prepare-package</phase>
+                        <phase>package</phase>
                         <goals>
                             <goal>single</goal>
                         </goals>

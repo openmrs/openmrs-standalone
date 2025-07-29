@@ -10,7 +10,10 @@
 	<fileSets>
 		<fileSet>
 			<outputDirectory>/</outputDirectory>
-			<directory>${project.build.directory}/emptydatabase/data</directory>
+			<directory>${project.build.directory}</directory>
+			<includes>
+				<include>openmrs-empty-dump.sql</include>
+			</includes>
 		</fileSet>
 	</fileSets>
 </assembly>

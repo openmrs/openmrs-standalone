@@ -13,6 +13,8 @@
  */
 package org.openmrs.standalone;
 
+import org.apache.ibatis.jdbc.ScriptRunner;
+
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
@@ -20,6 +22,12 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.UnsupportedEncodingException;
+import java.io.Reader;
+import java.io.FileReader;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.sql.Connection;
+import java.sql.DriverManager;
 import java.util.Properties;
 
 public class OpenmrsUtil {
@@ -211,5 +219,42 @@ public class OpenmrsUtil {
 	
 	public static String getTitle() {
 		return "OpenMRS " + REFAPP_VERSION + " Standalone";
+	}
+
+	public static void importSqlFile(File sqlFile, String jdbcUrl, String user, String password) {
+		if (!sqlFile.exists()) {
+			System.err.println(":x: SQL file not found: " + sqlFile.getAbsolutePath());
+			return;
+		}
+
+		System.out.println("✅ Preparing to import "+sqlFile+" data");
+		try (Connection conn = DriverManager.getConnection(jdbcUrl, user, password)) {
+
+			System.out.println("📥 Importing SQL from: " + sqlFile.getAbsolutePath());
+			try (Reader reader = new FileReader(sqlFile)) {
+				ScriptRunner scriptRunner = new ScriptRunner(conn);
+				scriptRunner.setLogWriter(null); // Disable logs
+				scriptRunner.setStopOnError(true);
+				scriptRunner.runScript(reader);
+				System.out.println("✅ Successfully imported SQL: " + sqlFile.getAbsolutePath());
+			}
+
+		} catch (Exception e) {
+			System.err.println("❌ Error importing SQL: " + e.getMessage());
+			e.printStackTrace();
+		}
+	}
+
+	public static String findDumpExecutable(String baseDir, String dbDir) {
+		String os = System.getProperty("os.name").toLowerCase();
+		boolean isWindows = os.contains("win");
+
+		Path mariadbDump = Paths.get(baseDir, dbDir, "bin", isWindows ? "mysqldump.exe" : "mariadb-dump");
+
+		if (mariadbDump.toFile().exists()) {
+			return mariadbDump.toString();
+		} else {
+			throw new RuntimeException("❌ Neither mariadb-dump nor mysqldump found in: " + mariadbDump.getParent());
+		}
 	}
 }
