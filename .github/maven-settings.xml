@@ -1,14 +1,52 @@
-<settings xmlns="http://maven.apache.org/SETTINGS/1.0.0"
-          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-          xsi:schemaLocation="http://maven.apache.org/SETTINGS/1.0.0 https://maven.apache.org/xsd/settings-1.0.0.xsd">
+<?xml version="1.0" encoding="UTF-8"?>
+<settings xsi:schemaLocation="http://maven.apache.org/SETTINGS/1.2.0 http://maven.apache.org/xsd/settings-1.2.0.xsd" xmlns="http://maven.apache.org/SETTINGS/1.2.0"
+          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+    <profiles>
+        <profile>
+            <repositories>
+                <repository>
+                    <id>openmrs-repo</id>
+                    <name>OpenMRS Repository</name>
+                    <url>https://mavenrepo.openmrs.org/public</url>
+                </repository>
+                <repository>
+                    <releases>
+                        <checksumPolicy>fail</checksumPolicy>
+                    </releases>
+                    <snapshots>
+                        <checksumPolicy>warn</checksumPolicy>
+                    </snapshots>
+                    <id>archetype</id>
+                    <url>https://mavenrepo.openmrs.org/public</url>
+                </repository>
+                <repository>
+                    <id>openmrs-repo-thirdparty</id>
+                    <name>OpenMRS Thirdparty Nexus Repository</name>
+                    <url>https://mavenrepo.openmrs.org/thirdparty</url>
+                </repository>
+                <repository>
+                    <id>mks-nexus-public</id>
+                    <name>Mekom Repository</name>
+                    <url>https://nexus.mekomsolutions.net/repository/maven-public</url>
+                </repository>
+            </repositories>
+            <pluginRepositories>
+                <pluginRepository>
+                    <snapshots>
+                        <enabled>false</enabled>
+                    </snapshots>
+                    <id>openmrs-repo</id>
+                    <name>OpenMRS Nexus Repository</name>
+                    <url>https://mavenrepo.openmrs.org/public</url>
+                </pluginRepository>
+            </pluginRepositories>
+            <id>openmrs</id>
+        </profile>
+    </profiles>
+    <activeProfiles>
+        <activeProfile>openmrs</activeProfile>
+    </activeProfiles>
     <pluginGroups>
         <pluginGroup>org.openmrs.maven.plugins</pluginGroup>
     </pluginGroups>
-    <mirrors>
-        <mirror>
-            <id>openmrs-mirror</id>
-            <mirrorOf>*</mirrorOf>
-            <url>http://mavenrepo.openmrs.org/nexus/content/groups/public</url>
-        </mirror>
-    </mirrors>
 </settings>
