@@ -37,7 +37,7 @@
                     </execution>
                     <execution>
                         <id>stop-empty-database</id>
-                        <phase>process-resources</phase>
+                        <phase>verify</phase>
                         <goals>
                             <goal>stop</goal>
                         </goals>
@@ -167,6 +167,36 @@
                         <configuration>
                             <distro>referenceapplication:${refapp.version}</distro>
                             <dir>${project.build.directory}/distro</dir>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+            <!-- Exec: Empty Dump DB to SQL -->
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>exec-maven-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>dump-empty-database</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>java</goal>
+                        </goals>
+                        <configuration>
+                            <mainClass>org.openmrs.standalone.DatabaseDumper</mainClass>
+                            <arguments>
+                                <argument>${project.build.directory}</argument>
+                                <argument>emptydatabase</argument>
+                                <argument>--port=33326</argument>
+                                <argument>--user=openmrs</argument>
+                                <argument>--password=test</argument>
+                                <argument>--skip-lock-tables</argument>
+                                <argument>--skip-extended-insert</argument>
+                                <argument>--ssl=0</argument>
+                                <argument>openmrs</argument>
+                                <argument>--result-file=${project.build.directory}/openmrs-empty-dump.sql</argument>
+                            </arguments>
+                            <classpathScope>compile</classpathScope>
                         </configuration>
                     </execution>
                 </executions>
