@@ -28,10 +28,10 @@ jobs:
           distribution: 'temurin'
 
       - name: Run Maven Clean
-        run: mvn clean
+        run: mvn clean --settings .github/maven-settings.xml
 
       - name: Run Maven Install
-        run: mvn install
+        run: mvn install --settings .github/maven-settings.xml
 
   build-windows:
     name: on Windows (Java 21)
@@ -48,10 +48,10 @@ jobs:
           distribution: 'temurin'
 
       - name: Run Maven Clean
-        run: mvn clean
+        run: mvn clean --settings .github/maven-settings.xml
 
       - name: Run Maven Install
-        run: mvn install
+        run: mvn install --settings .github/maven-settings.xml
 
   build-macos:
     name: on macOS (Java 21)
@@ -67,7 +67,7 @@ jobs:
           distribution: 'temurin'
 
       - name: Run Maven Clean
-        run: mvn clean
+        run: mvn clean --settings .github/maven-settings.xml
 
       - name: Run Maven Install
-        run: mvn install
+        run: mvn install --settings .github/maven-settings.xml
