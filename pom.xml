@@ -132,13 +132,13 @@
 									<property>refapp.version</property>
 									<message>refapp.version property is missing. This should be
 										something like 3.4, 3.5 Add
-										-Drefapp.version=3.5</message>
+										-Drefapp.version=3.4.1-SNAPSHOT</message>
 								</requireProperty>
 								<requireProperty>
 									<property>openmrs.version</property>
 									<message>openmrs.version property is missing. This should be
-										something like 3.4.0, 3.3.1 Add
-										-Dopenmrs.version=3.4.1-SNAPSHOT</message>
+										something like 2.7.4, 2.8.0 Add
+										-Dopenmrs.version=2.7.4</message>
 								</requireProperty>
 							</rules>
 							<fail>true</fail>
