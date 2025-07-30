@@ -183,3 +183,27 @@ SUMMARY: Using a single package for all (most) platforms approximately tripples 
 
 
 MariaDB4j documentation can be found at: https://github.com/MariaDB4j/MariaDB4j
+
+
+## 🛠️ Reusable Embedded MariaDB (ReusableDB.java) for Windows Compatibility
+The OpenMRS Standalone project uses a custom wrapper around the MariaDB4j `DB` class called `ReusableDB`. This wrapper is designed to enhance the robustness of the startup process and improve cross-platform compatibility, particularly on Windows systems.
+
+
+#### 🔍 Purpose
+
+`ReusableDB` avoids deleting the `dataDir` when the database is already initialized. This:
+- Prevents startup failures due to locked files on Windows.
+- Supports seamless restarts of the Standalone without losing data.
+- Makes switching between demo and empty databases more reliable.
+
+#### ✅ How it Works
+- Checks for the presence of the `openmrs` database directory inside `dataDir`.
+- If not found, triggers the initial MariaDB install process.
+- Otherwise, starts MariaDB using the existing configuration and data files.
+
+#### 📦 Usage Example
+
+```java
+DBConfigurationBuilder config = DBConfigurationBuilder.newBuilder();
+config.setPort(3316);
+ReusableDB db = ReusableDB.openEmbeddedDB(config.build());
