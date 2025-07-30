@@ -24,7 +24,7 @@
                 <executions>
                     <execution>
                         <id>package-jar-with-dependencies</id>
-                        <phase>prepare-package</phase>
+                        <phase>package</phase>
                         <goals>
                             <goal>single</goal>
                         </goals>
