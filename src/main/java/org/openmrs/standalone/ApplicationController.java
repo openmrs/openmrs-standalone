@@ -357,7 +357,7 @@ public class ApplicationController {
 	 */
 	private void unzipDatabase(File zipFile) throws IOException {
 		System.out.println("Unzipping database from " + zipFile.getName());
-		File dest = new File("database");
+		File dest = new File("db");
 		dest.mkdir();
 		unzip(zipFile, dest);
 	}
