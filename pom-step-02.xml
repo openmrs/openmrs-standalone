@@ -222,7 +222,7 @@
                         </goals>
                         <configuration>
                             <finalName>openmrs-standalone</finalName>
-                            <appendAssemblyId>false</appendAssemblyId>
+                            <appendAssemblyId>true</appendAssemblyId>
                             <outputDirectory>${project.build.directory}</outputDirectory>
                             <descriptorRefs>
                                 <descriptorRef>jar-with-dependencies</descriptorRef>
