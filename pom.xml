@@ -11,7 +11,7 @@
 	<packaging>pom</packaging>
 
 	<modules>
-		<module>pom-step-03.xml</module>
+		<module>pom-step-01.xml</module>
 	</modules>
 
 	<properties>
