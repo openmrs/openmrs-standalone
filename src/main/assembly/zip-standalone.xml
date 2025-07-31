@@ -37,6 +37,14 @@
 		<fileSet>
 			<directory>src/main/config</directory>
 			<outputDirectory>${project.build.finalName}</outputDirectory>
+			<fileModes>
+				<fileMode>
+					<includes>
+						<include>run-on-unix.sh</include>
+					</includes>
+					<mode>0755</mode>
+				</fileMode>
+			</fileModes>
 		</fileSet>
 		<fileSet>
 			<directory>${project.build.directory}/distro/web/openmrs_modules</directory>
