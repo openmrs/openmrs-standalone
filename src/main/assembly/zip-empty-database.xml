@@ -10,9 +10,9 @@
 	<fileSets>
 		<fileSet>
 			<outputDirectory>/</outputDirectory>
-			<directory>${project.build.directory}</directory>
+			<directory>${project.basedir}/src/main/db</directory>
 			<includes>
-				<include>openmrs-empty-dump.sql</include>
+				<include>empty-db-*.sql</include>
 			</includes>
 		</fileSet>
 	</fileSets>

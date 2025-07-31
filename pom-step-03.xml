@@ -3,11 +3,11 @@
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>org.openmrs</groupId>
-    <artifactId>referenceapplication-standalone-03</artifactId>
+    <artifactId>referenceapplication-standalone-zip-stage</artifactId>
     <version>3.0.0-SNAPSHOT</version>
     <packaging>jar</packaging>
 
-    <name>referenceapplication-standalone-03</name>
+    <name>referenceapplication-standalone-zip-stage</name>
 
     <parent>
         <groupId>org.openmrs</groupId>
@@ -18,6 +18,24 @@
 
     <build>
         <plugins>
+            <plugin>
+                <groupId>org.openmrs.maven.plugins</groupId>
+                <artifactId>openmrs-sdk-maven-plugin</artifactId>
+                <version>6.4.0</version>
+                <executions>
+                    <execution>
+                        <id>build-distro</id>
+                        <phase>generate-resources</phase>
+                        <goals>
+                            <goal>build-distro</goal>
+                        </goals>
+                        <configuration>
+                            <distro>referenceapplication:${refapp.version}</distro>
+                            <dir>${project.build.directory}/distro</dir>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-assembly-plugin</artifactId>
