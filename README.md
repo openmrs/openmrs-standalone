@@ -11,6 +11,28 @@
 -> output is in the target folder, as referenceapplkication-standalone-(refapp.version).zip
 -> the contents of that zip are in the similarly-named folder under /target, if you want to test in-place
 
+The standalone now supports loading a pre-initialized SQL database dump (from an SDK 3.x server).
+This bypasses the slow XML/metadata bootstrapping and ensures demo data + search index are ready immediately.
+
+## 🛠️ HOW TO EXTRACT SQL DUMPS FROM A RUNNING SDK INSTANCE
+You can speed up the standalone by bundling it with an SQL dump of a fully initialized OpenMRS SDK 3.x server.
+
+1. **Run your SDK instance and finish setup.**
+2. Once everything is initialized (demo data, search index rebuilt), run this command from terminal:
+
+```bash
+mysqldump --single-transaction -u root -p openmrs > demo-db-3.4.0.sql
+```
+Replace 3.4.0 with your current RefApp version.
+
+Place the dump in:
+
+```bash
+<project-root>/src/main/db/demo-db-3.4.0.sql       # for demo content
+<project-root>/src/main/db/empty-db-3.4.0.sql      # if it's an empty schema only
+```
+The standalone will auto-detect and load the corresponding SQL dump based on your refapp.version.
+
 ## HOW TO RUN FROM ECLIPSE
 
 - Copy your war file into the "tomcat/webapps" folder. Where the tomcat folder is at the root of the project.
