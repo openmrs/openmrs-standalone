@@ -62,6 +62,10 @@
 			<outputDirectory>${project.build.finalName}/appdata/configuration</outputDirectory>
 		</fileSet>
 		<fileSet>
+			<directory>${project.build.directory}/distro/web/openmrs_config_checksums</directory>
+			<outputDirectory>${project.build.finalName}/appdata/configuration_checksums</outputDirectory>
+		</fileSet>
+		<fileSet>
 			<directory>${project.build.directory}/distro/web/openmrs_spa</directory>
 			<outputDirectory>${project.build.finalName}/appdata/frontend</outputDirectory>
 		</fileSet>
