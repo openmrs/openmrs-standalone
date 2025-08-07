@@ -27,8 +27,10 @@ jobs:
           java-version: '21'
           distribution: 'temurin'
 
-      - name: Setup Docker Compose
-        uses: docker/setup-compose-action@v2
+      - name: Set up Docker Compose
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y docker-compose
 
       - name: Verify Docker Compose installation
         run: docker compose version
@@ -56,11 +58,18 @@ jobs:
       - name: Download Docker Compose
         shell: powershell
         run: |
-          $composeVersion = "v2.24.5" # Specify the desired Docker Compose version
+          $composeVersion = "v2.24.5"
           $downloadUrl = "https://github.com/docker/compose/releases/download/$composeVersion/docker-compose-windows-x86_64.exe"
-          $destinationPath = "$Env:ProgramFiles\Docker\docker-compose.exe"
+          $destinationDir = "$Env:ProgramFiles\Docker"
+          $destinationPath = "$destinationDir\docker-compose.exe"
           
-          Start-BitsTransfer -Source $downloadUrl -Destination $destinationPath
+          # Create the destination directory if it doesn't exist
+          if (!(Test-Path -Path $destinationDir)) {
+            New-Item -ItemType Directory -Force -Path $destinationDir | Out-Null
+          }
+          
+          # Download Docker Compose
+          Invoke-WebRequest -Uri $downloadUrl -OutFile $destinationPath
 
       - name: Verify Docker Compose Installation
         shell: powershell
