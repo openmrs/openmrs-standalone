@@ -150,6 +150,7 @@ public class ApplicationController {
 			}
 			
 			public void finished() {
+				String resourceUrl = "http://localhost:" + userInterface.getTomcatPort() + "/" + contextName;
 				Object value = workerThread.get();
 				
 				userInterface.enableStart(value == null);
@@ -161,6 +162,7 @@ public class ApplicationController {
 					//else block with the await call such that we do not exit tomcat
 					if (!commandLineMode) {
 						StandaloneUtil.launchBrowser(userInterface.getTomcatPort(), contextName);
+						OpenmrsUtil.rebuildEntireSearchIndex(resourceUrl);
 					}
 					
 					//if in non interactive mode, block such that tomcat does not exit
