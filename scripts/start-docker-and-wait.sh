@@ -32,7 +32,7 @@ while true; do
   sleep 5
 done
 
-echo "✅ OpenMRS is up. Checking contents of /openmrs/data..."
+echo "✅ OpenMRS is up. Proceeding to copy configuration checksums..."
 
 CONTAINER_ID=$(docker-compose -f "$DISTRO_DIR/docker-compose.yml" ps -q web)
 
