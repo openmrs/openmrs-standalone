@@ -94,14 +94,12 @@ jobs:
           java-version: '21'
           distribution: 'temurin'
 
-      - name: Setup Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: Setup Docker Compose
-        uses: docker/setup-docker-action@v3
-
-      - name: Build and run with Docker Compose
-        run: docker compose up --build -d
+      - name: Set up Docker Compose
+        run: |
+          brew install docker docker-compose
+          docker-compose --version   
+          systemctl start docker
+          systemctl enable docker
 
       - name: Run Maven Clean
         run: mvn clean --settings .github/maven-settings.xml
