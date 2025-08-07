@@ -90,6 +90,9 @@ jobs:
           java-version: '21'
           distribution: 'temurin'
 
+      - name: Start Docker Daemon
+        uses: docker/setup-docker@v3
+
       - name: Set up Docker
         uses: docker/setup-buildx-action@v3
           
