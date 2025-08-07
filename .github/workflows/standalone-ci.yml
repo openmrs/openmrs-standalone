@@ -90,12 +90,11 @@ jobs:
           java-version: '21'
           distribution: 'temurin'
 
-      - name: Set up Docker Compose
-        run: |
-          brew install docker docker-compose
-          docker-compose --version 
-          open --hide --background -a Docker
-          docker ps
+      - name: Set up Docker
+        uses: docker/setup-buildx-action@v3
+          
+      - name: Install Docker Compose
+        uses: docker/setup-compose-action@v1
 
       - name: Run Maven Clean
         run: mvn clean --settings .github/maven-settings.xml
