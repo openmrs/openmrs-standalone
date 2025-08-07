@@ -7,17 +7,30 @@ DISTRO_DIR="${1:-../target/distro}"
 echo "🚀 Starting OpenMRS in Docker from $DISTRO_DIR..."
 docker-compose -f "$DISTRO_DIR/docker-compose.yml" up -d web
 
-# Wait for OpenMRS to start
-if command -v curl &> /dev/null; then
-  echo "⏳ Waiting for OpenMRS to initialize using curl..."
-  timeout 180 bash -c 'until curl -sf http://localhost:8080/openmrs; do sleep 5; done'
-elif command -v wget &> /dev/null; then
-  echo "⏳ Waiting for OpenMRS to initialize using wget..."
-  timeout 180 bash -c 'until wget -q --spider http://localhost:8080/openmrs; do sleep 5; done'
-else
-  echo "❌ Neither curl nor wget found! Please install one of them." >&2
-  exit 1
-fi
+# Wait for OpenMRS to start (max 180 seconds)
+echo "⏳ Waiting for OpenMRS to initialize..."
+START_TIME=$(date +%s)
+TIMEOUT=180
+
+while true; do
+  if command -v curl &> /dev/null; then
+    curl -sf http://localhost:8080/openmrs && break
+  elif command -v wget &> /dev/null; then
+    wget -q --spider http://localhost:8080/openmrs && break
+  else
+    echo "❌ Neither curl nor wget found! Please install one of them." >&2
+    exit 1
+  fi
+
+  NOW=$(date +%s)
+  ELAPSED=$((NOW - START_TIME))
+  if [ "$ELAPSED" -gt "$TIMEOUT" ]; then
+    echo "❌ Timeout reached while waiting for OpenMRS to start."
+    exit 1
+  fi
+
+  sleep 5
+done
 
 echo "✅ OpenMRS is up. Checking contents of /openmrs/data..."
 
