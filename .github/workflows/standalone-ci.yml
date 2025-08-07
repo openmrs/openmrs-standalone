@@ -27,10 +27,11 @@ jobs:
           java-version: '21'
           distribution: 'temurin'
 
-      - name: Set up Docker Compose
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y docker-compose
+      - name: Setup Docker Compose
+        uses: docker/setup-compose-action@v2
+
+      - name: Verify Docker Compose installation
+        run: docker compose version
 
       - name: Run Maven Clean
         run: mvn clean --settings .github/maven-settings.xml
@@ -52,11 +53,18 @@ jobs:
           java-version: '21'
           distribution: 'temurin'
 
-      - name: Enable Docker on Windows
+      - name: Download Docker Compose
+        shell: powershell
         run: |
-          echo "Starting Docker..."
-          Start-Service Docker
-          docker version    
+          $composeVersion = "v2.24.5" # Specify the desired Docker Compose version
+          $downloadUrl = "https://github.com/docker/compose/releases/download/$composeVersion/docker-compose-windows-x86_64.exe"
+          $destinationPath = "$Env:ProgramFiles\Docker\docker-compose.exe"
+          
+          Start-BitsTransfer -Source $downloadUrl -Destination $destinationPath
+
+      - name: Verify Docker Compose Installation
+        shell: powershell
+        run: docker-compose.exe --version
 
       - name: Run Maven Clean
         run: mvn clean --settings .github/maven-settings.xml
@@ -79,8 +87,8 @@ jobs:
 
       - name: Set up Docker Compose
         run: |
-          sudo apt-get update
-          sudo apt-get install -y docker-compose      
+          brew install docker docker-compose
+          docker-compose --version     
 
       - name: Run Maven Clean
         run: mvn clean --settings .github/maven-settings.xml
