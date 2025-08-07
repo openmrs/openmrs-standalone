@@ -55,27 +55,11 @@ jobs:
           java-version: '21'
           distribution: 'temurin'
 
-      - name: Download Docker Compose
-        shell: powershell
-        run: |
-          $composeVersion = "v2.24.5"
-          $downloadUrl = "https://github.com/docker/compose/releases/download/$composeVersion/docker-compose-windows-x86_64.exe"
-          $destinationDir = "$Env:ProgramFiles\Docker"
-          $destinationPath = "$destinationDir\docker-compose.exe"
-          
-          # Create the destination directory if it doesn't exist
-          if (!(Test-Path -Path $destinationDir)) {
-            New-Item -ItemType Directory -Force -Path $destinationDir | Out-Null
-          }
-          
-          # Download Docker Compose
-          Invoke-WebRequest -Uri $downloadUrl -OutFile $destinationPath
-
       - name: Run Maven Clean
         run: mvn clean --settings .github/maven-settings.xml
 
       - name: Run Maven Install
-        run: mvn install --settings .github/maven-settings.xml
+        run: mvn install -Pci --settings .github/maven-settings.xml
 
   build-macos:
     name: on macOS (Java 21)
@@ -90,17 +74,8 @@ jobs:
           java-version: '21'
           distribution: 'temurin'
 
-      - name: Start Docker Daemon
-        uses: docker/setup-docker-action@v4.3.0
-
-      - name: Set up Docker
-        uses: docker/setup-buildx-action@v3
-          
-      - name: Install Docker Compose
-        uses: docker/setup-compose-action@v1
-
       - name: Run Maven Clean
         run: mvn clean --settings .github/maven-settings.xml
 
       - name: Run Maven Install
-        run: mvn install --settings .github/maven-settings.xml
+        run: mvn install -Pci --settings .github/maven-settings.xml
