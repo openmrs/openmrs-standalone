@@ -27,6 +27,11 @@ jobs:
           java-version: '21'
           distribution: 'temurin'
 
+      - name: Set up Docker Compose
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y docker-compose
+
       - name: Run Maven Clean
         run: mvn clean --settings .github/maven-settings.xml
 
@@ -47,6 +52,12 @@ jobs:
           java-version: '21'
           distribution: 'temurin'
 
+      - name: Enable Docker on Windows
+        run: |
+          echo "Starting Docker..."
+          Start-Service Docker
+          docker version    
+
       - name: Run Maven Clean
         run: mvn clean --settings .github/maven-settings.xml
 
@@ -65,6 +76,11 @@ jobs:
         with:
           java-version: '21'
           distribution: 'temurin'
+
+      - name: Set up Docker Compose
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y docker-compose      
 
       - name: Run Maven Clean
         run: mvn clean --settings .github/maven-settings.xml
