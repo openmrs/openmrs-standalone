@@ -71,10 +71,6 @@ jobs:
           # Download Docker Compose
           Invoke-WebRequest -Uri $downloadUrl -OutFile $destinationPath
 
-      - name: Verify Docker Compose Installation
-        shell: powershell
-        run: docker-compose.exe --version
-
       - name: Run Maven Clean
         run: mvn clean --settings .github/maven-settings.xml
 
@@ -97,9 +93,9 @@ jobs:
       - name: Set up Docker Compose
         run: |
           brew install docker docker-compose
-          docker-compose --version   
-          systemctl start docker
-          systemctl enable docker
+          docker-compose --version 
+          open --hide --background -a Docker
+          docker ps
 
       - name: Run Maven Clean
         run: mvn clean --settings .github/maven-settings.xml
