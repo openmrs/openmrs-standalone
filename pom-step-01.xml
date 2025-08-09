@@ -3,11 +3,11 @@
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>org.openmrs</groupId>
-    <artifactId>referenceapplication-standalone-01</artifactId>
+    <artifactId>referenceapplication-standalone-zip-stage</artifactId>
     <version>3.0.0-SNAPSHOT</version>
     <packaging>jar</packaging>
 
-    <name>referenceapplication-standalone-01</name>
+    <name>referenceapplication-standalone-zip-stage</name>
 
     <parent>
         <groupId>org.openmrs</groupId>
@@ -18,141 +18,6 @@
 
     <build>
         <plugins>
-            <plugin>
-                <groupId>ch.vorburger.mariaDB4j</groupId>
-                <artifactId>mariaDB4j-maven-plugin</artifactId>
-                <configuration>
-                    <port>33326</port>
-                    <baseDir>${project.build.directory}/emptydatabase</baseDir>
-                    <dataDir>${project.build.directory}/emptydatabase/data</dataDir>
-                </configuration>
-
-                <executions>
-                    <execution>
-                        <id>start-empty-database</id>
-                        <phase>initialize</phase>
-                        <goals>
-                            <goal>start</goal>
-                        </goals>
-                    </execution>
-                    <execution>
-                        <id>stop-empty-database</id>
-                        <phase>verify</phase>
-                        <goals>
-                            <goal>stop</goal>
-                        </goals>
-                    </execution>
-                </executions>
-            </plugin>
-            <plugin>
-                <groupId>org.liquibase</groupId>
-                <artifactId>${liquibase.plugin.artifactId}</artifactId>
-                <executions>
-                    <execution>
-                        <id>empty-database-create-schema</id>
-                        <phase>generate-resources</phase>
-                        <configuration>
-                            <driver>com.mysql.cj.jdbc.Driver</driver>
-                            <changeLogFile>liquibase-schema-only.xml</changeLogFile>
-                            <url><![CDATA[jdbc:mysql://127.0.0.1:33326/openmrs?autoReconnect=true&useUnicode=true&characterEncoding=UTF-8]]></url>
-                            <username>openmrs</username>
-                            <password>test</password>
-                            <verbose>true</verbose>
-                            <dropFirst>false</dropFirst>
-                            <systemProperties>
-                                <property>
-                                    <name>liquibase.databaseChangeLogTableName</name>
-                                    <value>liquibasechangelog</value>
-                                </property>
-                                <property>
-                                    <name>liquibase.databaseChangeLogLockTableName</name>
-                                    <value>liquibasechangeloglock</value>
-                                </property>
-                            </systemProperties>
-                        </configuration>
-                        <goals>
-                            <goal>update</goal>
-                        </goals>
-                    </execution>
-                    <execution>
-                        <id>empty-database-add-core-data</id>
-                        <phase>generate-resources</phase>
-                        <configuration>
-                            <driver>com.mysql.cj.jdbc.Driver</driver>
-                            <changeLogFile>liquibase-core-data.xml</changeLogFile>
-                            <url><![CDATA[jdbc:mysql://127.0.0.1:33326/openmrs?autoReconnect=true&useUnicode=true&characterEncoding=UTF-8]]></url>							<username>openmrs</username>
-                            <password>test</password>
-                            <verbose>true</verbose>
-                            <dropFirst>false</dropFirst>
-                            <systemProperties>
-                                <property>
-                                    <name>liquibase.databaseChangeLogTableName</name>
-                                    <value>liquibasechangelog</value>
-                                </property>
-                                <property>
-                                    <name>liquibase.databaseChangeLogLockTableName</name>
-                                    <value>liquibasechangeloglock</value>
-                                </property>
-                            </systemProperties>
-                        </configuration>
-                        <goals>
-                            <goal>update</goal>
-                        </goals>
-                    </execution>
-                    <execution>
-                        <id>empty-database-update-to-latest</id>
-                        <phase>generate-resources</phase>
-                        <configuration>
-                            <driver>com.mysql.cj.jdbc.Driver</driver>
-                            <changeLogFile>liquibase-update-to-latest.xml</changeLogFile>
-                            <url><![CDATA[jdbc:mysql://127.0.0.1:33326/openmrs?autoReconnect=true&useUnicode=true&characterEncoding=UTF-8]]></url>
-                            <username>openmrs</username>
-                            <password>test</password>
-                            <verbose>true</verbose>
-                            <dropFirst>false</dropFirst>
-                            <systemProperties>
-                                <property>
-                                    <name>liquibase.databaseChangeLogTableName</name>
-                                    <value>liquibasechangelog</value>
-                                </property>
-                                <property>
-                                    <name>liquibase.databaseChangeLogLockTableName</name>
-                                    <value>liquibasechangeloglock</value>
-                                </property>
-                            </systemProperties>
-                        </configuration>
-                        <goals>
-                            <goal>update</goal>
-                        </goals>
-                    </execution>
-                    <execution>
-                        <id>empty-database-add-standalone-data</id>
-                        <phase>generate-resources</phase>
-                        <configuration>
-                            <driver>com.mysql.cj.jdbc.Driver</driver>
-                            <changeLogFile>src/main/db/liquibase-standalone-data.xml</changeLogFile>
-                            <url><![CDATA[jdbc:mysql://127.0.0.1:33326/openmrs?autoReconnect=true&useUnicode=true&characterEncoding=UTF-8]]></url>
-                            <username>openmrs</username>
-                            <password>test</password>
-                            <verbose>true</verbose>
-                            <dropFirst>false</dropFirst>
-                            <systemProperties>
-                                <property>
-                                    <name>liquibase.databaseChangeLogTableName</name>
-                                    <value>liquibasechangelog</value>
-                                </property>
-                                <property>
-                                    <name>liquibase.databaseChangeLogLockTableName</name>
-                                    <value>liquibasechangeloglock</value>
-                                </property>
-                            </systemProperties>
-                        </configuration>
-                        <goals>
-                            <goal>update</goal>
-                        </goals>
-                    </execution>
-                </executions>
-            </plugin>
             <plugin>
                 <groupId>org.openmrs.maven.plugins</groupId>
                 <artifactId>openmrs-sdk-maven-plugin</artifactId>
@@ -171,32 +36,94 @@
                     </execution>
                 </executions>
             </plugin>
-            <!-- Exec: Empty Dump DB to SQL -->
+            <!-- Start Docker Compose and wait to copy checksums-->
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>
                 <artifactId>exec-maven-plugin</artifactId>
                 <executions>
                     <execution>
-                        <id>dump-empty-database</id>
-                        <phase>package</phase>
+                        <id>start-docker-and-wait</id>
+                        <phase>generate-resources</phase>
                         <goals>
-                            <goal>java</goal>
+                            <goal>exec</goal>
                         </goals>
                         <configuration>
-                            <mainClass>org.openmrs.standalone.DatabaseDumper</mainClass>
+                            <executable>bash</executable>
+                            <workingDirectory>${project.basedir}</workingDirectory>
                             <arguments>
-                                <argument>${project.build.directory}</argument>
-                                <argument>emptydatabase</argument>
-                                <argument>--port=33326</argument>
-                                <argument>--user=openmrs</argument>
-                                <argument>--password=test</argument>
-                                <argument>--skip-lock-tables</argument>
-                                <argument>--skip-extended-insert</argument>
-                                <argument>--ssl=0</argument>
-                                <argument>openmrs</argument>
-                                <argument>--result-file=${project.build.directory}/openmrs-empty-dump.sql</argument>
+                                <argument>scripts/start-docker-and-wait.sh</argument>
+                                <argument>${project.build.directory}/distro</argument>
                             </arguments>
-                            <classpathScope>compile</classpathScope>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-assembly-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>package-jar-with-dependencies</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>single</goal>
+                        </goals>
+                        <configuration>
+                            <finalName>openmrs-standalone</finalName>
+                            <appendAssemblyId>false</appendAssemblyId>
+                            <outputDirectory>${project.build.directory}</outputDirectory>
+                            <descriptorRefs>
+                                <descriptorRef>jar-with-dependencies</descriptorRef>
+                            </descriptorRefs>
+                            <archive>
+                                <manifest>
+                                    <mainClass>org.openmrs.standalone.Bootstrap</mainClass>
+                                </manifest>
+                            </archive>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>zip-demo-database</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>single</goal>
+                        </goals>
+                        <configuration>
+                            <finalName>demodatabase</finalName>
+                            <appendAssemblyId>false</appendAssemblyId>
+                            <attach>false</attach>
+                            <descriptors>
+                                <descriptor>src/main/assembly/zip-demo-database.xml</descriptor>
+                            </descriptors>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>zip-empty-database</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>single</goal>
+                        </goals>
+                        <configuration>
+                            <finalName>emptydatabase</finalName>
+                            <appendAssemblyId>false</appendAssemblyId>
+                            <attach>false</attach>
+                            <descriptors>
+                                <descriptor>src/main/assembly/zip-empty-database.xml</descriptor>
+                            </descriptors>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>zip-standalone</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>single</goal>
+                        </goals>
+                        <configuration>
+                            <finalName>referenceapplication-standalone-${refapp.version}</finalName>
+                            <appendAssemblyId>false</appendAssemblyId>
+                            <descriptors>
+                                <descriptor>src/main/assembly/zip-standalone.xml</descriptor>
+                            </descriptors>
                         </configuration>
                     </execution>
                 </executions>
@@ -215,15 +142,35 @@
                             <version>${openmrs.version}</version>
                             <type>jar</type>
                         </dependency>
-                        <dependency>
-                            <groupId>mysql</groupId>
-                            <artifactId>mysql-connector-java</artifactId>
-                            <version>8.0.30</version>
-                            <scope>compile</scope>
-                        </dependency>
                     </dependencies>
                 </plugin>
             </plugins>
         </pluginManagement>
     </build>
+
+    <profiles>
+        <profile>
+            <id>ci</id>
+            <activation>
+                <property>
+                    <name>env.CI</name>
+                    <value>true</value>
+                </property>
+            </activation>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.codehaus.mojo</groupId>
+                        <artifactId>exec-maven-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>start-docker-and-wait</id>
+                                <phase>none</phase>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
 </project>

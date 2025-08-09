@@ -37,6 +37,17 @@
 		<fileSet>
 			<directory>src/main/config</directory>
 			<outputDirectory>${project.build.finalName}</outputDirectory>
+			<includes>
+				<include>run-on-unix.sh</include>
+			</includes>
+			<fileMode>0755</fileMode>
+		</fileSet>
+		<fileSet>
+			<directory>src/main/config</directory>
+			<outputDirectory>${project.build.finalName}</outputDirectory>
+			<excludes>
+				<exclude>run-on-unix.sh</exclude>
+			</excludes>
 		</fileSet>
 		<fileSet>
 			<directory>${project.build.directory}/distro/web/openmrs_modules</directory>
@@ -49,6 +60,10 @@
 		<fileSet>
 			<directory>${project.build.directory}/distro/web/openmrs_config</directory>
 			<outputDirectory>${project.build.finalName}/appdata/configuration</outputDirectory>
+		</fileSet>
+		<fileSet>
+			<directory>${project.build.directory}/distro/web/openmrs_config_checksums</directory>
+			<outputDirectory>${project.build.finalName}/appdata/configuration_checksums</outputDirectory>
 		</fileSet>
 		<fileSet>
 			<directory>${project.build.directory}/distro/web/openmrs_spa</directory>

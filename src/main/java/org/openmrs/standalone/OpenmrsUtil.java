@@ -24,11 +24,14 @@ import java.io.InputStreamReader;
 import java.io.UnsupportedEncodingException;
 import java.io.Reader;
 import java.io.FileReader;
-import java.nio.file.Path;
-import java.nio.file.Paths;
+import java.io.OutputStream;
+import java.net.HttpURLConnection;
+import java.net.URL;
+import java.nio.charset.StandardCharsets;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.util.Properties;
+import java.util.Base64;
 
 public class OpenmrsUtil {
 	
@@ -245,16 +248,40 @@ public class OpenmrsUtil {
 		}
 	}
 
-	public static String findDumpExecutable(String baseDir, String dbDir) {
-		String os = System.getProperty("os.name").toLowerCase();
-		boolean isWindows = os.contains("win");
+	public static void rebuildEntireSearchIndex(String resourceUrl) {
+		final String SEARCH_INDEX_URL = resourceUrl + "/ws/rest/v1/searchindexupdate";
+		try {
+			URL url = new URL(SEARCH_INDEX_URL);
+			HttpURLConnection conn = (HttpURLConnection) url.openConnection();
 
-		Path mariadbDump = Paths.get(baseDir, dbDir, "bin", isWindows ? "mysqldump.exe" : "mariadb-dump");
+			// Basic Auth
+			String username = "admin";
+			String password = "Admin123";
+			String auth = username + ":" + password;
+			String encodedAuth = Base64.getEncoder().encodeToString(auth.getBytes(StandardCharsets.UTF_8));
+			String authHeader = "Basic " + encodedAuth;
 
-		if (mariadbDump.toFile().exists()) {
-			return mariadbDump.toString();
-		} else {
-			throw new RuntimeException("❌ Neither mariadb-dump nor mysqldump found in: " + mariadbDump.getParent());
+			conn.setRequestMethod("POST");
+			conn.setRequestProperty("Content-Type", "application/json");
+			conn.setRequestProperty("Authorization", authHeader);
+			conn.setDoOutput(true);
+
+			// Prepare the request body
+			String body = "{}";
+			try (OutputStream os = conn.getOutputStream()) {
+				byte[] input = body.getBytes("utf-8");
+				os.write(input, 0, input.length);
+			}
+
+			int responseCode = conn.getResponseCode();
+			if (responseCode == HttpURLConnection.HTTP_NO_CONTENT) {
+				System.out.println("✅ Search index rebuild triggered successfully on startup.");
+			} else {
+				System.err.println("❌ Failed to trigger rebuild. Status: " + responseCode);
+			}
+			conn.disconnect();
+		} catch (Exception e) {
+			e.printStackTrace();
 		}
 	}
 }

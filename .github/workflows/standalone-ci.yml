@@ -27,6 +27,14 @@ jobs:
           java-version: '21'
           distribution: 'temurin'
 
+      - name: Set up Docker Compose
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y docker-compose
+
+      - name: Verify Docker Compose installation
+        run: docker compose version
+
       - name: Run Maven Clean
         run: mvn clean --settings .github/maven-settings.xml
 
@@ -51,7 +59,7 @@ jobs:
         run: mvn clean --settings .github/maven-settings.xml
 
       - name: Run Maven Install
-        run: mvn install --settings .github/maven-settings.xml
+        run: mvn install -Pci --settings .github/maven-settings.xml
 
   build-macos:
     name: on macOS (Java 21)
@@ -70,4 +78,4 @@ jobs:
         run: mvn clean --settings .github/maven-settings.xml
 
       - name: Run Maven Install
-        run: mvn install --settings .github/maven-settings.xml
+        run: mvn install -Pci --settings .github/maven-settings.xml
