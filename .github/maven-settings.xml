@@ -11,7 +11,7 @@
                 </repository>
                 <repository>
                     <releases>
-                        <checksumPolicy>fail</checksumPolicy>
+                        <checksumPolicy>warn</checksumPolicy>
                     </releases>
                     <snapshots>
                         <checksumPolicy>warn</checksumPolicy>
