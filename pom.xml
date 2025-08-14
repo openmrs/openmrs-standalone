@@ -22,7 +22,7 @@
 
 		<tomcat.version>9.0.106</tomcat.version>
 		<openmrs.version>2.7.4</openmrs.version>
-		<refapp.version>3.4.0</refapp.version>
+		<refapp.version>3.6.0-SNAPSHOT</refapp.version>
 		<mariadb4jVersion>3.2.0</mariadb4jVersion>
 		<junitVersion>5.12.2</junitVersion>
 		<mockitoVersion>3.12.4</mockitoVersion>
