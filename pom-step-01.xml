@@ -19,18 +19,52 @@
     <build>
         <plugins>
             <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-antrun-plugin</artifactId>
+                <version>3.1.0</version>
+                <executions>
+                    <execution>
+                        <id>create-directories</id>
+                        <phase>generate-resources</phase>
+                        <goals>
+                            <goal>run</goal>
+                        </goals>
+                        <configuration>
+                            <target>
+                                <mkdir dir="${project.build.directory}/openmrs3x"/>
+                            </target>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
                 <groupId>org.openmrs.maven.plugins</groupId>
                 <artifactId>openmrs-sdk-maven-plugin</artifactId>
                 <version>6.5.0</version>
                 <executions>
                     <execution>
-                        <id>build-distro</id>
+                        <id>generate-distro</id>
                         <phase>generate-resources</phase>
+                        <goals>
+                            <goal>generate-distro</goal>
+                        </goals>
+                        <configuration>
+                            <outputLocation>${project.build.directory}/openmrs3x</outputLocation>
+                            <batchAnswers>
+                                <batchAnswer>Reference Application 3.x</batchAnswer>
+                                <batchAnswer>${refapp.version}</batchAnswer>
+                            </batchAnswers>
+                            <testMode>true</testMode>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>openmrs-sdk:build-distro</id>
                         <goals>
                             <goal>build-distro</goal>
                         </goals>
+                        <phase>generate-resources</phase>
                         <configuration>
-                            <distro>referenceapplication:${refapp.version}</distro>
+                            <distro>${project.build.directory}/openmrs3x/openmrs-distro.properties</distro>
                             <dir>${project.build.directory}/distro</dir>
                         </configuration>
                     </execution>
