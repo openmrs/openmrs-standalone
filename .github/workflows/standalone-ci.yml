@@ -35,6 +35,9 @@ jobs:
       - name: Verify Docker Compose installation
         run: docker compose version
 
+      - name: Pre-run OpenMRS SDK
+        run: mvn org.openmrs.maven.plugins:openmrs-sdk-maven-plugin:setup-sdk
+
       - name: Run Maven Clean
         run: mvn clean --settings .github/maven-settings.xml
 
@@ -55,6 +58,9 @@ jobs:
           java-version: '21'
           distribution: 'temurin'
 
+      - name: Pre-run OpenMRS SDK
+        run: mvn org.openmrs.maven.plugins:openmrs-sdk-maven-plugin:setup-sdk
+
       - name: Run Maven Clean
         run: mvn clean --settings .github/maven-settings.xml
 
@@ -73,6 +79,9 @@ jobs:
         with:
           java-version: '21'
           distribution: 'temurin'
+
+      - name: Pre-run OpenMRS SDK
+        run: mvn org.openmrs.maven.plugins:openmrs-sdk-maven-plugin:setup-sdk
 
       - name: Run Maven Clean
         run: mvn clean --settings .github/maven-settings.xml
