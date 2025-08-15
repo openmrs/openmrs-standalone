@@ -43,7 +43,7 @@
                 <version>6.5.0</version>
                 <executions>
                     <execution>
-                        <id>generate-distro</id>
+                        <id>openmrs-sdk:generate-distro</id>
                         <phase>generate-resources</phase>
                         <goals>
                             <goal>generate-distro</goal>
