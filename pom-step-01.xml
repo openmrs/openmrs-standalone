@@ -40,7 +40,7 @@
             <plugin>
                 <groupId>org.openmrs.maven.plugins</groupId>
                 <artifactId>openmrs-sdk-maven-plugin</artifactId>
-                <version>6.5.0</version>
+                <version>${openmrs.sdk.version}</version>
                 <executions>
                     <execution>
                         <id>openmrs-sdk:generate-distro</id>
@@ -177,6 +177,11 @@
                             <type>jar</type>
                         </dependency>
                     </dependencies>
+                </plugin>
+                <plugin>
+                    <groupId>org.openmrs.maven.plugins</groupId>
+                    <artifactId>openmrs-sdk-maven-plugin</artifactId>
+                    <version>${openmrs.sdk.version}</version>
                 </plugin>
             </plugins>
         </pluginManagement>
