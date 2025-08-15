@@ -36,7 +36,7 @@ jobs:
         run: docker compose version
 
       - name: Pre-run OpenMRS SDK
-        run: mvn org.openmrs.maven.plugins:openmrs-sdk-maven-plugin:6.5.0:setup-sdk -DinteractiveMode=false -DstatsEnabled=false --settings .github/maven-settings.xml
+        run: mvn org.openmrs.maven.plugins:openmrs-sdk-maven-plugin:6.5.0:setup-sdk -B --settings .github/maven-settings.xml
 
       - name: Run Maven Clean
         run: mvn clean --settings .github/maven-settings.xml
@@ -59,7 +59,7 @@ jobs:
           distribution: 'temurin'
 
       - name: Pre-run OpenMRS SDK
-        run: mvn org.openmrs.maven.plugins:openmrs-sdk-maven-plugin:6.5.0:setup-sdk -DinteractiveMode=false -DstatsEnabled=false --settings .github/maven-settings.xml
+        run: mvn org.openmrs.maven.plugins:openmrs-sdk-maven-plugin:6.5.0:setup-sdk -B --settings .github/maven-settings.xml
 
       - name: Run Maven Clean
         run: mvn clean --settings .github/maven-settings.xml
@@ -81,7 +81,7 @@ jobs:
           distribution: 'temurin'
 
       - name: Pre-run OpenMRS SDK
-        run: mvn org.openmrs.maven.plugins:openmrs-sdk-maven-plugin:6.5.0:setup-sdk -DinteractiveMode=false -DstatsEnabled=false --settings .github/maven-settings.xml
+        run: mvn org.openmrs.maven.plugins:openmrs-sdk-maven-plugin:6.5.0:setup-sdk -B --settings .github/maven-settings.xml
 
       - name: Run Maven Clean
         run: mvn clean --settings .github/maven-settings.xml
