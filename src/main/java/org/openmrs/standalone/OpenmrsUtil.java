@@ -13,7 +13,7 @@
  */
 package org.openmrs.standalone;
 
-import org.apache.ibatis.jdbc.ScriptRunner;
+import ch.vorburger.mariadb4j.DB;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -22,16 +22,19 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.UnsupportedEncodingException;
-import java.io.Reader;
-import java.io.FileReader;
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.util.Properties;
 import java.util.Base64;
+
+import static org.openmrs.standalone.MariaDbController.ROOT_USER;
+import static org.openmrs.standalone.MariaDbController.ROOT_PASSWORD;
+import static org.openmrs.standalone.MariaDbController.DATABASE_NAME;
 
 public class OpenmrsUtil {
 	
@@ -224,27 +227,42 @@ public class OpenmrsUtil {
 		return "OpenMRS " + REFAPP_VERSION + " Standalone";
 	}
 
-	public static void importSqlFile(File sqlFile, String jdbcUrl, String user, String password) {
+	/**
+	 * Imports an SQL file into the database.
+	 *
+	 * @param sqlFile   The SQL file to import
+	 */
+	public static void importSqlFile(File sqlFile) {
 		if (!sqlFile.exists()) {
-			System.err.println(":x: SQL file not found: " + sqlFile.getAbsolutePath());
+			System.err.println("❌ SQL file not found: " + sqlFile.getAbsolutePath());
 			return;
 		}
 
-		System.out.println("✅ Preparing to import "+sqlFile+" data");
-		try (Connection conn = DriverManager.getConnection(jdbcUrl, user, password)) {
+		System.out.println("✅ Preparing to import data from " + sqlFile);
 
+		// Using MariaDbController's DB instance
+		DB dbInstance = getDB();
+		if (dbInstance == null) {
+			throw new IllegalStateException("MariaDB has not been started. Call MariaDbController.startMariaDB() first.");
+		}
+
+		try (InputStream in = Files.newInputStream(sqlFile.toPath())) {
 			System.out.println("📥 Importing SQL from: " + sqlFile.getAbsolutePath());
-			try (Reader reader = new FileReader(sqlFile)) {
-				ScriptRunner scriptRunner = new ScriptRunner(conn);
-				scriptRunner.setLogWriter(null); // Disable logs
-				scriptRunner.setStopOnError(true);
-				scriptRunner.runScript(reader);
-				System.out.println("✅ Successfully imported SQL: " + sqlFile.getAbsolutePath());
-			}
-
+			dbInstance.source(in, ROOT_USER, ROOT_PASSWORD, DATABASE_NAME);
+			System.out.println("✅ Successfully imported SQL: " + sqlFile.getAbsolutePath());
 		} catch (Exception e) {
 			System.err.println("❌ Error importing SQL: " + e.getMessage());
 			e.printStackTrace();
+		}
+	}
+
+	private static DB getDB() {
+		try {
+			java.lang.reflect.Field f = MariaDbController.class.getDeclaredField("mariaDB");
+			f.setAccessible(true);
+			return (DB) f.get(null);
+		} catch (Exception e) {
+			return null;
 		}
 	}
 

@@ -29,8 +29,8 @@ public class MariaDbController {
     public static final String DATABASE_NAME = "openmrs";
     private static final String MARIA_DB_BASE_DIR = "database";
     private static final String MARIA_DB_DATA_DIR = Paths.get(MARIA_DB_BASE_DIR, "data").toString();
-    private static final String ROOT_USER = "root";
-    private static final String ROOT_PASSWORD = "";
+    public static final String ROOT_USER = "root";
+    public static final String ROOT_PASSWORD = "";
 
     private static DB mariaDB;
     private static DBConfigurationBuilder mariaDBConfig;

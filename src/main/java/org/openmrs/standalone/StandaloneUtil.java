@@ -439,7 +439,6 @@ public class StandaloneUtil {
 		Properties props = OpenmrsUtil.getRuntimeProperties(getContextName());
 		String url = props.getProperty("connection.url");
 		String password = props.getProperty("connection.password");
-		String username = props.getProperty("connection.username");
 
 		System.out.println("Starting MariaDB on port " + mariaDBPort + "...");
 		MariaDbController.startMariaDB(mariaDBPort, password);
@@ -462,7 +461,7 @@ public class StandaloneUtil {
 					if (sqlFiles != null && sqlFiles.length != 0) {
 						// Run the first found SQL file
 						File sqlFile = sqlFiles[0];
-						importSqlFile(sqlFile, url, username, password);
+						importSqlFile(sqlFile);
 					}
 				}
 
@@ -475,7 +474,6 @@ public class StandaloneUtil {
 			MariaDbController.stopMariaDB();
 		}
 	}
-	
 	
 	/**
 	 * Sets the MySQL and Tomcat ports in the run time properties file.

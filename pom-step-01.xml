@@ -57,12 +57,43 @@
                             <testMode>true</testMode>
                         </configuration>
                     </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-antrun-plugin</artifactId>
+                <version>3.1.0</version>
+                <executions>
+                    <execution>
+                        <id>update-stockmanagement</id>
+                        <phase>process-resources</phase>
+                        <configuration>
+                            <target>
+                                <replaceregexp file="${project.build.directory}/openmrs3x/openmrs-distro.properties"
+                                               match="omod.stockmanagement=.*"
+                                               replace="omod.stockmanagement=${omod.stockmanagement}"/>
+                                <replaceregexp file="${project.build.directory}/openmrs3x/openmrs-distro.properties"
+                                               match="war.openmrs=.*"
+                                               replace="war.openmrs=${openmrs.version}"/>
+                            </target>
+                        </configuration>
+                        <goals>
+                            <goal>run</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.openmrs.maven.plugins</groupId>
+                <artifactId>openmrs-sdk-maven-plugin</artifactId>
+                <version>${openmrs.sdk.version}</version>
+                <executions>
                     <execution>
                         <id>openmrs-sdk:build-distro</id>
                         <goals>
                             <goal>build-distro</goal>
                         </goals>
-                        <phase>generate-resources</phase>
+                        <phase>process-resources</phase>
                         <configuration>
                             <distro>${project.build.directory}/openmrs3x/openmrs-distro.properties</distro>
                             <dir>${project.build.directory}/distro</dir>
@@ -77,7 +108,7 @@
                 <executions>
                     <execution>
                         <id>start-docker-and-wait</id>
-                        <phase>generate-resources</phase>
+                        <phase>process-resources</phase>
                         <goals>
                             <goal>exec</goal>
                         </goals>
