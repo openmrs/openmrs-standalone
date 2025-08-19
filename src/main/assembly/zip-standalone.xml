@@ -9,7 +9,7 @@
 	</formats>
 	<files>
 		<file>
-			<source>${project.build.directory}/openmrs.war</source>
+			<source>${project.build.directory}/distro/web/openmrs_core/openmrs.war</source>
 			<outputDirectory>${project.build.finalName}/tomcat/webapps</outputDirectory>
 			<destName>openmrs.war</destName>
 		</file>

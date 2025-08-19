@@ -16,43 +16,8 @@
         <relativePath>pom.xml</relativePath>
     </parent>
 
-    <dependencies>
-        <dependency>
-            <groupId>org.openmrs.distro</groupId>
-            <artifactId>platform</artifactId>
-            <version>${openmrs.version}</version>
-            <type>war</type>
-            <scope>provided</scope>
-        </dependency>
-    </dependencies>
-
     <build>
         <plugins>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-dependency-plugin</artifactId>
-                <executions>
-                    <execution>
-                        <id>fetch-war</id>
-                        <phase>generate-resources</phase>
-                        <goals>
-                            <goal>copy</goal>
-                        </goals>
-                        <configuration>
-                            <artifactItems>
-                                <artifactItem>
-                                    <groupId>org.openmrs.distro</groupId>
-                                    <artifactId>platform</artifactId>
-                                    <version>${openmrs.version}</version>
-                                    <type>war</type>
-                                    <destFileName>openmrs.war</destFileName>
-                                    <outputDirectory>${project.build.directory}</outputDirectory>
-                                </artifactItem>
-                            </artifactItems>
-                        </configuration>
-                    </execution>
-                </executions>
-            </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-antrun-plugin</artifactId>
@@ -106,7 +71,10 @@
                             <target>
                                 <replaceregexp file="${project.build.directory}/openmrs3x/openmrs-distro.properties"
                                                match="omod.stockmanagement=.*"
-                                               replace="omod.stockmanagement=2.0.4-core-2.8-SNAPSHOT"/>
+                                               replace="omod.stockmanagement=${omod.stockmanagement}"/>
+                                <replaceregexp file="${project.build.directory}/openmrs3x/openmrs-distro.properties"
+                                               match="war.openmrs=.*"
+                                               replace="war.openmrs=${openmrs.version}"/>
                             </target>
                         </configuration>
                         <goals>
