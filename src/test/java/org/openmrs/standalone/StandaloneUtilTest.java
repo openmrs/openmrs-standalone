@@ -37,7 +37,7 @@ class StandaloneUtilTest {
 
     private static final String USERNAME = "openmrs";
     private static final String MARIADB_PORT = "33126";
-    private static final String DEFAULT_URL = "jdbc:mysql://127.0.0.1:" + MARIADB_PORT + "/" + MariaDbController.DATABASE_NAME;
+    private static final String DEFAULT_URL = "jdbc:mariadb://127.0.0.1:" + MARIADB_PORT + "/" + MariaDbController.DATABASE_NAME;
 
     private static final String MARIADB_BASEDIR_NAME = "mariadb-base-dir";
     private static final String DATA_DIR_NAME = "data";

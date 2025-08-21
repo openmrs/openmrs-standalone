@@ -101,6 +101,12 @@
 			<artifactId>mybatis</artifactId>
 			<version>3.5.19</version>
 		</dependency>
+		<dependency>
+			<groupId>org.mariadb.jdbc</groupId>
+			<artifactId>mariadb-java-client</artifactId>
+			<version>3.5.4</version>
+			<scope>compile</scope>
+		</dependency>
 	</dependencies>
 
 	<build>
