@@ -418,7 +418,7 @@ public class MainFrame extends javax.swing.JFrame implements ActionListener, Use
 	 * @see org.openmrs.standalone.UserInterface#showInitialConfig()
 	 */
 	public void showInitialConfig() {
-		final JDialog configDialog = new JDialog(this, "Configure your OpenMRS " + OpenmrsUtil.REFAPP_VERSION + " Installation", true);
+		final JDialog configDialog = new JDialog(this, "Configure your O3 RefApp v" + OpenmrsUtil.REFAPP_VERSION + " Installation", true);
 		JPanel content = new JPanel();
 		content.setBorder(BorderFactory.createEmptyBorder(15, 15, 15, 15));
 		content.setLayout(new BorderLayout(10, 10)); //10,10 = hgap, vgap
@@ -427,15 +427,20 @@ public class MainFrame extends javax.swing.JFrame implements ActionListener, Use
 		Font font = new Font(Font.SERIF, Font.PLAIN, 16);
 		
 		final JButton useCurrent = new JButton("Do Not Modify the Database");
-		
+
 		final JButton demoDatabase = new JButton(
-		        "<html><h3>Demonstration mode</h3>Configures OpenMRS with a demonstration database. This is the quickest way to start up OpenMRS with some sample data to evaluate the system or experiment with features</html>",
-		        new ImageIcon(getClass().getResource("demonstration_mode.png")));
+				"<html><h3>Demonstration mode</h3>Configures the application with a demonstration database. "
+						+ "This is the quickest way to start with sample data to evaluate the system or experiment with features.</html>",
+				new ImageIcon(getClass().getResource("demonstration_mode.png"))
+		);
+
 		colorHelper(demoDatabase, new Color(136, 235, 148));
-		
+
 		final JButton emptyDatabase = new JButton(
-		        "<html><h3>Starter Implementation</h3>Configures OpenMRS without any patient data. If you are familiar with OpenMRS and want to start a new system, this is a good place to start.</html>",
-		        new ImageIcon(getClass().getResource("starter_impl.png")));
+				"<html><h3>Starter Implementation</h3>Configures the application without any patient data. "
+						+ "If you are familiar with the system and want to start a new setup, this is a good place to begin.</html>",
+				new ImageIcon(getClass().getResource("starter_impl.png"))
+		);
 		colorHelper(emptyDatabase, new Color(255, 243, 136));
 		
 		ActionListener listener = new ActionListener() {
@@ -466,7 +471,7 @@ public class MainFrame extends javax.swing.JFrame implements ActionListener, Use
 		}
 		
 		JLabel instructions = new JLabel(
-		        "<html><b>Welcome to OpenMRS " + OpenmrsUtil.REFAPP_VERSION + "! OpenMRS can be configured in one of " + buttonList.size() + " ways, depending on your needs. Please click on the configuration that best meets your needs.</b><br/>(You will not see this next time you run OpenMRS)</html>");
+		        "<html><b>Welcome! O3 RefApp can be configured in one of " + buttonList.size() + " ways, depending on your needs. Please click on the configuration that best meets your needs.</b><br/>(You will not see this next time you run OpenMRS)</html>");
 		instructions.setFont(font);
 		
 		JButton exitButton = new JButton("Exit");

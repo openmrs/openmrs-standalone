@@ -116,7 +116,7 @@ NOTE: Without this folder structure, you will get errors while trying to run the
 
 ## DATABASE CONNECTION STRING
 
-	jdbc:mysql://127.0.0.1:3316/openmrs?autoReconnect=true&useUnicode=true&characterEncoding=UTF-8&zeroDateTimeBehavior=convertToNull
+	jdbc:mariadb://127.0.0.1:3316/openmrs?autoReconnect=true&useUnicode=true&characterEncoding=UTF-8&zeroDateTimeBehavior=convertToNull
 
 The above default database connection string has all in the openmrs mysql default database connection and is used for the MariaDB connection.
 
