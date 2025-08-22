@@ -418,7 +418,7 @@ public class MainFrame extends javax.swing.JFrame implements ActionListener, Use
 	 * @see org.openmrs.standalone.UserInterface#showInitialConfig()
 	 */
 	public void showInitialConfig() {
-		final JDialog configDialog = new JDialog(this, "Configure your OpenMRS " + OpenmrsUtil.REFAPP_VERSION + " Installation", true);
+		final JDialog configDialog = new JDialog(this, "Configure your O3 RefApp v" + OpenmrsUtil.REFAPP_VERSION + " Installation", true);
 		JPanel content = new JPanel();
 		content.setBorder(BorderFactory.createEmptyBorder(15, 15, 15, 15));
 		content.setLayout(new BorderLayout(10, 10)); //10,10 = hgap, vgap
@@ -466,7 +466,7 @@ public class MainFrame extends javax.swing.JFrame implements ActionListener, Use
 		}
 		
 		JLabel instructions = new JLabel(
-		        "<html><b>Welcome to OpenMRS " + OpenmrsUtil.REFAPP_VERSION + "! OpenMRS can be configured in one of " + buttonList.size() + " ways, depending on your needs. Please click on the configuration that best meets your needs.</b><br/>(You will not see this next time you run OpenMRS)</html>");
+		        "<html><b>Welcome to O3 RefApp v" + OpenmrsUtil.REFAPP_VERSION + "! O3 RefApp can be configured in one of " + buttonList.size() + " ways, depending on your needs. Please click on the configuration that best meets your needs.</b><br/>(You will not see this next time you run OpenMRS)</html>");
 		instructions.setFont(font);
 		
 		JButton exitButton = new JButton("Exit");

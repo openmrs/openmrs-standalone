@@ -224,7 +224,7 @@ public class OpenmrsUtil {
 	}
 	
 	public static String getTitle() {
-		return "OpenMRS " + REFAPP_VERSION + " Standalone";
+		return "O3 RefApp v" +REFAPP_VERSION + " Standalone";
 	}
 
 	/**
