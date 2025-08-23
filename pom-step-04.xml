@@ -86,7 +86,7 @@
 							<classpathScope>runtime</classpathScope>
 							<arguments>
 								<argument>${project.basedir}/large-demo-data-2-7-0.sql</argument>
-								<argument>jdbc:mysql://localhost:33328/openmrs</argument>
+								<argument>jdbc:mariadb://localhost:33328/openmrs</argument>
 								<argument>openmrs</argument>
 								<argument>test</argument>
 							</arguments>

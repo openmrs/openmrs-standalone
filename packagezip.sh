@@ -28,7 +28,7 @@ cp ../target/openmrs.war tomcat/webapps/openmrs.war
 echo "application_data_directory=appdata" >> openmrs-runtime.properties
 echo "reset_connection_password=true" >> openmrs-runtime.properties
 echo "tomcatport=8081" >> openmrs-runtime.properties
-echo "connection.url=jdbc:mysql://localhost:3316/openmrs?" >> openmrs-runtime.properties
+echo "connection.url=jdbc:mariadb://localhost:3316/openmrs?" >> openmrs-runtime.properties
 echo "connection.username=openmrs" >> openmrs-runtime.properties
 echo "connection.password=Admin123" >> openmrs-runtime.properties
 

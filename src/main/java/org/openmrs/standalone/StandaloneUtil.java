@@ -147,7 +147,7 @@ public class StandaloneUtil {
 
 				String portToken = ":" + mariaDBPort + "/";
 
-				//in a string like this: jdbc:mysql://localhost:3316/openmrs?autoReconnect=true
+				//in a string like this: jdbc:mariadb://localhost:3316/openmrs?autoReconnect=true
 				//look for something like this :3316/
 				String regex = ":[0-9]+/";
 				Pattern pattern = Pattern.compile(regex);
@@ -316,7 +316,7 @@ public class StandaloneUtil {
 
 	private static boolean setMysqlPassword(String url, String mysqlPort, String username, String newPassword) throws Exception {
 		try {
-			Class.forName("com.mysql.cj.jdbc.Driver").newInstance();
+			Class.forName("org.mariadb.jdbc.Driver").newInstance();
 
 			MariaDbController.startMariaDB(mysqlPort, properties.getProperty("connection.password", ""));
 
@@ -418,7 +418,7 @@ public class StandaloneUtil {
 	 */
 	public static void startupDatabaseToCreateDefaultUser(String mariaDBPort) throws Exception {
 		try {
-			Class.forName("com.mysql.cj.jdbc.Driver");
+			Class.forName("org.mariadb.jdbc.Driver");
 		} catch (ClassNotFoundException ex) {
 			throw new RuntimeException("Cannot find MySQL driver class", ex);
 		}
@@ -482,7 +482,7 @@ public class StandaloneUtil {
 			String connectionString = properties.getProperty(KEY_CONNECTION_URL);
 			String portToken = ":" + mariaDBPort + "/";
 
-			//in a string like this: jdbc:mysql://localhost:3316/openmrs?autoReconnect=true
+			//in a string like this: jdbc:mariadb://localhost:3316/openmrs?autoReconnect=true
 			//look for something like this :3316/
 			String regex = ":[0-9]+/";
 			Pattern pattern = Pattern.compile(regex);

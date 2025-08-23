@@ -78,7 +78,7 @@ public class MariaDbController {
             mariaDB = ReusableDB.openEmbeddedDB(mariaDBConfig.build());
             mariaDB.start();
 
-            Connection conn = DriverManager.getConnection("jdbc:mysql://localhost:" + port + "/", ROOT_USER, ROOT_PASSWORD);
+            Connection conn = DriverManager.getConnection("jdbc:mariadb://localhost:" + port + "/", ROOT_USER, ROOT_PASSWORD);
             try (Statement stmt = conn.createStatement()) {
                 stmt.execute("ALTER USER 'root'@'localhost' IDENTIFIED BY '" + ROOT_PASSWORD + "';");
                 stmt.execute("GRANT ALL PRIVILEGES ON *.* TO 'root'@'localhost' WITH GRANT OPTION;");
@@ -98,7 +98,7 @@ public class MariaDbController {
         mariaDB.createDB(DATABASE_NAME, ROOT_USER, ROOT_PASSWORD);
 
         // ✅ Create openmrs user and grant permissions
-        try (Connection connection = DriverManager.getConnection("jdbc:mysql://localhost:" + port + "/", ROOT_USER, ROOT_PASSWORD)) {
+        try (Connection connection = DriverManager.getConnection("jdbc:mariadb://localhost:" + port + "/", ROOT_USER, ROOT_PASSWORD)) {
             try (Statement stmt = connection.createStatement()) {
                 // Create user if not exists
                 String createUserSQL = "CREATE USER IF NOT EXISTS 'openmrs'@'localhost' IDENTIFIED BY '" + userPassword + "';";
