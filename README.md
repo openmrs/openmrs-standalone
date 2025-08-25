@@ -11,6 +11,49 @@
 -> output is in the target folder, as referenceapplkication-standalone-(refapp.version).zip
 -> the contents of that zip are in the similarly-named folder under /target, if you want to test in-place
 
+### Building with OpenMRS Core Snapshots
+
+The **Reference Application Standalone 2.x** depends on **OpenMRS Core 2.8.x-SNAPSHOT** artifacts.
+Since **snapshot artifacts are not published** to Maven Central or the OpenMRS public Maven repository, they must be **built and installed locally** before compiling the Standalone.
+
+#### Local builds
+
+If you are building locally, you need to install OpenMRS Core 2.8.x into your Maven cache first:
+
+```bash
+git clone https://github.com/openmrs/openmrs-core.git
+cd openmrs-core
+git checkout 2.8.x
+mvn clean install -DskipTests
+```
+
+This makes the required `2.8.x-SNAPSHOT` artifacts available in your local `~/.m2/repository`.
+
+#### CI builds
+
+On CI (e.g., GitHub Actions), we explicitly build and install `openmrs-core` so that snapshot dependencies are resolved during the Standalone build:
+
+```yaml
+- name: Checkout openmrs-core
+  uses: actions/checkout@v4
+  with:
+    repository: openmrs/openmrs-core
+    ref: 2.8.x
+    path: openmrs-core
+
+- name: Build and install openmrs-core
+  run: |
+    cd openmrs-core
+    mvn clean install -DskipTests
+```
+
+👉 This step ensures **snapshot versions are available during CI pipelines**, preventing build failures caused by missing `2.8.x-SNAPSHOT` artifacts.
+
+#### Future updates
+
+If the Standalone project upgrades to depend on a different OpenMRS Core branch (e.g., `3.0.x`), the CI workflow will need to be updated to build and install that matching snapshot version (e.g., `ref: 3.0.x`)..
+
+
 ## HOW TO RUN FROM ECLIPSE
 
 - Copy your war file into the "tomcat/webapps" folder. Where the tomcat folder is at the root of the project.
