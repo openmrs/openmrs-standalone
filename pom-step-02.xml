@@ -186,13 +186,14 @@
                 <executions>
                     <execution>
                         <id>package-jar-with-dependencies</id>
-                        <phase>prepare-package</phase>
+                        <phase>package</phase>
                         <goals>
                             <goal>single</goal>
                         </goals>
                         <configuration>
                             <finalName>openmrs-standalone</finalName>
                             <appendAssemblyId>false</appendAssemblyId>
+                            <attach>true</attach> 
                             <outputDirectory>${project.build.directory}</outputDirectory>
                             <descriptorRefs>
                                 <descriptorRef>jar-with-dependencies</descriptorRef>
