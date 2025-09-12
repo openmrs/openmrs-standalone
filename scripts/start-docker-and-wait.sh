@@ -45,7 +45,7 @@ else
 fi
 
 # Import pre-populated database dump
-DB_DUMP="$PROJECT_DIR/src/main/db/demo-db-3.6.0-SNAPSHOT.sql"
+DB_DUMP=$(ls "$PROJECT_DIR/src/main/db/demo-db-"*.sql 2>/dev/null | head -n 1)
 if [ -f "$DB_DUMP" ]; then
   echo "📦 Importing pre-populated database dump into SDK MySQL container..."
   MYSQL_CONTAINER=$(docker ps --filter "name=openmrs-sdk-mysql" -q | head -n 1)
