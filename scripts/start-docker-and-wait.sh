@@ -13,6 +13,22 @@ if [ -z "$JAVA_HOME" ]; then
   exit 1
 fi
 
+# function to find a free port between 8000 and 9000
+find_free_port() {
+  for port in $(seq 8000 9000); do
+    if ! lsof -i :"$port" >/dev/null 2>&1; then
+      echo "$port"
+      return
+    fi
+  done
+  echo "❌ No free port found in range 8000-9000" >&2
+  exit 1
+}
+
+# Pick a free port for Tomcat
+TOMCAT_PORT=$(find_free_port)
+echo "Using Tomcat port: $TOMCAT_PORT"
+
 # Delete old server if it exists
 mvn openmrs-sdk:delete -DserverId="$SERVER_ID" -B || true
 
@@ -24,7 +40,7 @@ mvn openmrs-sdk:setup \
   -DserverId="$SERVER_ID" \
   -Ddistro="$DISTRO_DIR/web/openmrs-distro.properties" \
   -DjavaHome="$JAVA_HOME" \
-  -DbatchAnswers="8080,1044,MySQL 8.4.1 and above in SDK docker container (requires pre-installed Docker),yes" \
+  -DbatchAnswers="$TOMCAT_PORT,1044,MySQL 8.4.1 and above in SDK docker container (requires pre-installed Docker),yes" \
   -B
 
 # Copy pre-created runtime properties
@@ -36,7 +52,7 @@ connection.url=jdbc:mariadb://127.0.0.1:3308/openmrs-example?autoReconnect=true&
 connection.username=root
 connection.password=Admin123
 auto_update_database=false
-tomcatport=8080
+tomcatport=$TOMCAT_PORT
 EOF
 
 echo "✅ Generated openmrs-runtime.properties at $SERVER_DIR"
@@ -75,9 +91,9 @@ TIMEOUT=180
 
 while true; do
   if command -v curl &> /dev/null; then
-    curl -sf http://localhost:8080/openmrs && break
+    curl -sf http://localhost:$TOMCAT_PORT/openmrs && break
   elif command -v wget &> /dev/null; then
-    wget -q --spider http://localhost:8080/openmrs && break
+    wget -q --spider http://localhost:$TOMCAT_PORT/openmrs && break
   else
     echo "❌ Neither curl nor wget found! Please install one of them." >&2
     exit 1
@@ -107,14 +123,6 @@ else
   echo "⚠️ Checksums directory not found yet. It may be created later by the SDK."
 fi
 
-# Stop any existing server using 8080
-echo "🔍 Checking if port 8080 is in use..."
-PID=$(lsof -ti:8080 || true)
-if [ -n "$PID" ]; then
-  echo "⚠️ Port 8080 is in use by PID $PID. Stopping it..."
-  kill -9 $PID
-  echo "✅ Freed up port 8080."
-fi
 # echo "🧹 Stopping and deleting OpenMRS server..."
 mvn openmrs-sdk:delete -DserverId="$SERVER_ID" -B
 rm -rf $SERVER_DIR
