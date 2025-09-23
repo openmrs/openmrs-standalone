@@ -30,10 +30,12 @@ TOMCAT_PORT=$(find_free_port)
 echo "Using Tomcat port: $TOMCAT_PORT"
 
 # Delete old server if it exists
+echo "🧹 Cleaning old server..."
 mvn openmrs-sdk:delete -DserverId="$SERVER_ID" -B || true
+rm -rf "$HOME/openmrs/$SERVER_ID"
+echo "✅ Old server cleaned."
 
 echo "🚀 Starting OpenMRS using the SDK from $DISTRO_DIR..."
-
 
 # Run SDK setup (automated, Docker-based MySQL if Docker available)
 mvn openmrs-sdk:setup \
@@ -43,12 +45,30 @@ mvn openmrs-sdk:setup \
   -DbatchAnswers="$TOMCAT_PORT,1044,MySQL 8.4.1 and above in SDK docker container (requires pre-installed Docker),yes" \
   -B
 
+# Detect MySQL connection target
+detect_mysql_connection() {
+  # Check if MySQL container is running with a published port
+  MYSQL_CONTAINER=$(docker ps --filter "name=openmrs-sdk-mysql" -q | head -n 1)
+
+  if [ -n "$MYSQL_CONTAINER" ] && nc -z 127.0.0.1 3308 >/dev/null 2>&1; then
+    # Use host-mapped port
+    echo "jdbc:mariadb://127.0.0.1:3308/openmrs-example?autoReconnect=true&useUnicode=true&characterEncoding=UTF-8&zeroDateTimeBehavior=convertToNull"
+  elif nc -z 127.0.0.1 3306 >/dev/null 2>&1; then
+    # Maybe local MySQL running on 3306
+    echo "jdbc:mariadb://127.0.0.1:3306/openmrs-example?autoReconnect=true&useUnicode=true&characterEncoding=UTF-8&zeroDateTimeBehavior=convertToNull"
+  else
+    echo "❌ No MySQL instance detected on host or Docker. Please start one." >&2
+    exit 1
+  fi
+}
+
 # Copy pre-created runtime properties
 SERVER_DIR="$HOME/openmrs/$SERVER_ID"
 if [ -f "$PROJECT_DIR/src/main/config/openmrs-runtime.properties" ]; then
+  DB_URL=$(detect_mysql_connection)
   # Generate runtime properties
 cat > "$SERVER_DIR/openmrs-runtime.properties" <<EOF
-connection.url=jdbc:mariadb://127.0.0.1:3308/openmrs-example?autoReconnect=true&useUnicode=true&characterEncoding=UTF-8&zeroDateTimeBehavior=convertToNull
+connection.url=$DB_URL
 connection.username=root
 connection.password=Admin123
 auto_update_database=false
