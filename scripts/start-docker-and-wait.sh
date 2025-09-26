@@ -13,6 +13,9 @@ if [ -z "$JAVA_HOME" ]; then
   exit 1
 fi
 
+# Candidate ports to try
+PORTS=(1044 1045 1046 1047 1048 1049 1050)
+
 # function to find a free port between 8000 and 9000
 find_free_port() {
   for port in $(seq 8000 9000); do
@@ -95,9 +98,24 @@ else
   echo "⚠️ No pre-populated database dump found at $DB_DUMP. SDK will create empty DB."
 fi
 
+
+# Function to check if debug port is free
+is_port_free() {
+  ! lsof -i :$1 >/dev/null 2>&1
+}
+
+# Pick first free port
+for p in "${PORTS[@]}"; do
+  if is_port_free "$p"; then
+    DEBUG_PORT=$p
+    break
+  fi
+done
+
+echo "Using debug port: $DEBUG_PORT"
 # Start the server in the background
 echo "▶️ Starting OpenMRS server..."
-mvn openmrs-sdk:run -DserverId="$SERVER_ID" \
+mvn openmrs-sdk:run -Ddebug="$DEBUG_PORT" -DserverId="$SERVER_ID" \
   -DjvmArgs='--add-opens java.base/java.lang=ALL-UNNAMED --add-opens java.base/java.util=ALL-UNNAMED' -B \
   > "$SERVER_DIR/openmrs.log" 2>&1 &
 
