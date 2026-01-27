@@ -16,22 +16,29 @@
 		<relativePath>pom.xml</relativePath>
 	</parent>
 
-	<dependencies>
-		<dependency>
-			<groupId>org.openmrs.api</groupId>
-			<artifactId>openmrs-api</artifactId>
-			<version>${openmrs.version}</version>
-			<type>jar</type>
-			<scope>provided</scope>
-		</dependency>
-		<dependency>
-			<groupId>org.openmrs.distro</groupId>
-			<artifactId>platform</artifactId>
-			<version>${openmrs.version}</version>
-			<type>war</type>
-			<scope>provided</scope>
-		</dependency>
-	</dependencies>
+    <dependencies>
+
+        <dependency>
+            <groupId>ch.vorburger.mariaDB4j</groupId>
+            <artifactId>mariaDB4j</artifactId>
+            <version>${mariadb4jVersion}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.openmrs.api</groupId>
+            <artifactId>openmrs-api</artifactId>
+            <version>${openmrs.version}</version>
+            <type>jar</type>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.openmrs.distro</groupId>
+            <artifactId>platform</artifactId>
+            <version>${openmrs.version}</version>
+            <type>war</type>
+            <scope>provided</scope>
+        </dependency>
+    </dependencies>
 
 	<build>
 		<plugins>
