@@ -259,25 +259,28 @@ SUMMARY: Using a single package for all (most) platforms approximately tripples 
 MariaDB4j documentation can be found at:
 https://github.com/MariaDB4j/MariaDB4j
 
-## 🛠️ Reusable Embedded MariaDB (ReusableDB.java)
+## 🛠️ Database Initialization Logic (MariaDB4j 3.3.1)
 
-To improve startup robustness and cross-platform compatibility, especially on Windows, the OpenMRS Standalone project uses a custom wrapper around the `DB` class from MariaDB4j called `ReusableDB`.
+To improve startup robustness and cross-platform compatibility, especially on Windows, the OpenMRS Standalone project utilizes the native folder-reuse capabilities of **MariaDB4j 3.3.1**. This replaces the legacy custom `ReusableDB` wrapper.
 
 #### 🔍 Purpose
-
-`ReusableDB` avoids deleting the `dataDir` when the database is already initialized. This:
-- Prevents startup failures due to locked files on Windows.
-- Supports seamless restarts of the Standalone without losing data.
-- Makes switching between demo and empty databases more reliable.
+By leveraging modern MariaDB4j internal logic, the Standalone ensures:
+- **Data Persistence:** Existing data in the `dataDir` is automatically detected and preserved.
+- **Windows Robustness:** Avoids common file-locking issues on Windows by checking for existing data before attempting a fresh installation.
+- **Simplified Maintenance:** Leverages standard library calls instead of custom internal workarounds.
 
 #### ✅ How it Works
-- Checks for the presence of the `openmrs` database directory inside `dataDir`.
-- If not found, triggers the initial MariaDB install process.
-- Otherwise, starts MariaDB using the existing configuration and data files.
+The `MariaDbController` now utilizes the improved `newEmbeddedDB` factory method:
+1. **Internal Check:** The library internally checks if the database directory already exists and contains data.
+2. **Smart Initialization:** * If the folder is **empty**, it proceeds with a fresh installation and schema setup.
+    * If data is **present**, it skips the installation phase and safely opens the existing database.
 
-#### 📦 Usage Example
+#### 📦 Usage Example (Standard API)
 
 ```java
-DBConfigurationBuilder config = DBConfigurationBuilder.newBuilder();
-config.setPort(3316);
-ReusableDB db = ReusableDB.openEmbeddedDB(config.build());
+// Configuration handles pathing
+DBConfiguration config = mariaDBConfig.build();
+
+// Logic handles reuse internally in 3.3.1+
+mariaDB = DB.newEmbeddedDB(config);
+mariaDB.start();

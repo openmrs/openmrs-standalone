@@ -22,6 +22,7 @@ import java.util.Properties;
 
 import ch.vorburger.exec.ManagedProcessException;
 import ch.vorburger.mariadb4j.DB;
+import ch.vorburger.mariadb4j.DBConfiguration;
 import ch.vorburger.mariadb4j.DBConfigurationBuilder;
 
 public class MariaDbController {
@@ -73,23 +74,19 @@ public class MariaDbController {
         mariaDBConfig.addArg("--collation-server=utf8_general_ci");
         mariaDBConfig.addArg("--character-set-server=utf8");
 
-        if(isWindows){
-            // For Windows, we use the ReusableDB class
-            mariaDB = ReusableDB.openEmbeddedDB(mariaDBConfig.build());
-            mariaDB.start();
+        DBConfiguration config = mariaDBConfig.build();
+        mariaDB = DB.newEmbeddedDB(config);
+        mariaDB.start();
 
-            Connection conn = DriverManager.getConnection("jdbc:mariadb://localhost:" + port + "/", ROOT_USER, ROOT_PASSWORD);
-            try (Statement stmt = conn.createStatement()) {
+        if (isWindows) {
+            // Windows-specific setup using JDBC try-with-resources
+            try (Connection conn = DriverManager.getConnection("jdbc:mariadb://localhost:" + port + "/", ROOT_USER, ROOT_PASSWORD);
+                 Statement stmt = conn.createStatement()) {
                 stmt.execute("ALTER USER 'root'@'localhost' IDENTIFIED BY '" + ROOT_PASSWORD + "';");
                 stmt.execute("GRANT ALL PRIVILEGES ON *.* TO 'root'@'localhost' WITH GRANT OPTION;");
             }
-
         } else {
-            // For Linux and macOS, we use the standard DB class
-            mariaDB = DB.newEmbeddedDB(mariaDBConfig.build());
-            mariaDB.start();
-
-            // Ensure root user exists and has correct password and privileges
+            // Linux and macOS-specific setup
             mariaDB.run("ALTER USER 'root'@'localhost' IDENTIFIED BY '" + ROOT_PASSWORD + "';");
             mariaDB.run("GRANT ALL PRIVILEGES ON *.* TO 'root'@'localhost' WITH GRANT OPTION;");
         }
