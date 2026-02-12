@@ -32,8 +32,8 @@
             <scope>provided</scope>
         </dependency>
         <dependency>
-            <groupId>org.openmrs.distro</groupId>
-            <artifactId>platform</artifactId>
+            <groupId>org.openmrs.web</groupId>
+            <artifactId>openmrs-webapp</artifactId>
             <version>${openmrs.version}</version>
             <type>war</type>
             <scope>provided</scope>
