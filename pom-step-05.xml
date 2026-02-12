@@ -139,10 +139,10 @@
 						<configuration>
 							<artifactItems>
 								<artifactItem>
-									<groupId>org.openmrs.distro</groupId>
-									<artifactId>platform</artifactId>
-									<version>${openmrs.version}</version>
-									<type>war</type>
+                                    <groupId>org.openmrs.web</groupId>
+                                    <artifactId>openmrs-webapp</artifactId>
+                                    <version>${openmrs.version}</version>
+                                    <type>war</type>
 									<destFileName>openmrs.war</destFileName>
 									<outputDirectory>${project.build.directory}</outputDirectory>
 								</artifactItem>
