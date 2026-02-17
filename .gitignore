@@ -1,5 +1,8 @@
 # maven ignores
 target/
+
+# Compiled class files
+*.class
 # IntelliJ ignores
 *.iml
 *.ipr

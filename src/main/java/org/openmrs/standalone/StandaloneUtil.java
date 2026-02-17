@@ -316,7 +316,7 @@ public class StandaloneUtil {
 
 	private static boolean setMysqlPassword(String url, String mysqlPort, String username, String newPassword) throws Exception {
 		try {
-			Class.forName("org.mariadb.jdbc.Driver").newInstance();
+			Class.forName("org.mariadb.jdbc.Driver").getDeclaredConstructor().newInstance();
 
 			MariaDbController.startMariaDB(mysqlPort, properties.getProperty("connection.password", ""));
 
