@@ -16,6 +16,10 @@
 		<relativePath>pom.xml</relativePath>
 	</parent>
 
+	<properties>
+		<skipTests>false</skipTests>
+	</properties>
+
     <dependencies>
 
         <dependency>

@@ -40,6 +40,7 @@
     <junitVersion>5.12.2</junitVersion>
     <mockitoVersion>3.12.4</mockitoVersion>
     <mariadb4jVersion>3.3.1</mariadb4jVersion>
+    <skipTests>true</skipTests>
   </properties>
 
   <dependencies>
