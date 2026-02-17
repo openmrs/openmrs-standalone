@@ -20,7 +20,6 @@ import java.net.InetAddress;
 import java.net.MalformedURLException;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.security.AccessControlException;
 import java.util.Random;
 
 import ch.vorburger.exec.ManagedProcessException;
@@ -153,7 +152,7 @@ public class TomcatManager {
 				socket.setSoTimeout(10 * 1000); // Ten seconds
 				stream = socket.getInputStream();
 			}
-			catch (AccessControlException ace) {
+			catch (SecurityException ace) {
 				System.out.println("TomcatManager.accept security exception: " + ace.getMessage());
 				continue;
 			}

@@ -67,6 +67,8 @@ import javax.swing.WindowConstants;
  */
 public class MainFrame extends javax.swing.JFrame implements ActionListener, UserInterface {
 	
+	private static final long serialVersionUID = 1L;
+	
 	private ApplicationController appController;
 	
 	private int tomcatPort = UserInterface.DEFAULT_TOMCAT_PORT;
@@ -118,7 +120,7 @@ public class MainFrame extends javax.swing.JFrame implements ActionListener, Use
 		
 		setStatus(UserInterface.STATUS_MESSAGE_STARTING);
 		
-		int preferredMetaKey = Toolkit.getDefaultToolkit().getMenuShortcutKeyMask();
+		int preferredMetaKey = Toolkit.getDefaultToolkit().getMenuShortcutKeyMaskEx();
 		
 		fileMenu.setText("File");
 		browserMenuItem.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_B, preferredMetaKey));
@@ -298,14 +300,13 @@ public class MainFrame extends javax.swing.JFrame implements ActionListener, Use
 		
 		try{
 			if (System.getProperty("os.name").startsWith("Mac OS X")) {
-				Class noparams[] = {}; //no paramater
-				Class[] paramImage = new Class[1]; //Image parameter
+				Class<?>[] noparams = {};
+				Class<?>[] paramImage = new Class<?>[1];
 				paramImage[0] = Image.class;
-				Class Application = Class.forName("com.apple.eawt.Application");
-				Object application = Application.newInstance();
-				Method getApplication = Application.getDeclaredMethod("getApplication", noparams);
-				application = getApplication.invoke(null, null);
-				Method setDockIconImage = Application.getDeclaredMethod("setDockIconImage", paramImage);
+				Class<?> applicationClass = Class.forName("com.apple.eawt.Application");
+				Method getApplication = applicationClass.getDeclaredMethod("getApplication", noparams);
+				Object application = getApplication.invoke(null, (Object[]) null);
+				Method setDockIconImage = applicationClass.getDeclaredMethod("setDockIconImage", paramImage);
 				ImageIcon image = new ImageIcon(getClass().getResource("openmrs_logo_white.gif"));
 				setDockIconImage.invoke(application, image.getImage());
 			}
