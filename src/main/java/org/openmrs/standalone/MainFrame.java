@@ -303,10 +303,10 @@ public class MainFrame extends javax.swing.JFrame implements ActionListener, Use
 				Class<?>[] noparams = {};
 				Class<?>[] paramImage = new Class<?>[1];
 				paramImage[0] = Image.class;
-				Class<?> Application = Class.forName("com.apple.eawt.Application");
-				Method getApplication = Application.getDeclaredMethod("getApplication", noparams);
+				Class<?> applicationClass = Class.forName("com.apple.eawt.Application");
+				Method getApplication = applicationClass.getDeclaredMethod("getApplication", noparams);
 				Object application = getApplication.invoke(null, (Object[]) null);
-				Method setDockIconImage = Application.getDeclaredMethod("setDockIconImage", paramImage);
+				Method setDockIconImage = applicationClass.getDeclaredMethod("setDockIconImage", paramImage);
 				ImageIcon image = new ImageIcon(getClass().getResource("openmrs_logo_white.gif"));
 				setDockIconImage.invoke(application, image.getImage());
 			}
