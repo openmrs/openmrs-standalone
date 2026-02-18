@@ -5,12 +5,14 @@ set -e
 DISTRO_DIR="${1:-../target/distro}"
 
 echo "🚀 Starting OpenMRS in Docker from $DISTRO_DIR..."
-docker-compose -f "$DISTRO_DIR/docker-compose.yml" up -d web
+# Fix the auto-generated Dockerfile base image tag (nightly-amazoncorretto-11 was removed from Docker Hub)
+sed -i.bak 's|openmrs/openmrs-core:nightly-amazoncorretto-11|openmrs/openmrs-core:2.8.x|g' "$DISTRO_DIR/web/Dockerfile" && rm -f "$DISTRO_DIR/web/Dockerfile.bak"
+docker-compose -f "$DISTRO_DIR/docker-compose.yml" up -d --build web
 
 # Wait for OpenMRS to start (max 180 seconds)
 echo "⏳ Waiting for OpenMRS to initialize..."
 START_TIME=$(date +%s)
-TIMEOUT=180
+TIMEOUT=600
 
 while true; do
   if command -v curl &> /dev/null; then
