@@ -4,7 +4,6 @@
 
     <groupId>org.openmrs</groupId>
     <artifactId>referenceapplication-standalone-zip-stage</artifactId>
-    <version>3.0.0-SNAPSHOT</version>
     <packaging>jar</packaging>
 
     <name>referenceapplication-standalone-zip-stage</name>
@@ -40,7 +39,6 @@
             <plugin>
                 <groupId>org.openmrs.maven.plugins</groupId>
                 <artifactId>openmrs-sdk-maven-plugin</artifactId>
-                <version>${openmrs.sdk.version}</version>
                 <executions>
                     <execution>
                         <id>openmrs-sdk:generate-distro</id>
@@ -86,8 +84,7 @@
             <plugin>
                 <groupId>org.openmrs.maven.plugins</groupId>
                 <artifactId>openmrs-sdk-maven-plugin</artifactId>
-                <version>${openmrs.sdk.version}</version>
-                <executions>
+                 <executions>
                     <execution>
                         <id>openmrs-sdk:build-distro</id>
                         <goals>
