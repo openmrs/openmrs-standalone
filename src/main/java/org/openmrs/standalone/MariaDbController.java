@@ -50,8 +50,6 @@ public class MariaDbController {
             userPassword = "";
         }
 
-        String os = System.getProperty("os.name").toLowerCase();
-        boolean isWindows = os.contains("win");
 
         // Build DB configuration
         mariaDBConfig = DBConfigurationBuilder.newBuilder();
@@ -73,31 +71,19 @@ public class MariaDbController {
         mariaDBConfig.addArg("--collation-server=utf8_general_ci");
         mariaDBConfig.addArg("--character-set-server=utf8");
 
-        if(isWindows){
-            // For Windows, we use the ReusableDB class
-            mariaDB = ReusableDB.openEmbeddedDB(mariaDBConfig.build());
-            mariaDB.start();
+        // Standardized start logic for all platforms (Windows, Linux, macOS)
+        mariaDB = DB.newEmbeddedDB(mariaDBConfig.build());
+        mariaDB.start();
 
-            Connection conn = DriverManager.getConnection("jdbc:mariadb://localhost:" + port + "/", ROOT_USER, ROOT_PASSWORD);
-            try (Statement stmt = conn.createStatement()) {
-                stmt.execute("ALTER USER 'root'@'localhost' IDENTIFIED BY '" + ROOT_PASSWORD + "';");
-                stmt.execute("GRANT ALL PRIVILEGES ON *.* TO 'root'@'localhost' WITH GRANT OPTION;");
-            }
-        } else {
-            // For Linux and macOS, we use the standard DB class
-            mariaDB = DB.newEmbeddedDB(mariaDBConfig.build());
-            mariaDB.start();
-
-            // Ensure root user exists and has correct password and privileges
-            mariaDB.run("ALTER USER 'root'@'localhost' IDENTIFIED BY '" + ROOT_PASSWORD + "';");
-            mariaDB.run("GRANT ALL PRIVILEGES ON *.* TO 'root'@'localhost' WITH GRANT OPTION;");
-        }
+        // Ensure root user exists and has correct password and privileges
+        mariaDB.run("ALTER USER 'root'@'localhost' IDENTIFIED BY '" + ROOT_PASSWORD + "';", ROOT_USER, ROOT_PASSWORD);
+        mariaDB.run("GRANT ALL PRIVILEGES ON *.* TO 'root'@'localhost' WITH GRANT OPTION;", ROOT_USER, ROOT_PASSWORD);
 
         // Create the OpenMRS database schema if it doesn't exist
         mariaDB.createDB(DATABASE_NAME, ROOT_USER, ROOT_PASSWORD);
 
         // ✅ Create openmrs user and grant permissions
-        try (Connection connection = DriverManager.getConnection("jdbc:mysql://localhost:" + port + "/", ROOT_USER, ROOT_PASSWORD)) {
+        try (Connection connection = DriverManager.getConnection("jdbc:mariadb://localhost:" + port + "/", ROOT_USER, ROOT_PASSWORD)) {
             try (Statement stmt = connection.createStatement()) {
                 // Create user if not exists
                 String createUserSQL = "CREATE USER IF NOT EXISTS 'openmrs'@'localhost' IDENTIFIED BY '" + userPassword + "';";
