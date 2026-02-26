@@ -33,6 +33,14 @@ jobs:
       - name: Run Maven Install
         run: mvn install
 
+      - name: Upload standalone artifact
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: openmrs-standalone
+          path: target/openmrs-standalone-*.zip
+          if-no-files-found: warn
+
   build-windows:
     name: on Windows (Java 21)
     runs-on: windows-latest
