@@ -1,0 +1,106 @@
+name: Generate SQL Database Dumps
+
+on:
+  workflow_dispatch:
+    inputs:
+      refapp_version:
+        description: 'RefApp version (leave empty for pom.xml default)'
+        required: false
+        type: string
+      openmrs_version:
+        description: 'OpenMRS Core version (leave empty for pom.xml default)'
+        required: false
+        type: string
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: generate-db-dumps
+  cancel-in-progress: true
+
+jobs:
+  generate-dumps:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+
+      - name: Set up Docker Compose
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y docker-compose
+
+      - name: Pre-run OpenMRS SDK Plugin
+        run: mvn org.openmrs.maven.plugins:openmrs-sdk-maven-plugin:setup-sdk -B --settings .github/maven-settings.xml
+
+      - name: Determine versions
+        id: versions
+        run: |
+          REFAPP_VERSION="${{ github.event.inputs.refapp_version }}"
+          OPENMRS_VERSION="${{ github.event.inputs.openmrs_version }}"
+          if [ -z "$REFAPP_VERSION" ]; then
+            REFAPP_VERSION=$(mvn help:evaluate -Dexpression=refapp.version -q -DforceStdout -B --settings .github/maven-settings.xml)
+          fi
+          if [ -z "$OPENMRS_VERSION" ]; then
+            OPENMRS_VERSION=$(mvn help:evaluate -Dexpression=openmrs.version -q -DforceStdout -B --settings .github/maven-settings.xml)
+          fi
+          echo "refapp_version=$REFAPP_VERSION" >> "$GITHUB_OUTPUT"
+          echo "openmrs_version=$OPENMRS_VERSION" >> "$GITHUB_OUTPUT"
+          echo "Using RefApp $REFAPP_VERSION, OpenMRS Core $OPENMRS_VERSION"
+
+      - name: Generate and build OpenMRS distribution
+        run: |
+          mvn -f pom-step-01.xml process-resources -Pci -B \
+            --settings .github/maven-settings.xml \
+            -Drefapp.version=${{ steps.versions.outputs.refapp_version }} \
+            -Dopenmrs.version=${{ steps.versions.outputs.openmrs_version }}
+
+      - name: Show generated Docker Compose config
+        run: cat target/distro/docker-compose.yml
+
+      - name: Generate empty database dump
+        run: |
+          bash scripts/generate-db-dumps.sh \
+            target/distro \
+            "${{ steps.versions.outputs.refapp_version }}" \
+            src/main/db \
+            empty
+
+      - name: Generate demo database dump
+        run: |
+          bash scripts/generate-db-dumps.sh \
+            target/distro \
+            "${{ steps.versions.outputs.refapp_version }}" \
+            src/main/db \
+            demo
+
+      - name: Create Pull Request
+        uses: peter-evans/create-pull-request@v7
+        with:
+          commit-message: |
+            Update SQL database dumps for RefApp ${{ steps.versions.outputs.refapp_version }}
+
+            Co-authored-by: github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com>
+          title: "Update SQL database dumps for RefApp ${{ steps.versions.outputs.refapp_version }}"
+          body: |
+            This PR updates the SQL database dumps for Reference Application **${{ steps.versions.outputs.refapp_version }}** (OpenMRS Core ${{ steps.versions.outputs.openmrs_version }}).
+
+            Generated automatically by the **Generate SQL Database Dumps** workflow.
+
+            ### Files updated
+            - `src/main/db/demo-db-${{ steps.versions.outputs.refapp_version }}.sql` — Database with demo data
+            - `src/main/db/empty-db-${{ steps.versions.outputs.refapp_version }}.sql` — Empty database (schema only)
+          branch: update-db-dumps-${{ steps.versions.outputs.refapp_version }}
+          base: openmrs-emr3
+          add-paths: |
+            src/main/db/*.sql
