@@ -208,24 +208,31 @@ MariaDB4j documentation can be found at: https://github.com/MariaDB4j/MariaDB4j
 
 
 ## 🛠️ Reusable Embedded MariaDB (ReusableDB.java) for Windows Compatibility
-The OpenMRS Standalone project uses a custom wrapper around the MariaDB4j `DB` class called `ReusableDB`. This wrapper is designed to enhance the robustness of the startup process and improve cross-platform compatibility, particularly on Windows systems.
+The OpenMRS Standalone project uses a custom wrapper around the MariaDB4j `DB` class called `ReusableDB`. Following the upgrade to MariaDB4j 3.3.1, this wrapper has been removed in favor of the standard MariaDB4j API, which now includes built-in support for Windows file locking and data persistence.
 
 
 #### 🔍 Purpose
+By moving to the native MariaDB4j 3.3.1 :
 
-`ReusableDB` avoids deleting the `dataDir` when the database is already initialized. This:
+-We no longer need custom logic to prevent "file in use" errors on Windows; the library handles this natively.
 - Prevents startup failures due to locked files on Windows.
-- Supports seamless restarts of the Standalone without losing data.
-- Makes switching between demo and empty databases more reliable.
+- Removed the ReusableDB extension, reducing technical debt.
+- The standalone now uses the same initialization path across Windows, Linux, and macOS.
 
 #### ✅ How it Works
-- Checks for the presence of the `openmrs` database directory inside `dataDir`.
-- If not found, triggers the initial MariaDB install process.
-- Otherwise, starts MariaDB using the existing configuration and data files.
+The system now uses the standard DB.newEmbeddedDB() method. MariaDB4j 3.3.1 intelligently manages the dataDir:
+- It detects if the database is already initialized and avoids overwriting existing data.
+- It ensures that the database process starts correctly without needing to manually bypass the installation step.
 
 #### 📦 Usage Example
 
 ```java
+
+//Replaced:
 DBConfigurationBuilder config = DBConfigurationBuilder.newBuilder();
 config.setPort(3316);
 ReusableDB db = ReusableDB.openEmbeddedDB(config.build());
+
+//Standard current API
+DB mariaDB = DB.newEmbeddedDB(config.build());
+mariaDB.start();
