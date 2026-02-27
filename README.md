@@ -1,4 +1,4 @@
-OpenMRS Standalone provides a simplified, all-inclusive installation option with both an embedded database and web server.
+OpenMRS Standalone provides a simplified, all-inclusive installation options with both an embedded database and web server.
 Read more at: https://wiki.openmrs.org/display/docs/OpenMRS+Standalone
 
 The current setup uses an embedded MariaDB database with MariaDB4j, while continuing to utilize the MySQL driver for database connectivity. Read more about mariadb4j here: https://github.com/MariaDB4j/MariaDB4j
