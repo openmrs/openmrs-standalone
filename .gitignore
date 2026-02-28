@@ -42,3 +42,6 @@ local.properties
 
 # PDT-specific
 .buildpath
+
+# macOS
+.DS_Store
