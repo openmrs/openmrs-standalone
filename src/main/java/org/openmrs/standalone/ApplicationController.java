@@ -234,17 +234,17 @@ public class ApplicationController {
 		
 		userInterface.setVisible(true);
 		
-		// add shutdown hook to stop server
+		// add shutdown hook to stop server (Tomcat first, then MariaDB)
 		Runtime.getRuntime().addShutdownHook(new Thread() {
 			
 			public void run() {
+				stopServer();
 				try {
 					stopMariaDB();
 				} catch (ManagedProcessException e) {
 					System.out.println("Failed to stop MariaDB: " + e.getMessage());
 					e.printStackTrace();
 				}
-				stopServer();
 			}
 		});
 		

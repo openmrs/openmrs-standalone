@@ -74,7 +74,7 @@ public class TomcatManager {
 		String warPath = "tomcat/webapps/" + contextName + ".war";
 		File warFile = new File(warPath);
 		Context rootContext = container.addWebapp("/" + contextName, warFile.getAbsolutePath());
-		rootContext.setReloadable(true);
+		rootContext.setReloadable(false);
 		
 		// create http connector
 		Connector httpConnector = new Connector();
@@ -101,6 +101,7 @@ public class TomcatManager {
 		try {
 			if (container != null) {
 				container.stop();
+				container.destroy();
 				container = null;
 				stopMySql = true;
 			}
