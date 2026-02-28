@@ -97,7 +97,7 @@ public class Bootstrap {
 		
 		try {	
 			Properties properties = OpenmrsUtil.getRuntimeProperties(StandaloneUtil.getContextName());
-			String vm_arguments = properties.getProperty("vm_arguments", "-Xmx512m -Xms512m -XX:NewSize=128m --add-exports=java.desktop/com.apple.eawt=ALL-UNNAMED");
+			String vm_arguments = properties.getProperty("vm_arguments", "-Xmx512m -Xms512m -XX:NewSize=128m --add-exports=java.desktop/com.apple.eawt=ALL-UNNAMED --add-opens=java.base/java.lang=ALL-UNNAMED");
 			
 			// Spin up a separate java process calling a non-default Main class in our Jar.  
 			process = Runtime.getRuntime().exec(
