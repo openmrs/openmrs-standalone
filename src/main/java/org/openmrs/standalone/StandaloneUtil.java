@@ -415,6 +415,17 @@ public class StandaloneUtil {
 	}
 	
 	/**
+	 * Disables demo data generation by the referencedemodata module.
+	 * The module checks the runtime property "referencedemodata.createDemoPatients"
+	 * and skips patient creation when set to "false".
+	 */
+	public static void disableDemoDataGeneration() {
+		Map<String, String> props = new HashMap<String, String>();
+		props.put("referencedemodata.createDemoPatients", "false");
+		updateRuntimeProperties(props);
+	}
+	
+	/**
 	 * Sets the given runtime properties, and re-saves the file
 	 * 
 	 * @param newProps

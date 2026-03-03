@@ -19,7 +19,6 @@ import org.apache.commons.io.FileUtils;
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.File;
-import java.io.FileFilter;
 import java.io.FileOutputStream;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -268,14 +267,14 @@ public class ApplicationController {
 			} else if (applyDatabaseChange == DatabaseMode.EMPTY_DATABASE) {
 				deleteActiveDatabase();
 				unzipDatabase(new File("emptydatabase.zip"));
-				deleteDemoDataModule();
+				StandaloneUtil.disableDemoDataGeneration();
 				StandaloneUtil.resetConnectionPassword();
 				StandaloneUtil.startupDatabaseToCreateDefaultUser(mySqlPort);
 				System.out.println("Database mode using wizard: " + applyDatabaseChange);
 			} else if (applyDatabaseChange == DatabaseMode.DEMO_DATABASE) {
 				deleteActiveDatabase();
 				unzipDatabase(new File("demodatabase.zip"));
-				deleteDemoDataModule();
+				StandaloneUtil.disableDemoDataGeneration();
 				StandaloneUtil.resetConnectionPassword();
 				StandaloneUtil.startupDatabaseToCreateDefaultUser(mySqlPort);
 				System.out.println("Database mode using wizard: " + applyDatabaseChange);
@@ -499,25 +498,6 @@ public class ApplicationController {
 	 */
 	public void setApplyDatabaseChange(DatabaseMode modeToApply) {
 		this.applyDatabaseChange = modeToApply;
-	}
-	
-	private void deleteDemoDataModule() {
-		File directory = new File("appdata/modules");  
-		   
-		File[] toBeDeleted = directory.listFiles(new FileFilter() {  
-			public boolean accept(File theFile) {  
-				if (theFile.isFile()) {  
-					return (theFile.getName().startsWith("referencedemodata") ||
-							theFile.getName().startsWith("openmrs-webapp"));  
-				}  
-				
-				return false;  
-			}  
-		});  
-		     
-		for (File deletableFile : toBeDeleted) {  
-			deletableFile.delete();  
-		}
 	}
 	
 	private static void writeProcessIdFile() {
