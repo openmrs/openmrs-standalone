@@ -38,12 +38,15 @@ echo "✅ OpenMRS is up. Proceeding to copy configuration checksums..."
 
 CONTAINER_ID=$(docker-compose -f "$DISTRO_DIR/docker-compose.yml" ps -q web)
 
-# Try to copy the checksum file
+# Copy checksums from the container. Use trailing /. on source to copy CONTENTS
+# into the destination directory (avoids nesting configuration_checksums/ inside
+# openmrs_config_checksums/ when the destination already exists).
 echo "📦 Attempting to extract openmrs_config_checksums..."
-if docker cp "$CONTAINER_ID":/openmrs/data/configuration_checksums "$DISTRO_DIR/web/openmrs_config_checksums"; then
+mkdir -p "$DISTRO_DIR/web/openmrs_config_checksums"
+if docker cp "$CONTAINER_ID":/openmrs/data/configuration_checksums/. "$DISTRO_DIR/web/openmrs_config_checksums/"; then
   echo "✅ Checksums copied successfully."
 else
-  echo "❌ Failed to copy checksums file. File may not exist yet."
+  echo "⚠️  Failed to copy checksums from Docker. Pre-computed checksums will be used."
 fi
 
 echo "🧹 Shutting down Docker containers..."
