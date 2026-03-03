@@ -275,6 +275,7 @@ public class ApplicationController {
 			} else if (applyDatabaseChange == DatabaseMode.DEMO_DATABASE) {
 				deleteActiveDatabase();
 				unzipDatabase(new File("demodatabase.zip"));
+				deleteDemoDataModule();
 				StandaloneUtil.resetConnectionPassword();
 				StandaloneUtil.startupDatabaseToCreateDefaultUser(mySqlPort);
 				System.out.println("Database mode using wizard: " + applyDatabaseChange);
