@@ -16,6 +16,7 @@ package org.openmrs.standalone;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.lang.reflect.Method;
 import java.net.InetAddress;
 import java.net.MalformedURLException;
 import java.net.ServerSocket;
@@ -35,6 +36,8 @@ import org.apache.catalina.startup.Tomcat;
 public class TomcatManager {
 
 	private Tomcat container = null;
+	
+	private Context rootContext = null;
 	
 	/**
 	 * The port number on which we wait for shutdown commands.
@@ -75,6 +78,7 @@ public class TomcatManager {
 		File warFile = new File(warPath);
 		Context rootContext = container.addWebapp("/" + contextName, warFile.getAbsolutePath());
 		rootContext.setReloadable(false);
+		this.rootContext = rootContext;
 		
 		// create http connector
 		Connector httpConnector = new Connector();
@@ -100,6 +104,7 @@ public class TomcatManager {
 		//stop tomcat.
 		try {
 			if (container != null) {
+				suppressKnownShutdownErrors();
 				container.stop();
 				container.destroy();
 				container = null;
@@ -215,6 +220,49 @@ public class TomcatManager {
 		}
 		catch (IOException e) {
 			// Ignore
+		}
+	}
+	
+	/**
+	 * Suppresses known harmless ERROR log messages that occur during shutdown.
+	 * <p>
+	 * OpenMRS Core 2.8.x has two bugs triggered during Tomcat context destruction:
+	 * <ul>
+	 *   <li>MemoryLeakUtil tries to load com.mysql.jdbc.ConnectionImpl (MySQL 5.x class)
+	 *       which doesn't exist when using MariaDB — logs ClassNotFoundException as ERROR</li>
+	 *   <li>OpenmrsClassLoader.onShutdown() calls Thread.stop() which throws
+	 *       UnsupportedOperationException on JDK 20+ (JEP 451) — logged as ERROR</li>
+	 * </ul>
+	 * Both exceptions are already caught by OpenMRS; we just suppress the noisy ERROR output
+	 * by setting their Log4j2 loggers to FATAL level via the webapp classloader.
+	 */
+	private void suppressKnownShutdownErrors() {
+		try {
+			ClassLoader webappCl = rootContext.getLoader().getClassLoader();
+			if (webappCl == null) {
+				return;
+			}
+			
+			// Set TCCL so Log4j2's ClassLoaderContextSelector resolves the webapp's
+			// LoggerContext (stack-walking via reflection would yield the wrong context)
+			ClassLoader originalCl = Thread.currentThread().getContextClassLoader();
+			Thread.currentThread().setContextClassLoader(webappCl);
+			try {
+				Class<?> levelClass = webappCl.loadClass("org.apache.logging.log4j.Level");
+				Object fatalLevel = levelClass.getField("FATAL").get(null);
+				
+				Class<?> configuratorClass = webappCl.loadClass(
+						"org.apache.logging.log4j.core.config.Configurator");
+				Method setLevelMethod = configuratorClass.getMethod("setLevel",
+						String.class, levelClass);
+				
+				setLevelMethod.invoke(null, "org.openmrs.util.MemoryLeakUtil", fatalLevel);
+				setLevelMethod.invoke(null, "org.openmrs.util.OpenmrsClassLoader", fatalLevel);
+			} finally {
+				Thread.currentThread().setContextClassLoader(originalCl);
+			}
+		} catch (Exception e) {
+			// Best effort — if this fails, the harmless errors will still appear
 		}
 	}
 }
