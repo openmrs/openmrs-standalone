@@ -98,11 +98,27 @@
                     </execution>
                 </executions>
             </plugin>
-            <!-- Start Docker Compose and wait to copy checksums-->
+            <!-- Pre-compute configuration checksums and optionally copy from Docker -->
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>
                 <artifactId>exec-maven-plugin</artifactId>
                 <executions>
+                    <execution>
+                        <id>generate-checksums</id>
+                        <phase>process-resources</phase>
+                        <goals>
+                            <goal>exec</goal>
+                        </goals>
+                        <configuration>
+                            <executable>bash</executable>
+                            <workingDirectory>${project.basedir}</workingDirectory>
+                            <arguments>
+                                <argument>scripts/generate-checksums.sh</argument>
+                                <argument>${project.build.directory}/distro/web/openmrs_config</argument>
+                                <argument>${project.build.directory}/distro/web/openmrs_config_checksums</argument>
+                            </arguments>
+                        </configuration>
+                    </execution>
                     <execution>
                         <id>start-docker-and-wait</id>
                         <phase>process-resources</phase>
