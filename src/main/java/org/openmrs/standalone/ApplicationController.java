@@ -276,6 +276,7 @@ public class ApplicationController {
 				deleteActiveDatabase();
 				unzipDatabase(new File("demodatabase.zip"));
 				deleteDemoDataModule();
+				deleteConfigurationFiles();
 				StandaloneUtil.resetConnectionPassword();
 				StandaloneUtil.startupDatabaseToCreateDefaultUser(mySqlPort);
 				System.out.println("Database mode using wizard: " + applyDatabaseChange);
@@ -499,6 +500,27 @@ public class ApplicationController {
 	 */
 	public void setApplyDatabaseChange(DatabaseMode modeToApply) {
 		this.applyDatabaseChange = modeToApply;
+	}
+	
+	/**
+	 * Deletes Initializer configuration files and checksums so that modules
+	 * don't try to re-create data that already exists in the demo database dump.
+	 */
+	private void deleteConfigurationFiles() {
+		File configDir = new File("appdata/configuration");
+		File checksumsDir = new File("appdata/configuration_checksums");
+		try {
+			if (configDir.exists()) {
+				FileUtils.cleanDirectory(configDir);
+				System.out.println("Cleared configuration directory");
+			}
+			if (checksumsDir.exists()) {
+				FileUtils.cleanDirectory(checksumsDir);
+				System.out.println("Cleared configuration checksums directory");
+			}
+		} catch (IOException e) {
+			System.out.println("Error clearing configuration files: " + e.getMessage());
+		}
 	}
 	
 	private void deleteDemoDataModule() {
