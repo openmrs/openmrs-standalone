@@ -44,6 +44,8 @@ done
 if [ "$SKIP_BUILD" = false ]; then
   echo "🔨 Building OpenMRS distribution..."
   cd "$PROJECT_ROOT"
+  # Remove previous distro so the SDK build-distro goal doesn't prompt for confirmation
+  rm -rf "$DISTRO_DIR"
   mvn org.openmrs.maven.plugins:openmrs-sdk-maven-plugin:setup-sdk -B
   mvn -f pom-step-01.xml process-resources -Pci -B
   echo "✅ Distribution built at $DISTRO_DIR"
