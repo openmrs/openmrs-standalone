@@ -2,17 +2,16 @@
 # Generates the demo data SQL dump locally by:
 #   1. Building the OpenMRS distribution (if not already built)
 #   2. Starting OpenMRS in Docker with demo data enabled
-#   3. Monitoring Docker logs — waiting for teleconsultation module messages to stop
+#   3. Polling the REST API until a valid authenticated session is returned
 #   4. Dumping the database to src/main/db/
 #
 # Usage:
-#   ./scripts/generate-demo-data-locally.sh [--skip-build] [--timeout 1800] [--quiet-period 120]
+#   ./scripts/generate-demo-data-locally.sh [--skip-build] [--timeout 1800] [--poll-interval 30]
 #
 # Options:
 #   --skip-build      Skip the Maven distribution build (reuse existing target/distro)
 #   --timeout N       Max seconds to wait for OpenMRS to fully load (default: 1800)
-#   --quiet-period N  Seconds of no teleconsultation log activity before considering
-#                     initialization complete (default: 120)
+#   --poll-interval N Seconds between REST API session polls (default: 30)
 
 set -euo pipefail
 
@@ -25,14 +24,14 @@ DB_ROOT_PASSWORD="${DB_ROOT_PASSWORD:-openmrs}"
 # Defaults
 SKIP_BUILD=false
 TIMEOUT=1800
-QUIET_PERIOD=120
+POLL_INTERVAL=30
 
 # Parse arguments
 while [[ $# -gt 0 ]]; do
   case "$1" in
-    --skip-build)   SKIP_BUILD=true; shift ;;
-    --timeout)      TIMEOUT="$2"; shift 2 ;;
-    --quiet-period) QUIET_PERIOD="$2"; shift 2 ;;
+    --skip-build)     SKIP_BUILD=true; shift ;;
+    --timeout)        TIMEOUT="$2"; shift 2 ;;
+    --poll-interval)  POLL_INTERVAL="$2"; shift 2 ;;
     -h|--help)
       sed -n '2,/^$/p' "$0" | sed 's/^# \?//'
       exit 0
@@ -90,82 +89,51 @@ COMPOSE_ARGS+=(-f "$OVERRIDE_FILE")
 echo "🚀 Starting OpenMRS in Docker (demo mode)..."
 docker compose "${COMPOSE_ARGS[@]}" up -d --build web
 
-# ── Step 4: Wait for HTTP readiness ─────────────────────────────────────────
-echo "⏳ Waiting for OpenMRS HTTP endpoint..."
 START_TIME=$(date +%s)
 
+# ── Step 4: Poll REST API until OpenMRS is fully initialized ────────────────
+echo "⏳ Polling OpenMRS REST API for a valid authenticated session..."
+echo "   Endpoint: http://localhost:8080/openmrs/ws/rest/v1/session"
+echo "   Poll interval: ${POLL_INTERVAL}s | Overall timeout: ${TIMEOUT}s"
+
 while true; do
-  if curl -sf http://localhost:8080/openmrs > /dev/null 2>&1; then
-    echo "✅ OpenMRS HTTP endpoint is responding."
-    break
+  # A successful response with "authenticated":true means OpenMRS is fully up
+  # and all modules (including demo data loading) have finished initializing.
+  HTTP_CODE=$(curl -sf -o /dev/null -w "%{http_code}" \
+    -u admin:Admin123 \
+    http://localhost:8080/openmrs/ws/rest/v1/session 2>/dev/null || echo "000")
+
+  if [ "$HTTP_CODE" = "200" ]; then
+    AUTHENTICATED=$(curl -sf -u admin:Admin123 \
+      http://localhost:8080/openmrs/ws/rest/v1/session 2>/dev/null \
+      | grep -o '"authenticated":[a-z]*' | head -1 || echo "")
+
+    if [ "$AUTHENTICATED" = '"authenticated":true' ]; then
+      echo "✅ REST API returned authenticated session — OpenMRS is fully initialized."
+      break
+    fi
+    echo "   [$(date +%H:%M:%S)] HTTP 200 but not yet authenticated (startup in progress)..."
+  else
+    echo "   [$(date +%H:%M:%S)] HTTP $HTTP_CODE — waiting..."
   fi
 
   NOW=$(date +%s)
   ELAPSED=$((NOW - START_TIME))
   if [ "$ELAPSED" -gt "$TIMEOUT" ]; then
-    echo "❌ Timeout after ${TIMEOUT}s waiting for OpenMRS HTTP endpoint."
+    echo "❌ Timeout after ${TIMEOUT}s waiting for OpenMRS REST API."
     docker compose "${COMPOSE_ARGS[@]}" logs --tail=50 web
     exit 1
   fi
 
-  sleep 10
+  sleep "$POLL_INTERVAL"
 done
 
-# ── Step 5: Monitor logs for teleconsultation module activity ───────────────
-echo "⏳ Monitoring Docker logs for teleconsultation module activity..."
-echo "   Will consider initialization complete after ${QUIET_PERIOD}s of no teleconsultation log messages."
-echo "   Overall timeout: ${TIMEOUT}s"
-
-LAST_TELECON_TIME=$(date +%s)
-SEEN_TELECON=false
-
-# Follow Docker logs in background, filtering for teleconsultation
-LOG_FIFO=$(mktemp -u)
-mkfifo "$LOG_FIFO"
-
-docker compose "${COMPOSE_ARGS[@]}" logs -f --no-log-prefix web > "$LOG_FIFO" 2>&1 &
-LOG_PID=$!
-
-# Read log lines with a timeout, watching for teleconsultation references
-while true; do
-  # Read with a 10-second timeout
-  if read -r -t 10 LINE < "$LOG_FIFO" 2>/dev/null; then
-    if echo "$LINE" | grep -qi "teleconsultation"; then
-      SEEN_TELECON=true
-      LAST_TELECON_TIME=$(date +%s)
-      echo "   📡 [$(date +%H:%M:%S)] Teleconsultation activity detected"
-    fi
-  fi
-
-  NOW=$(date +%s)
-  TOTAL_ELAPSED=$((NOW - START_TIME))
-
-  # Check overall timeout
-  if [ "$TOTAL_ELAPSED" -gt "$TIMEOUT" ]; then
-    echo "❌ Overall timeout reached (${TIMEOUT}s). Proceeding with dump anyway."
-    break
-  fi
-
-  # If we've seen teleconsultation messages and they've been quiet long enough, we're done
-  if [ "$SEEN_TELECON" = true ]; then
-    QUIET_ELAPSED=$((NOW - LAST_TELECON_TIME))
-    if [ "$QUIET_ELAPSED" -ge "$QUIET_PERIOD" ]; then
-      echo "✅ No teleconsultation log activity for ${QUIET_PERIOD}s — initialization appears complete."
-      break
-    fi
-  fi
-done
-
-# Clean up log follower
-kill "$LOG_PID" 2>/dev/null || true
-rm -f "$LOG_FIFO"
-
-# ── Step 6: Determine version ──────────────────────────────────────────────
+# ── Step 5: Determine version ──────────────────────────────────────────────
 cd "$PROJECT_ROOT"
 REFAPP_VERSION=$(mvn help:evaluate -Dexpression=refapp.version -q -DforceStdout -B 2>/dev/null || echo "unknown")
 echo "📦 RefApp version: $REFAPP_VERSION"
 
-# ── Step 7: Dump the database ──────────────────────────────────────────────
+# ── Step 6: Dump the database ──────────────────────────────────────────────
 DB_CONTAINER=$(docker compose "${COMPOSE_ARGS[@]}" ps -q db)
 if [ -z "$DB_CONTAINER" ]; then
   echo "❌ Could not find database container."
