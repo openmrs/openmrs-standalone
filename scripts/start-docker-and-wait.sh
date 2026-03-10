@@ -5,12 +5,14 @@ set -e
 DISTRO_DIR="${1:-../target/distro}"
 
 echo "🚀 Starting OpenMRS in Docker from $DISTRO_DIR..."
-docker-compose -f "$DISTRO_DIR/docker-compose.yml" up -d web
+# Fix the auto-generated Dockerfile base image tag (nightly-amazoncorretto-11 was removed from Docker Hub)
+sed -i.bak 's|openmrs/openmrs-core:nightly-amazoncorretto-11|openmrs/openmrs-core:2.8.x|g' "$DISTRO_DIR/web/Dockerfile" && rm -f "$DISTRO_DIR/web/Dockerfile.bak"
+docker-compose -f "$DISTRO_DIR/docker-compose.yml" up -d --build web
 
 # Wait for OpenMRS to start (max 180 seconds)
 echo "⏳ Waiting for OpenMRS to initialize..."
 START_TIME=$(date +%s)
-TIMEOUT=180
+TIMEOUT=600
 
 while true; do
   if command -v curl &> /dev/null; then
@@ -36,12 +38,15 @@ echo "✅ OpenMRS is up. Proceeding to copy configuration checksums..."
 
 CONTAINER_ID=$(docker-compose -f "$DISTRO_DIR/docker-compose.yml" ps -q web)
 
-# Try to copy the checksum file
+# Copy checksums from the container. Use trailing /. on source to copy CONTENTS
+# into the destination directory (avoids nesting configuration_checksums/ inside
+# openmrs_config_checksums/ when the destination already exists).
 echo "📦 Attempting to extract openmrs_config_checksums..."
-if docker cp "$CONTAINER_ID":/openmrs/data/configuration_checksums "$DISTRO_DIR/web/openmrs_config_checksums"; then
+mkdir -p "$DISTRO_DIR/web/openmrs_config_checksums"
+if docker cp "$CONTAINER_ID":/openmrs/data/configuration_checksums/. "$DISTRO_DIR/web/openmrs_config_checksums/"; then
   echo "✅ Checksums copied successfully."
 else
-  echo "❌ Failed to copy checksums file. File may not exist yet."
+  echo "⚠️  Failed to copy checksums from Docker. Pre-computed checksums will be used."
 fi
 
 echo "🧹 Shutting down Docker containers..."
