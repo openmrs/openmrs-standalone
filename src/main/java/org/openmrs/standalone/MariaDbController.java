@@ -71,18 +71,16 @@ public class MariaDbController {
         mariaDBConfig.addArg("--collation-server=utf8_general_ci");
         mariaDBConfig.addArg("--character-set-server=utf8");
 
-        // Standardized start logic for all platforms (Windows, Linux, macOS)
         mariaDB = DB.newEmbeddedDB(mariaDBConfig.build());
         mariaDB.start();
 
-        // Ensure root user exists and has correct password and privileges
-        mariaDB.run("ALTER USER 'root'@'localhost' IDENTIFIED BY '" + ROOT_PASSWORD + "';", ROOT_USER, ROOT_PASSWORD);
+        mariaDB.run("ALTER USER 'root'@'localhost' IDENTIFIED VIA mysql_native_password USING PASSWORD('');", "root", null);
+        mariaDB.run("FLUSH PRIVILEGES;", "root", null);
         mariaDB.run("GRANT ALL PRIVILEGES ON *.* TO 'root'@'localhost' WITH GRANT OPTION;", ROOT_USER, ROOT_PASSWORD);
 
         // Create the OpenMRS database schema if it doesn't exist
         mariaDB.createDB(DATABASE_NAME, ROOT_USER, ROOT_PASSWORD);
 
-        // ✅ Create openmrs user and grant permissions
         try (Connection connection = DriverManager.getConnection("jdbc:mariadb://localhost:" + port + "/", ROOT_USER, ROOT_PASSWORD)) {
             try (Statement stmt = connection.createStatement()) {
                 // Create user if not exists
