@@ -69,5 +69,15 @@
 			<directory>${project.build.directory}/distro/web/openmrs_spa</directory>
 			<outputDirectory>${project.build.finalName}/appdata/frontend</outputDirectory>
 		</fileSet>
+		<!--
+			Bundled macOS arm64 dylibs (pcre2, openssl@3) used by MacOsBinaryPatcher
+			to fix the upstream mariaDB4j-db-macos-arm64 binaries that hard-code
+			/opt/homebrew/... load paths. Bundling them here (outside database/)
+			keeps them safe from the database/ folder being wiped on initial setup.
+		-->
+		<fileSet>
+			<directory>src/main/native</directory>
+			<outputDirectory>${project.build.finalName}/native</outputDirectory>
+		</fileSet>
 	</fileSets>
 </assembly>

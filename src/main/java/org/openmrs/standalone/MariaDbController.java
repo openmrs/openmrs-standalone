@@ -84,8 +84,12 @@ public class MariaDbController {
                 stmt.execute("GRANT ALL PRIVILEGES ON *.* TO 'root'@'localhost' WITH GRANT OPTION;");
             }
         } else {
-            // For Linux and macOS, we use the standard DB class
-            mariaDB = DB.newEmbeddedDB(mariaDBConfig.build());
+            // For Linux and macOS, we use the standard DB class.
+            // On macOS arm64 we first patch the bundled MariaDB binaries so they
+            // do not require Homebrew at /opt/homebrew/... — see MacOsBinaryPatcher.
+            ch.vorburger.mariadb4j.DBConfiguration builtConfig = mariaDBConfig.build();
+            MacOsBinaryPatcher.patchIfNeeded(builtConfig, baseDir);
+            mariaDB = DB.newEmbeddedDB(builtConfig);
             mariaDB.start();
 
             // Ensure root user exists and has correct password and privileges
