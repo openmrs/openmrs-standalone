@@ -157,10 +157,10 @@ public class Bootstrap {
 			}
 		} catch (Exception e) {}
 
-		if (majorVersion < 17 || majorVersion > 23) {
-			String message = "OpenMRS Standalone requires Java 17 through 23 (Java 21 is recommended).\n"
+		if (majorVersion < 17 || majorVersion > 21) {
+			String message = "OpenMRS Standalone requires Java 17 through 21 (Java 17 is recommended).\n"
 					+ "You are currently running Java " + javaVersion + ".\n\n"
-					+ (majorVersion > 23 ? "Java 24+ removes security features required by OpenMRS, causing startup failures.\n" : "")
+					+ (majorVersion > 21 ? "Java 24+ removes security features required by OpenMRS, causing startup failures.\n" : "")
 					+ "Please install a supported Java version and use it to run this application.";
 			try {
 				javax.swing.JOptionPane.showMessageDialog(null, message, "Unsupported Java Version", javax.swing.JOptionPane.ERROR_MESSAGE);
