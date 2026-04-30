@@ -99,9 +99,15 @@ public class Bootstrap {
 			Properties properties = OpenmrsUtil.getRuntimeProperties(StandaloneUtil.getContextName());
 			String vm_arguments = properties.getProperty("vm_arguments", "-Xmx512m -Xms512m -XX:NewSize=128m --add-exports=java.desktop/com.apple.eawt=ALL-UNNAMED");
 
+			String javaHome = System.getProperty("java.home");
+			String javaExecutable = javaHome + java.io.File.separator + "bin" + java.io.File.separator + "java";
+			if (System.getProperty("os.name").toLowerCase().contains("win")) {
+				javaExecutable += ".exe";
+			}
+
 			// Spin up a separate java process calling a non-default Main class in our Jar.  
 			process = Runtime.getRuntime().exec(
-			    "java " + (showSplashScreen ? "-splash:splashscreen-loading.png" : "")
+			    javaExecutable + " " + (showSplashScreen ? "-splash:splashscreen-loading.png" : "")
 			            + " " + vm_arguments + " -cp "
 			            + StandaloneUtil.getJarFileName() + " org.openmrs.standalone.ApplicationController" + args);
 			
@@ -140,6 +146,30 @@ public class Bootstrap {
 	 * @param args the command line arguments.
 	 */
 	public static void main(String[] args) {
+		String javaVersion = System.getProperty("java.version");
+		int majorVersion = 0;
+		try {
+			if (javaVersion.startsWith("1.")) {
+				majorVersion = Integer.parseInt(javaVersion.substring(2, 3));
+			} else {
+				int dot = javaVersion.indexOf(".");
+				majorVersion = dot != -1 ? Integer.parseInt(javaVersion.substring(0, dot)) : Integer.parseInt(javaVersion);
+			}
+		} catch (Exception e) {}
+
+		if (majorVersion < 17 || majorVersion > 23) {
+			String message = "OpenMRS Standalone requires Java 17 through 23 (Java 21 is recommended).\n"
+					+ "You are currently running Java " + javaVersion + ".\n\n"
+					+ (majorVersion > 23 ? "Java 24+ removes security features required by OpenMRS, causing startup failures.\n" : "")
+					+ "Please install a supported Java version and use it to run this application.";
+			try {
+				javax.swing.JOptionPane.showMessageDialog(null, message, "Unsupported Java Version", javax.swing.JOptionPane.ERROR_MESSAGE);
+			} catch (Exception e) {
+				System.err.println(message);
+			}
+			System.exit(1);
+		}
+
 		boolean showSplashScreen = true;
 		
 		String commandLineArguments = "";
