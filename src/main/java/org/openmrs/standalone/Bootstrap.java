@@ -91,7 +91,7 @@ public class Bootstrap {
 	 * @param args the command line arguments.
 	 * @param showSplashScreen determines whether the splashscreen is to be shown.
 	 */
-	private void launch(String args, boolean showSplashScreen) {
+	private void launch(String[] args, boolean showSplashScreen) {
 		
 		Process process = null;
 		
@@ -105,11 +105,27 @@ public class Bootstrap {
 				javaExecutable += ".exe";
 			}
 
+			java.util.List<String> command = new java.util.ArrayList<String>();
+			command.add(javaExecutable);
+			if (showSplashScreen) {
+				command.add("-splash:splashscreen-loading.png");
+			}
+			if (vm_arguments != null && !vm_arguments.trim().isEmpty()) {
+				for (String arg : vm_arguments.trim().split("\\s+")) {
+					command.add(arg);
+				}
+			}
+			command.add("-cp");
+			command.add(StandaloneUtil.getJarFileName());
+			command.add("org.openmrs.standalone.ApplicationController");
+			if (args != null) {
+				for (String arg : args) {
+					command.add(arg);
+				}
+			}
+
 			// Spin up a separate java process calling a non-default Main class in our Jar.  
-			process = Runtime.getRuntime().exec(
-			    javaExecutable + " " + (showSplashScreen ? "-splash:splashscreen-loading.png" : "")
-			            + " " + vm_arguments + " -cp "
-			            + StandaloneUtil.getJarFileName() + " org.openmrs.standalone.ApplicationController" + args);
+			process = Runtime.getRuntime().exec(command.toArray(new String[0]));
 			
 			// Proxy the System.out and System.err from the spawned process back to the main window.  This
 			// is important or the spawned process could block.
@@ -172,10 +188,7 @@ public class Bootstrap {
 
 		boolean showSplashScreen = true;
 		
-		String commandLineArguments = "";
 		for (String arg : args) {
-			commandLineArguments += (" " + arg);
-			
 			if (arg.contains("commandline"))
 				showSplashScreen = false;
 		}
@@ -193,6 +206,6 @@ public class Bootstrap {
 			}
 		});
 		
-		new Bootstrap().launch(commandLineArguments, showSplashScreen);
+		new Bootstrap().launch(args, showSplashScreen);
 	}
 }
