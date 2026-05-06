@@ -164,14 +164,17 @@ public class Bootstrap {
 	public static void main(String[] args) {
 		String javaVersion = System.getProperty("java.version");
 		int majorVersion = 0;
-		try {
-			if (javaVersion.startsWith("1.")) {
-				majorVersion = Integer.parseInt(javaVersion.substring(2, 3));
-			} else {
-				int dot = javaVersion.indexOf(".");
-				majorVersion = dot != -1 ? Integer.parseInt(javaVersion.substring(0, dot)) : Integer.parseInt(javaVersion);
+		if (javaVersion != null) {
+			try {
+				if (javaVersion.startsWith("1.")) {
+					majorVersion = Integer.parseInt(javaVersion.substring(2, 3));
+				} else {
+					majorVersion = Integer.parseInt(javaVersion.split("[\\.-]")[0]);
+				}
+			} catch (Exception e) {
+				System.err.println("Failed to parse java.version: " + javaVersion);
 			}
-		} catch (Exception e) {}
+		}
 
 		if (majorVersion < 17 || majorVersion > 21) {
 			String message = "OpenMRS Standalone requires Java 17 through 21 (Java 17 is recommended).\n"
