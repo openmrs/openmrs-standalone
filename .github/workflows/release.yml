@@ -3,7 +3,7 @@ name: 3.x Release
 on:
   push:
     tags:
-      - '3.x-v*'
+      - 'refapp-v*'
 
 permissions:
   contents: write
