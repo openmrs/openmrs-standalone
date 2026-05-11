@@ -3,7 +3,7 @@ name: 3.x Release
 on:
   push:
     tags:
-      - 'v*'
+      - '3.x-v*'
 
 permissions:
   contents: write
