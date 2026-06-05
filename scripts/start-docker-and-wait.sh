@@ -7,6 +7,9 @@ DISTRO_DIR="${1:-../target/distro}"
 echo "🚀 Starting OpenMRS in Docker from $DISTRO_DIR..."
 # Fix the auto-generated Dockerfile base image tag (nightly-amazoncorretto-11 was removed from Docker Hub)
 sed -i.bak 's|openmrs/openmrs-core:nightly-amazoncorretto-11|openmrs/openmrs-core:2.8.x|g' "$DISTRO_DIR/web/Dockerfile" && rm -f "$DISTRO_DIR/web/Dockerfile.bak"
+# Ensure distro files are world-readable: `openmrs assemble` writes importmap.json and
+# routes.registry.json with mode 600, which the non-root container user cannot read after COPY.
+chmod -R a+rX "$DISTRO_DIR/web"
 docker-compose -f "$DISTRO_DIR/docker-compose.yml" up -d --build web
 
 # Wait for OpenMRS to start (max 180 seconds)
