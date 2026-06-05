@@ -69,6 +69,10 @@
 			<directory>${project.build.directory}/distro/web/openmrs_spa</directory>
 			<outputDirectory>${project.build.finalName}/appdata/frontend</outputDirectory>
 		</fileSet>
+		<fileSet>
+			<directory>${chartsearchai.assets.dir}</directory>
+			<outputDirectory>${project.build.finalName}/appdata/chartsearchai</outputDirectory>
+		</fileSet>
 		<!--
 			Bundled macOS arm64 dylibs (pcre2, openssl@3) used by MacOsBinaryPatcher
 			to fix the upstream mariaDB4j-db-macos-arm64 binaries that hard-code
