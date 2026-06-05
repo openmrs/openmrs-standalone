@@ -12,7 +12,7 @@
 			<outputDirectory>/</outputDirectory>
 			<directory>${project.basedir}/src/main/db</directory>
 			<includes>
-				<include>demo-db-*.sql</include>
+				<include>demo-db-${refapp.version}.sql</include>
 			</includes>
 		</fileSet>
 	</fileSets>

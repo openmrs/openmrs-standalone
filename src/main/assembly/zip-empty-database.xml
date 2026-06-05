@@ -12,7 +12,7 @@
 			<outputDirectory>/</outputDirectory>
 			<directory>${project.basedir}/src/main/db</directory>
 			<includes>
-				<include>empty-db-*.sql</include>
+				<include>empty-db-${refapp.version}.sql</include>
 			</includes>
 		</fileSet>
 	</fileSets>
