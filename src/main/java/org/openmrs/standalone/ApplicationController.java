@@ -225,6 +225,15 @@ public class ApplicationController {
 	 * Creates the application user interface and automatically runs the server
 	 */
 	private void init(boolean commandLineMode, boolean nonInteractive, DatabaseMode mode, String tomcatPort, String mySqlPort) throws Exception {
+		// When the standalone was downloaded as a zip on macOS, every extracted file carries the
+		// com.apple.quarantine attribute and dyld refuses to load the bundled MariaDB dylibs.
+		// Strip the attribute from the native binary trees before anything tries to execute them.
+		if (System.getProperty("os.name", "").toLowerCase().contains("mac")) {
+			StandaloneUtil.stripQuarantineAttributes(new File("database"));
+			StandaloneUtil.stripQuarantineAttributes(new File("native"));
+			StandaloneUtil.stripQuarantineAttributes(new File("appdata"));
+		}
+
 		if (commandLineMode) {
 			userInterface = new CommandLine(this, tomcatPort, mySqlPort, nonInteractive, mode);
 		} else {

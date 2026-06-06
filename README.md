@@ -1,3 +1,12 @@
+## NOTE FOR MACOS USERS RUNNING A DOWNLOADED ZIP
+
+macOS tags every file extracted from a downloaded zip with the com.apple.quarantine
+attribute, which makes dyld refuse to load the bundled MariaDB dylibs (libpcre2, openssl)
+and the embedded database fails to initialize. The launcher strips the attribute
+automatically at startup; if you are running an older build, do it manually:
+
+    xattr -dr com.apple.quarantine <extracted-standalone-directory>
+
 ## QUICK SUMMARY FOR BUILDING THE STANDALONE
 
 * Increase the maven memory: e.g. export MAVEN_OPTS="-Xms1012m -Xmx2024m"

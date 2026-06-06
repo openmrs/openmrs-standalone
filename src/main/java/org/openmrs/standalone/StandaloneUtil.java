@@ -26,6 +26,12 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.nio.file.FileVisitResult;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.SimpleFileVisitor;
+import java.nio.file.attribute.BasicFileAttributes;
+import java.nio.file.attribute.UserDefinedFileAttributeView;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
@@ -563,5 +569,61 @@ public class StandaloneUtil {
 		}
 
 		return (String) properties.get("refapp.version");
+	}
+
+	private static final String MAC_QUARANTINE_ATTRIBUTE = "com.apple.quarantine";
+
+	/**
+	 * Recursively removes the macOS {@code com.apple.quarantine} extended attribute from every
+	 * file under the given root. Browsers tag every file extracted from a downloaded zip with
+	 * this attribute, and dyld then refuses to load the bundled ad-hoc-signed MariaDB dylibs
+	 * (e.g. libpcre2), so the embedded database aborts before its first start. Removing the
+	 * attribute is what a user would otherwise have to do manually with
+	 * {@code xattr -dr com.apple.quarantine <dir>}.
+	 *
+	 * <p>Safe to call on any platform and on trees without the attribute: file systems that do
+	 * not support user-defined extended attributes are skipped silently, and files without the
+	 * attribute are left untouched.
+	 *
+	 * @param root directory tree to clean
+	 */
+	public static void stripQuarantineAttributes(File root) {
+		if (root == null || !root.exists()) {
+			return;
+		}
+		try {
+			Files.walkFileTree(root.toPath(), new SimpleFileVisitor<Path>() {
+
+				@Override
+				public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) {
+					removeQuarantine(file);
+					return FileVisitResult.CONTINUE;
+				}
+
+				@Override
+				public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) {
+					removeQuarantine(dir);
+					return FileVisitResult.CONTINUE;
+				}
+
+				@Override
+				public FileVisitResult visitFileFailed(Path file, IOException exc) {
+					return FileVisitResult.CONTINUE;
+				}
+			});
+		} catch (IOException e) {
+			System.out.println("Unable to strip quarantine attributes under " + root + ": " + e.getMessage());
+		}
+	}
+
+	private static void removeQuarantine(Path path) {
+		try {
+			UserDefinedFileAttributeView view = Files.getFileAttributeView(path, UserDefinedFileAttributeView.class);
+			if (view != null && view.list().contains(MAC_QUARANTINE_ATTRIBUTE)) {
+				view.delete(MAC_QUARANTINE_ATTRIBUTE);
+			}
+		} catch (IOException ignored) {
+			// unsupported file system or permission issue - leave the file as is
+		}
 	}
 }
