@@ -5,12 +5,20 @@ set -e
 DISTRO_DIR="${1:-../target/distro}"
 
 echo "🚀 Starting OpenMRS in Docker from $DISTRO_DIR..."
+
+# Prefer the Compose v2 plugin ("docker compose"); fall back to the standalone v1 binary.
+# Newer CI runner images ship only the v2 plugin.
+if docker compose version >/dev/null 2>&1; then
+  COMPOSE="docker compose"
+else
+  COMPOSE="docker-compose"
+fi
 # Fix the auto-generated Dockerfile base image tag (nightly-amazoncorretto-11 was removed from Docker Hub)
 sed -i.bak 's|openmrs/openmrs-core:nightly-amazoncorretto-11|openmrs/openmrs-core:2.8.x|g' "$DISTRO_DIR/web/Dockerfile" && rm -f "$DISTRO_DIR/web/Dockerfile.bak"
 # Ensure distro files are world-readable: `openmrs assemble` writes importmap.json and
 # routes.registry.json with mode 600, which the non-root container user cannot read after COPY.
 chmod -R a+rX "$DISTRO_DIR/web"
-docker-compose -f "$DISTRO_DIR/docker-compose.yml" up -d --build web
+$COMPOSE -f "$DISTRO_DIR/docker-compose.yml" up -d --build web
 
 # Wait for OpenMRS to start (max 180 seconds)
 echo "⏳ Waiting for OpenMRS to initialize..."
@@ -39,7 +47,7 @@ done
 
 echo "✅ OpenMRS is up. Proceeding to copy configuration checksums..."
 
-CONTAINER_ID=$(docker-compose -f "$DISTRO_DIR/docker-compose.yml" ps -q web)
+CONTAINER_ID=$($COMPOSE -f "$DISTRO_DIR/docker-compose.yml" ps -q web)
 
 # Copy checksums from the container. Use trailing /. on source to copy CONTENTS
 # into the destination directory (avoids nesting configuration_checksums/ inside
@@ -53,4 +61,4 @@ else
 fi
 
 echo "🧹 Shutting down Docker containers..."
-docker-compose -f "$DISTRO_DIR/docker-compose.yml" down
+$COMPOSE -f "$DISTRO_DIR/docker-compose.yml" down

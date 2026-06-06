@@ -21,10 +21,22 @@ git clone --depth 1 "$REPO_URL" "$WORK_DIR/esm-chartsearchai"
 
 echo "Installing dependencies..."
 cd "$WORK_DIR/esm-chartsearchai"
-yarn install
+
+# The ESM project pins its yarn version via the package.json "packageManager" field, which
+# newer yarn 1.x releases (>=1.22.20, as on CI runners) refuse to ignore. Route through
+# Corepack so the pinned yarn is used, without mutating the host's global yarn. Fall back
+# to plain yarn for environments without Corepack.
+export COREPACK_ENABLE_DOWNLOAD_PROMPT=0
+if command -v corepack >/dev/null 2>&1; then
+  YARN="corepack yarn"
+else
+  YARN="yarn"
+fi
+
+$YARN install
 
 echo "Building production bundle..."
-yarn build
+$YARN build
 
 echo "Copying build output to ${FRONTEND_DIR}/${MODULE_NAME}/..."
 mkdir -p "$FRONTEND_DIR/$MODULE_NAME"
