@@ -161,6 +161,15 @@ public class ApplicationController {
 					//else block with the await call such that we do not exit tomcat
 					if (!commandLineMode) {
 						StandaloneUtil.launchBrowser(userInterface.getTomcatPort(), contextName);
+					}
+
+					// Rebuild the Lucene search index after a fresh database import
+					// (demo/empty/wizard). The index lives on the filesystem, not in the
+					// imported SQL dump, so without this patient search returns nothing until
+					// the index is rebuilt by hand. Must run in command-line mode too - it was
+					// previously gated behind the GUI-only browser launch - and only after an
+					// import, so ordinary restarts (which reuse the existing index) are not slowed.
+					if (applyDatabaseChange != null) {
 						OpenmrsUtil.rebuildEntireSearchIndex(resourceUrl);
 					}
 					
