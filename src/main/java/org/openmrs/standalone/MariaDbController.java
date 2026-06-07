@@ -93,6 +93,12 @@ public class MariaDbController {
             ch.vorburger.mariadb4j.DBConfiguration builtConfig = mariaDBConfig.build();
             MacOsBinaryPatcher.patchIfNeeded(builtConfig, baseDir);
             mariaDB = DB.newEmbeddedDB(builtConfig);
+            // On first boot MariaDB4j extracts its binaries into baseDir only now - after the
+            // launcher's startup cleanup ran - and on a quarantined install (zip downloaded
+            // with a browser) the extracted/copied dylibs can inherit the quarantine
+            // attribute, which makes dyld refuse to load them. Strip again right before the
+            // binaries are first executed.
+            StandaloneUtil.stripQuarantineAttributes(baseDir);
             mariaDB.start();
 
             // Ensure root user exists and has correct password and privileges
