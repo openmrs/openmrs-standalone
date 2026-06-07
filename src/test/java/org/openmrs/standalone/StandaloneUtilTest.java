@@ -151,6 +151,26 @@ class StandaloneUtilTest {
         }
     }
 
+    /**
+     * Regression test: StandaloneUtil used to hold an eagerly-initialized static Properties
+     * captured at class-load time. When the class was first loaded outside this test's
+     * OpenmrsUtil mock (e.g. by another test class running earlier), the static was null on CI
+     * and the password-reset flow threw an NPE instead of changing the password. Forcing that
+     * state makes the scenario deterministic; once the static is removed the reflective lookup
+     * finds nothing and the flow must succeed on its own parameters.
+     */
+    @Test
+    public void shouldChangePasswordEvenWhenClassWasLoadedWithoutRuntimeProperties() throws Exception {
+        try {
+            java.lang.reflect.Field staticProperties = StandaloneUtil.class.getDeclaredField("properties");
+            staticProperties.setAccessible(true);
+            staticProperties.set(null, null);
+        } catch (NoSuchFieldException fieldRemoved) {
+            // the eager static no longer exists - the latent failure mode is structurally gone
+        }
+        shouldChangePasswordWhenResetFlagIsTrue();
+    }
+
     @Test
     public void shouldChangePasswordWhenResetFlagIsTrue() throws Exception {
         properties.setProperty(KEY_RESET_CONNECTION_PASSWORD, "true");

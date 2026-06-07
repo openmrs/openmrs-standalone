@@ -72,7 +72,6 @@ public class StandaloneUtil {
 	
 	private static String CONTEXT_NAME;
 
-	static Properties properties = OpenmrsUtil.getRuntimeProperties(StandaloneUtil.getContextName());
 
 	/**
 	 * Checks to see if a specific port is available.
@@ -188,7 +187,8 @@ public class StandaloneUtil {
 				if ("true".equalsIgnoreCase(resetConnectionPassword)) {
 					String newPassword = generateSecurePassword();
 
-					boolean passwordChanged = setMysqlPassword(connectionString, mariaDBPort, username, newPassword);
+					boolean passwordChanged = setMysqlPassword(connectionString, mariaDBPort, username, newPassword,
+				    properties.getProperty(KEY_CONNECTION_PASSWORD, ""));
 
 					if (passwordChanged) {
 						properties.put(KEY_CONNECTION_PASSWORD, newPassword);
@@ -331,14 +331,16 @@ public class StandaloneUtil {
 	 * @param mysqlPort the MySQL port number.
 	 * @param username the MySQL username.
 	 * @param newPassword the new password to set.
+	 * @param currentPassword the password currently configured for the openmrs user.
 	 * @return true if the password was successfully changed, false otherwise.
 	 * @throws Exception if an error occurs while setting the password.
 	 */
-	private static boolean setMysqlPassword(String url, String mysqlPort, String username, String newPassword) throws Exception {
+	private static boolean setMysqlPassword(String url, String mysqlPort, String username, String newPassword,
+	        String currentPassword) throws Exception {
 		try {
 			Class.forName("org.mariadb.jdbc.Driver").newInstance();
 
-			MariaDbController.startMariaDB(mysqlPort, properties.getProperty("connection.password", ""));
+			MariaDbController.startMariaDB(mysqlPort, currentPassword);
 
 			String sqlCreate = "CREATE USER IF NOT EXISTS '" + username + "'@'localhost' IDENTIFIED BY '" + newPassword + "';";
 			String sqlAlter = "ALTER USER '" + username + "'@'localhost' IDENTIFIED BY '" + newPassword + "';";
