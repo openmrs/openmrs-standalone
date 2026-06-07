@@ -14,6 +14,9 @@
 package org.openmrs.standalone;
 
 import java.io.File;
+import java.io.IOException;
+import java.net.InetSocketAddress;
+import java.net.Socket;
 import java.nio.file.Paths;
 import java.sql.Connection;
 import java.sql.DriverManager;
@@ -127,11 +130,41 @@ public class MariaDbController {
 
     public static void stopMariaDB() throws ManagedProcessException {
         if (mariaDB != null) {
+            int port = mariaDB.getConfiguration().getPort();
             mariaDB.stop();
             mariaDB = null;
+            // DB.stop() can return while mariadbd is still shutting down. A caller that
+            // immediately restarts (e.g. the password-reset flow) then races the dying
+            // process for the port and the data directory locks - a coin flip that shows
+            // up as 'Address already in use' or an instant start failure. Wait until the
+            // port is actually released so that stop is synchronous.
+            waitForPortToBeReleased(port, 30000);
         } else {
             System.out.println("MariaDB has already been stopped");
         }
+    }
+
+    private static void waitForPortToBeReleased(int port, long timeoutMillis) {
+        if (port <= 0) {
+            return;
+        }
+        long deadline = System.currentTimeMillis() + timeoutMillis;
+        while (System.currentTimeMillis() < deadline) {
+            try (Socket socket = new Socket()) {
+                socket.connect(new InetSocketAddress("localhost", port), 250);
+                // Still accepting connections - the old process is not gone yet.
+                try {
+                    Thread.sleep(200);
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                    return;
+                }
+            } catch (IOException expected) {
+                // Connection refused - the port has been released.
+                return;
+            }
+        }
+        System.err.println("Timed out waiting for MariaDB to release port " + port);
     }
 
     public static String getRootPassword() {
