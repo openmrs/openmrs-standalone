@@ -20,6 +20,14 @@ if [ ! -d "$CONFIG_DIR" ]; then
     exit 1
 fi
 
+# Normalize both directories to canonical POSIX paths. On Windows (git-bash) Maven passes
+# mixed-separator paths like D:\a\repo\target/distro/... whose textual prefix never matches
+# the paths emitted by find, so the relative-path computation below produced filenames
+# containing full absolute paths and the script failed.
+CONFIG_DIR=$(cd "$CONFIG_DIR" && pwd)
+mkdir -p "$CHECKSUMS_DIR"
+CHECKSUMS_DIR=$(cd "$CHECKSUMS_DIR" && pwd)
+
 # Determine md5 command (macOS uses md5, Linux uses md5sum)
 if command -v md5sum &> /dev/null; then
     md5cmd() { md5sum "$1" | cut -d' ' -f1; }
