@@ -38,27 +38,36 @@ import java.util.List;
  *
  * <p>We work around both by shipping the three MSVC runtime DLLs under
  * {@code native/windows-x64/lib/} (alongside the macOS dylibs handled by
- * {@link MacOsBinaryPatcher}) and pre-loading them by absolute path into this JVM as early as
- * possible - always before the embedded Tomcat webapp (and therefore ONNX) starts. Tomcat runs
- * in the same process, so once these modules are resident the Windows loader satisfies
- * {@code onnxruntime.dll}'s imports from them (matched by base name) instead of from any
- * missing/older copy in {@code System32}, regardless of where ONNX extracted its DLL.
+ * {@link MacOsBinaryPatcher}) and pre-loading them by absolute path into this JVM before the
+ * embedded Tomcat webapp (and therefore ONNX) starts. Tomcat runs in the same process, so a DLL
+ * we make resident is what the Windows loader binds {@code onnxruntime.dll}'s imports to (matched
+ * by base name), regardless of where ONNX extracted its DLL.
+ *
+ * <p>Important nuance: the JVM itself (a C++ program) usually loads its own
+ * {@code vcruntime140.dll} / {@code msvcp140.dll} from the JDK {@code bin} directory at startup,
+ * before any Java runs. {@code System.load()} on a base name that is already resident returns the
+ * existing module - it does NOT replace it with our file. So this preload's real effect is to
+ * supply runtime DLLs the process does <em>not</em> already have - most importantly
+ * {@code vcruntime140_1.dll} (the VS2019+ exception-handling runtime that onnxruntime needs and
+ * that minimal JREs / clean Windows installs frequently lack). For {@code vcruntime140.dll} /
+ * {@code msvcp140.dll} the JVM's already-resident copies normally win and are normally compatible.
  *
  * <p>Load order matters: {@code msvcp140.dll} depends on the {@code vcruntime140} pair, so
  * those are loaded first.
  *
  * <p>We pre-load <em>unconditionally</em>. An earlier version skipped when
  * {@code System32\msvcp140.dll} already existed, to avoid shadowing a newer system runtime - but
- * that broke the common real case (a machine with an older/partial runtime present still failed
- * with 1114, because onnxruntime bound to the stale system copy and our bundle was never loaded).
- * The bundled DLLs come from the latest VC++ 2015-2022 redistributable, which is
- * forward-compatible with the onnxruntime build we ship, so loading them first is safe and is the
- * reliable fix.
+ * that broke the common real case: a machine missing {@code vcruntime140_1.dll} still failed with
+ * 1114 because the guard saw msvcp140 present and skipped, so our bundle (with the missing DLL)
+ * was never loaded. The bundled DLLs come from the latest VC++ 2015-2022 redistributable.
  *
- * <p>Best effort and a no-op off Windows x64. Every decision and load result is logged, so a
- * residual failure is diagnosable from the log alone: if preload reports {@code 3/3 loaded} yet
- * ONNX still fails, the cause is <em>not</em> the VC++ runtime (look to CPU features, antivirus,
- * or a corrupt extraction).
+ * <p>Best effort and a no-op off Windows x64. Every decision and load result is logged. Note when
+ * reading the log: a {@code pre-loaded} line means {@code System.load} succeeded, which for an
+ * already-resident base name just returns the existing (JVM/system) copy - so {@code 3/3 loaded}
+ * does NOT prove our exact files are in use. A residual failure could still be a resident-but-
+ * incompatible {@code msvcp140.dll} (unfixable in-process; install the VC++ Redistributable or use
+ * a JDK that bundles a compatible one) or a non-runtime cause (CPU features, antivirus, corrupt
+ * extraction).
  */
 public final class WindowsRuntimePatcher {
 
@@ -99,24 +108,28 @@ public final class WindowsRuntimePatcher {
                     + BUNDLED_DLLS.size() + " bundled MSVC runtime DLLs present in " + dir);
         }
 
-        int loaded = 0;
+        int succeeded = 0;
         for (File dll : libraries) {
             try {
                 System.load(dll.getAbsolutePath());
-                loaded++;
-                System.out.println("ChartSearchAI: pre-loaded " + dll.getAbsolutePath());
+                succeeded++;
+                // "succeeded" not "loaded": for a base name already resident (e.g. the JVM's own
+                // vcruntime140/msvcp140) System.load returns the existing module without mapping
+                // our file - see the class javadoc. So this line does not prove our exact file is
+                // in use; it proves a module of that name is resident.
+                System.out.println("ChartSearchAI: System.load succeeded for " + dll.getAbsolutePath());
             }
             catch (Throwable t) {
                 // Throwable (not Exception) is deliberate: System.load reports failure via
-                // UnsatisfiedLinkError, which is an Error (e.g. an already-resident copy of the
-                // same base name, an arch mismatch, or a corrupt file). Keep going rather than
+                // UnsatisfiedLinkError, which is an Error (e.g. an arch mismatch, a corrupt file,
+                // or a symbol missing from an older resident dependency). Keep going rather than
                 // abort startup.
-                System.out.println("ChartSearchAI: could not pre-load " + dll.getAbsolutePath()
+                System.out.println("ChartSearchAI: System.load failed for " + dll.getAbsolutePath()
                         + " (" + t + "); continuing.");
             }
         }
-        System.out.println("ChartSearchAI: MSVC runtime preload complete - " + loaded + "/"
-                + BUNDLED_DLLS.size() + " loaded from " + dir);
+        System.out.println("ChartSearchAI: MSVC runtime preload done - " + succeeded + "/"
+                + libraries.size() + " System.load calls succeeded from " + dir);
     }
 
     /**
