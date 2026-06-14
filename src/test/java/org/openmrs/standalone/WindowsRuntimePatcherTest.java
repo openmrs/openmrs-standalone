@@ -15,8 +15,6 @@ package org.openmrs.standalone;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assumptions.assumeFalse;
 
 import java.io.File;
@@ -74,20 +72,6 @@ class WindowsRuntimePatcherTest {
         assertEquals(Arrays.asList("vcruntime140.dll", "msvcp140.dll"),
             resolved.stream().map(File::getName).collect(Collectors.toList()),
             "missing DLLs are skipped while declared order is preserved");
-    }
-
-    @Test
-    void systemRuntimePresent_trueWhenSystemDirHasMsvcp140() throws Exception {
-        Files.createFile(tempDir.resolve("msvcp140.dll"));
-        assertTrue(WindowsRuntimePatcher.systemRuntimePresent(tempDir.toFile()),
-            "an installed system runtime must be detected so the bundled copy does not shadow it");
-    }
-
-    @Test
-    void systemRuntimePresent_falseWhenSystemDirLacksMsvcp140() {
-        // tempDir exists but is empty: this is the clean-Windows case the bundle exists to fix.
-        assertFalse(WindowsRuntimePatcher.systemRuntimePresent(tempDir.toFile()),
-            "a machine without the runtime must NOT be considered to have it");
     }
 
     @Test

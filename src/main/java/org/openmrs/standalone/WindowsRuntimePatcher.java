@@ -32,27 +32,33 @@ import java.util.List;
  * and every chartsearchai query then dies with {@code NoClassDefFoundError: Could not
  * initialize class ai.onnxruntime.OrtEnvironment}.
  *
- * <p>We work around this by shipping the three MSVC runtime DLLs under
+ * <p>The same 1114 error also occurs when the machine has an <em>older or partial</em> VC++
+ * runtime: e.g. {@code msvcp140.dll} present but a stale version, or {@code vcruntime140_1.dll}
+ * (added with VS2019) missing, so onnxruntime's C++ runtime init can't complete.
+ *
+ * <p>We work around both by shipping the three MSVC runtime DLLs under
  * {@code native/windows-x64/lib/} (alongside the macOS dylibs handled by
- * {@link MacOsBinaryPatcher}) and pre-loading them by absolute path into this JVM before the
- * embedded Tomcat webapp starts. Tomcat runs in the same process, so once these modules are
- * resident the Windows loader satisfies {@code onnxruntime.dll}'s imports from the
- * already-loaded modules (matched by base name) regardless of where the DLL was extracted.
+ * {@link MacOsBinaryPatcher}) and pre-loading them by absolute path into this JVM as early as
+ * possible - always before the embedded Tomcat webapp (and therefore ONNX) starts. Tomcat runs
+ * in the same process, so once these modules are resident the Windows loader satisfies
+ * {@code onnxruntime.dll}'s imports from them (matched by base name) instead of from any
+ * missing/older copy in {@code System32}, regardless of where ONNX extracted its DLL.
  *
  * <p>Load order matters: {@code msvcp140.dll} depends on the {@code vcruntime140} pair, so
  * those are loaded first.
  *
- * <p>The bundled DLLs are a <em>fallback</em>, not an override: if the machine already has the
- * Visual C++ Redistributable installed (its DLLs live in {@code %SystemRoot%\System32}), this
- * does nothing and lets ONNX use that system copy. Force-loading our bundled copy would shadow
- * the system one for {@code onnxruntime.dll}'s imports (the loader binds an import to whatever
- * module of that base name is already resident), which could break ONNX on a machine whose
- * system runtime is newer than ours. So we only inject the bundle when the runtime is absent -
- * the clean-Windows case this exists to fix.
+ * <p>We pre-load <em>unconditionally</em>. An earlier version skipped when
+ * {@code System32\msvcp140.dll} already existed, to avoid shadowing a newer system runtime - but
+ * that broke the common real case (a machine with an older/partial runtime present still failed
+ * with 1114, because onnxruntime bound to the stale system copy and our bundle was never loaded).
+ * The bundled DLLs come from the latest VC++ 2015-2022 redistributable, which is
+ * forward-compatible with the onnxruntime build we ship, so loading them first is safe and is the
+ * reliable fix.
  *
- * <p>Best effort and a no-op on every platform other than Windows x64. If the bundled DLLs are
- * absent (e.g. a build that did not ship them), any failure to pre-load is logged and ignored -
- * ONNX will simply fail the same way it would have without this class.
+ * <p>Best effort and a no-op off Windows x64. Every decision and load result is logged, so a
+ * residual failure is diagnosable from the log alone: if preload reports {@code 3/3 loaded} yet
+ * ONNX still fails, the cause is <em>not</em> the VC++ runtime (look to CPU features, antivirus,
+ * or a corrupt extraction).
  */
 public final class WindowsRuntimePatcher {
 
@@ -70,16 +76,10 @@ public final class WindowsRuntimePatcher {
     /**
      * Pre-loads the bundled MSVC runtime DLLs into this JVM if running on Windows x64.
      * A no-op on any other platform. Never throws: a missing bundle or a failed load is logged
-     * and execution continues.
+     * and execution continues. Logs every step so a residual ONNX failure is diagnosable.
      */
     public static void preloadIfNeeded() {
         if (!isWindowsX64()) {
-            return;
-        }
-
-        if (systemRuntimePresent(windowsSystemDir())) {
-            // The machine already has the Visual C++ Redistributable; use it rather than
-            // shadowing it with our (possibly older) bundled copy.
             return;
         }
 
@@ -89,30 +89,34 @@ public final class WindowsRuntimePatcher {
         }
         catch (IOException e) {
             System.out.println("ChartSearchAI: no bundled MSVC runtime found (" + e.getMessage()
-                    + "); relying on the system Visual C++ Redistributable for ONNX Runtime.");
+                    + "); ONNX Runtime will rely on the system Visual C++ runtime.");
             return;
         }
 
         List<File> libraries = resolveLibraries(dir);
         if (libraries.size() < BUNDLED_DLLS.size()) {
             System.out.println("ChartSearchAI: only " + libraries.size() + " of "
-                    + BUNDLED_DLLS.size() + " bundled MSVC runtime DLLs present in " + dir
-                    + "; ONNX Runtime may fail to load if the system lacks the Visual C++ Redistributable.");
+                    + BUNDLED_DLLS.size() + " bundled MSVC runtime DLLs present in " + dir);
         }
 
+        int loaded = 0;
         for (File dll : libraries) {
             try {
                 System.load(dll.getAbsolutePath());
+                loaded++;
+                System.out.println("ChartSearchAI: pre-loaded " + dll.getAbsolutePath());
             }
             catch (Throwable t) {
                 // Throwable (not Exception) is deliberate: System.load reports failure via
-                // UnsatisfiedLinkError, which is an Error - an already-resident system copy, an
-                // arch mismatch, or a corrupt file. ONNX can still succeed via the system runtime,
-                // so log and keep going rather than abort startup.
+                // UnsatisfiedLinkError, which is an Error (e.g. an already-resident copy of the
+                // same base name, an arch mismatch, or a corrupt file). Keep going rather than
+                // abort startup.
                 System.out.println("ChartSearchAI: could not pre-load " + dll.getAbsolutePath()
                         + " (" + t + "); continuing.");
             }
         }
+        System.out.println("ChartSearchAI: MSVC runtime preload complete - " + loaded + "/"
+                + BUNDLED_DLLS.size() + " loaded from " + dir);
     }
 
     /**
@@ -153,24 +157,5 @@ public final class WindowsRuntimePatcher {
         String os = System.getProperty("os.name", "").toLowerCase();
         String arch = System.getProperty("os.arch", "").toLowerCase();
         return os.contains("win") && (arch.equals("amd64") || arch.equals("x86_64"));
-    }
-
-    /**
-     * Whether the Windows system directory already holds the Visual C++ runtime. The
-     * redistributable installs {@code vcruntime140.dll} / {@code msvcp140.dll} directly into
-     * {@code System32}; the presence of {@code msvcp140.dll} (the C++ standard library, the
-     * heaviest of the set) is a reliable proxy for "the runtime is installed system-wide".
-     */
-    static boolean systemRuntimePresent(File systemDir) {
-        return new File(systemDir, "msvcp140.dll").isFile();
-    }
-
-    /** The 64-bit Windows system directory, e.g. {@code C:\Windows\System32}. */
-    private static File windowsSystemDir() {
-        String root = System.getenv("SystemRoot");
-        if (root == null || root.isEmpty()) {
-            root = "C:\\Windows";
-        }
-        return new File(root, "System32");
     }
 }
