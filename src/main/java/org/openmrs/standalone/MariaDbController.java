@@ -54,7 +54,9 @@ public class MariaDbController {
         }
 
         String os = System.getProperty("os.name").toLowerCase();
+        String arch = System.getProperty("os.arch").toLowerCase();
         boolean isWindows = os.contains("win");
+        boolean isMacIntel = os.contains("mac") && (arch.equals("x86_64") || arch.equals("amd64"));
 
         // Build DB configuration
         mariaDBConfig = DBConfigurationBuilder.newBuilder();
@@ -86,8 +88,33 @@ public class MariaDbController {
                 stmt.execute("ALTER USER 'root'@'localhost' IDENTIFIED BY '" + ROOT_PASSWORD + "';");
                 stmt.execute("GRANT ALL PRIVILEGES ON *.* TO 'root'@'localhost' WITH GRANT OPTION;");
             }
+        } else if (isMacIntel) {
+            // Intel (x86_64) Macs have no bundled MariaDB: mariaDB4j ships only Linux x64, macOS
+            // arm64 and Windows x64 binaries, and no maintained source publishes a modern x86_64
+            // macOS build. Fall back to a MariaDB the user installed (e.g. `brew install mariadb`)
+            // by pointing mariaDB4j at it instead of unpacking from the classpath. The data dir
+            // stays the writable app dir set above; only the program files come from the system.
+            File systemBaseDir = SystemMariaDb.locateBaseDir();
+            if (systemBaseDir == null) {
+                throw new IllegalStateException(
+                        "No bundled MariaDB is available for Intel (x86_64) Macs, and none was found on this system. "
+                        + "Install one with 'brew install mariadb' (or put mariadbd on the PATH) and restart. "
+                        + "On Apple Silicon, the bundled database works out of the box - if you are on an Apple "
+                        + "Silicon Mac, relaunch with a native arm64 Java instead of an x86_64 (Rosetta) one.");
+            }
+            mariaDBConfig.setUnpackingFromClasspath(false);
+            mariaDBConfig.setBaseDir(systemBaseDir);
+            // Avoid mariaDB4j creating its default <baseDir>/libs inside the (often read-only)
+            // system prefix during prepareDirectories(); point it at the install's real lib dir.
+            mariaDBConfig.setLibDir(SystemMariaDb.resolveLibDir(systemBaseDir));
+            mariaDB = DB.newEmbeddedDB(mariaDBConfig.build());
+            mariaDB.start();
+
+            mariaDB.run("ALTER USER 'root'@'localhost' IDENTIFIED BY '" + ROOT_PASSWORD + "';");
+            mariaDB.run("GRANT ALL PRIVILEGES ON *.* TO 'root'@'localhost' WITH GRANT OPTION;");
         } else {
-            // For Linux and macOS, we use the standard DB class.
+            // For Linux and Apple Silicon (arm64) macOS, we use the standard DB class with the
+            // bundled binaries. (Intel macOS is handled above, since no x86_64 mac binary ships.)
             // On macOS arm64 we first patch the bundled MariaDB binaries so they
             // do not require Homebrew at /opt/homebrew/... — see MacOsBinaryPatcher.
             ch.vorburger.mariadb4j.DBConfiguration builtConfig = mariaDBConfig.build();
