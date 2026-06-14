@@ -455,7 +455,12 @@ public class ApplicationController {
 			Properties updatedProperties = OpenmrsUtil.getRuntimeProperties(StandaloneUtil.getContextName());
 
 			MariaDbController.startMariaDB(mySqlPort, updatedProperties.getProperty("connection.password"));
-			
+
+			// Pre-load the bundled MSVC runtime so ONNX Runtime (chartsearchai embeddings) loads
+			// on Windows machines without the Visual C++ Redistributable. Tomcat is embedded in
+			// this same JVM, so the DLLs stay resident for the webapp. No-op off Windows x64.
+			WindowsRuntimePatcher.preloadIfNeeded();
+
 			contextName = StandaloneUtil.getContextName();
 			tomcatManager = null;
 			tomcatManager = new TomcatManager(contextName, userInterface.getTomcatPort());
