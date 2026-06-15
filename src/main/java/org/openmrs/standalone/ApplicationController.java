@@ -454,14 +454,6 @@ public class ApplicationController {
 			String mySqlPort = StandaloneUtil.setPortsAndMySqlPassword(userInterface.getMySqlPort(), userInterface.getTomcatPort() + "");
 			Properties updatedProperties = OpenmrsUtil.getRuntimeProperties(StandaloneUtil.getContextName());
 
-			// Supply the bundled MSVC runtime so ONNX Runtime (chartsearchai embeddings) loads on
-			// Windows machines missing the runtime DLLs it needs - chiefly vcruntime140_1.dll.
-			// Done before MariaDB so the runtime is in place as early as the launcher allows; the
-			// embedded Tomcat shares this JVM. (The JVM has already loaded its own vcruntime140 /
-			// msvcp140 at startup, so for those base names this is a no-op - see WindowsRuntimePatcher.)
-			// No-op off Windows x64.
-			WindowsRuntimePatcher.preloadIfNeeded();
-
 			MariaDbController.startMariaDB(mySqlPort, updatedProperties.getProperty("connection.password"));
 
 			contextName = StandaloneUtil.getContextName();

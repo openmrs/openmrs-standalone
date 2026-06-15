@@ -1,6 +1,6 @@
-# Native libraries shipped with the standalone (macOS dylibs, Windows MSVC
-# runtime DLLs, Linux .so) must never be EOL- or encoding-normalized, regardless
-# of a contributor's core.autocrlf / core.eol settings. Without this, a clone with
+# Native libraries shipped with the standalone (e.g. the macOS arm64 dylibs under
+# src/main/native/) must never be EOL- or encoding-normalized, regardless of a
+# contributor's core.autocrlf / core.eol settings. Without this, a clone with
 # autocrlf=true relies solely on git's content heuristic to leave them untouched.
 *.dll   binary
 *.dylib binary

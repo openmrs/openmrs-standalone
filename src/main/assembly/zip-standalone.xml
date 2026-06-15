@@ -74,14 +74,10 @@
 			<outputDirectory>${project.build.finalName}/appdata/chartsearchai</outputDirectory>
 		</fileSet>
 		<!--
-			Bundled native libraries, shipped outside database/ so they survive the
-			database/ folder being wiped on initial setup:
-			- macos-arm64/ : pcre2 + openssl@3 dylibs used by MacOsBinaryPatcher to fix
-			  the upstream mariaDB4j-db-macos-arm64 binaries that hard-code
-			  /opt/homebrew/... load paths.
-			- windows-x64/ : MSVC runtime DLLs pre-loaded by WindowsRuntimePatcher so
-			  ONNX Runtime (chartsearchai embeddings) loads without the Visual C++
-			  Redistributable installed.
+			Bundled macOS arm64 dylibs (pcre2, openssl@3) used by MacOsBinaryPatcher
+			to fix the upstream mariaDB4j-db-macos-arm64 binaries that hard-code
+			/opt/homebrew/... load paths. Bundling them here (outside database/)
+			keeps them safe from the database/ folder being wiped on initial setup.
 		-->
 		<fileSet>
 			<directory>src/main/native</directory>
