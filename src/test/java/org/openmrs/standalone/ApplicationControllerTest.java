@@ -1,0 +1,61 @@
+package org.openmrs.standalone;
+
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import org.junit.jupiter.api.Test;
+
+/**
+ * Unit tests for the headless UI-mode decision in {@link ApplicationController}. These cover the
+ * fallback that prevents a HeadlessException when the GUI is requested on a host with no display.
+ */
+class ApplicationControllerTest {
+
+	// resolveCommandLine: GUI request on a headless host must downgrade to the command line.
+
+	@Test
+	void resolveCommandLine_guiRequestOnHeadlessHost_usesCommandLine() {
+		assertTrue(ApplicationController.resolveCommandLine(false, true));
+	}
+
+	@Test
+	void resolveCommandLine_guiRequestWithDisplay_keepsGui() {
+		assertFalse(ApplicationController.resolveCommandLine(false, false));
+	}
+
+	@Test
+	void resolveCommandLine_explicitCommandLine_alwaysCommandLine() {
+		assertTrue(ApplicationController.resolveCommandLine(true, false));
+		assertTrue(ApplicationController.resolveCommandLine(true, true));
+	}
+
+	// resolveNonInteractive: a headless GUI fallback with no console must run unattended,
+	// otherwise the interactive read loop would spin on EOF.
+
+	@Test
+	void resolveNonInteractive_headlessFallbackNoConsole_runsUnattended() {
+		assertTrue(ApplicationController.resolveNonInteractive(false, false, true, false));
+	}
+
+	@Test
+	void resolveNonInteractive_headlessFallbackWithConsole_staysInteractive() {
+		assertFalse(ApplicationController.resolveNonInteractive(false, false, true, true));
+	}
+
+	@Test
+	void resolveNonInteractive_explicitCommandLineNoConsole_respectsUserChoice() {
+		// The user explicitly asked for -commandline, so we don't silently force unattended.
+		assertFalse(ApplicationController.resolveNonInteractive(false, true, true, false));
+	}
+
+	@Test
+	void resolveNonInteractive_explicitFlag_alwaysUnattended() {
+		assertTrue(ApplicationController.resolveNonInteractive(true, false, false, true));
+		assertTrue(ApplicationController.resolveNonInteractive(true, true, true, false));
+	}
+
+	@Test
+	void resolveNonInteractive_guiWithDisplay_staysInteractive() {
+		assertFalse(ApplicationController.resolveNonInteractive(false, false, false, true));
+	}
+}

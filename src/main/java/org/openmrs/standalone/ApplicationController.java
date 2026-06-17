@@ -16,6 +16,7 @@ package org.openmrs.standalone;
 import ch.vorburger.exec.ManagedProcessException;
 import org.apache.commons.io.FileUtils;
 
+import java.awt.GraphicsEnvironment;
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.File;
@@ -110,7 +111,23 @@ public class ApplicationController {
 			}
 		}
 		
-		//If running in non interactive mode, write the process id 
+		//The GUI (MainFrame) needs a graphical display. When none is available
+		//(e.g. a headless Linux server with no X11 DISPLAY) building the JFrame
+		//throws a HeadlessException and the launcher dies before doing anything
+		//useful. Fall back to the command-line interface instead of crashing.
+		boolean headless = GraphicsEnvironment.isHeadless();
+		boolean guiFallback = !commandLine && headless;
+		//Resolve nonInteractive BEFORE overwriting commandLine, since the decision
+		//depends on whether the GUI (not -commandline) was the original request.
+		nonInteractive = resolveNonInteractive(nonInteractive, commandLine, headless, System.console() != null);
+		commandLine = resolveCommandLine(commandLine, headless);
+		if (guiFallback) {
+			System.out.println("No graphical display detected; falling back to "
+			        + (nonInteractive ? "non-interactive " : "") + "command-line mode. "
+			        + "Pass -commandline (optionally with -noninteractive) to select it explicitly.");
+		}
+
+		//If running in non interactive mode, write the process id
 		//to be used with kill -9
 		if (nonInteractive) {
 			writeProcessIdFile();
@@ -130,7 +147,37 @@ public class ApplicationController {
 		
 		new ApplicationController(commandLine, nonInteractive, mode, tomcatPort, mySqlPort);
 	}
-	
+
+	/**
+	 * Decides the effective UI mode. The GUI cannot run on a headless JVM, so a GUI request on a
+	 * headless host is downgraded to the command-line interface. Pure (no environment access) so the
+	 * decision can be unit-tested without a real display.
+	 *
+	 * @param commandLineRequested whether -commandline was passed
+	 * @param headless whether the JVM has no graphical display
+	 * @return true if the command-line interface should be used
+	 */
+	static boolean resolveCommandLine(boolean commandLineRequested, boolean headless) {
+		return commandLineRequested || headless;
+	}
+
+	/**
+	 * Decides whether to run non-interactively. A GUI request that falls back to the command line on a
+	 * headless host with no attached console (launched via nohup/systemd/cron or with redirected stdin)
+	 * must run unattended: the interactive loop would otherwise read EOF forever, spinning on a null
+	 * line. An explicit -commandline request is left as the user chose it. Pure so it can be unit-tested.
+	 *
+	 * @param nonInteractiveRequested whether -noninteractive was passed
+	 * @param commandLineRequested whether -commandline was passed
+	 * @param headless whether the JVM has no graphical display
+	 * @param consoleAttached whether an interactive console is attached (System.console() != null)
+	 * @return true if the server should run non-interactively
+	 */
+	static boolean resolveNonInteractive(boolean nonInteractiveRequested, boolean commandLineRequested,
+	        boolean headless, boolean consoleAttached) {
+		return nonInteractiveRequested || (!commandLineRequested && headless && !consoleAttached);
+	}
+
 	/**
 	 * Starts running the server.
 	 */

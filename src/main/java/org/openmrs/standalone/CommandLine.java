@@ -50,7 +50,10 @@ public class CommandLine implements UserInterface {
 	private boolean running = false;
 	
 	private boolean exiting = false;
-	
+
+	/** True once the user has confirmed an explicit exit; suppresses the EOF default-mode import. */
+	private boolean exitRequested = false;
+
 	private SwingWorker workerThread;
 	
 	private boolean nonInteractive = false;
@@ -142,10 +145,32 @@ public class CommandLine implements UserInterface {
 		processCommadLine();
 	}
 	
-	private void processCommadLine() {
+	/**
+	 * Reads a line from stdin and trims it, returning null when the stream is at EOF (console closed,
+	 * Ctrl+D, or stdin redirected from /dev/null). Callers must treat null as "no input": without this,
+	 * {@code readLine().trim()} throws a NullPointerException on EOF and the read loop spins on it.
+	 */
+	private String readTrimmedLine() throws IOException {
+		String line = bufferedReader.readLine();
+		return line == null ? null : line.trim();
+	}
+
+	/**
+	 * Reads and dispatches one command. Returns true only when stdin is at EOF, so callers can tell an
+	 * exhausted stream apart from the user typing {@code exit} (both stop the loop via {@code exiting},
+	 * but only EOF should trigger the initial-config default - see {@link #showInitialConfig()}).
+	 */
+	private boolean processCommadLine() {
 		try {
-			String line = bufferedReader.readLine().trim();
-			
+			String line = readTrimmedLine();
+			if (line == null) {
+				//stdin reached EOF (console closed or Ctrl+D). Stop the interactive
+				//command loop so we don't spin on null; the server keeps running on its
+				//own (Tomcat) threads.
+				exiting = true;
+				return true;
+			}
+
 			if (line.contains(CMD_LAUNCH_BROWSE)) {
 				appController.launchBrowser(tomcatPort);
 			} else if (line.startsWith(CMD_START)) {
@@ -166,7 +191,8 @@ public class CommandLine implements UserInterface {
 		}
 		catch (IOException ex) {
 			ex.printStackTrace();
-		}	
+		}
+		return false;
 	}
 	
 	private void startServer(String[] args) {
@@ -198,7 +224,8 @@ public class CommandLine implements UserInterface {
 		if (running) {
 			try {
 				System.out.println(UserInterface.PROMPT_STOP + " Type: y/yes or n/no");
-				String line = bufferedReader.readLine().trim();
+				String line = readTrimmedLine();
+				//A null line means stdin closed at the prompt; treat it as "no" and leave the server running.
 				if ("yes".equalsIgnoreCase(line) || "y".equalsIgnoreCase(line)) {
 					setStatus(UserInterface.STATUS_MESSAGE_STOPPING);
 					appController.stop();
@@ -213,9 +240,11 @@ public class CommandLine implements UserInterface {
 	private void exit() {
 		try {
 			System.out.println(UserInterface.PROMPT_EXIT + " Type: y/yes or n/no");
-			String line = bufferedReader.readLine().trim();
+			String line = readTrimmedLine();
+			//A null line means stdin closed at the prompt; treat it as "no" and do not exit.
 			if ("yes".equalsIgnoreCase(line) || "y".equalsIgnoreCase(line)) {
 				exiting = true;
+				exitRequested = true;
 				appController.exit();
 			}
 		}
@@ -233,7 +262,16 @@ public class CommandLine implements UserInterface {
     	}
     	else {
 			System.out.println(UserInterface.PROMPT_CHOOSE_DEMO_EMPTY_OR_EXPERT_MODE + " Type: " + CMD_DEMO + " or " + CMD_EMPTY + " or " + CMD_EXPERT);
-			processCommadLine();
+			boolean reachedEof = processCommadLine();
+			if (reachedEof && !exitRequested) {
+				//stdin closed (EOF) before a database mode was chosen. Apply the default mode so
+				//ApplicationController's initial-config loop terminates instead of re-prompting against
+				//a dead stream forever. Gated on EOF specifically (not the shared `exiting` flag), and
+				//skipped once the user has asked to quit, so that typing `exit` here - directly or
+				//followed by EOF on a later prompt - never triggers a destructive database import that
+				//would race the System.exit() that exit() schedules.
+				appController.setApplyDatabaseChange(mode);
+			}
     	}
     }
 }
