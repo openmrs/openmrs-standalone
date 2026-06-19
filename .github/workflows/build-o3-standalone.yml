@@ -133,6 +133,21 @@ jobs:
             || fail "appdata/lucene/indexes was not populated"
           echo "Built index: $(du -sh "$LUCENE" | cut -f1)"
 
+          # Functionally verify the baked index actually SERVES search (a present-but-empty index
+          # would pass the file check yet ship broken search). Refuse to publish unless real
+          # queries return hits. This is the gate that guarantees we never ship a standalone whose
+          # search only works after a first-run rebuild.
+          BASE="http://127.0.0.1:8081/openmrs"; AUTH="admin:Admin123"
+          for i in $(seq 1 30); do
+            [ "$(curl -s -o /dev/null -w '%{http_code}' -u "$AUTH" "$BASE/ws/rest/v1/session" || true)" = 200 ] && break
+            sleep 4
+          done
+          cnt() { curl -s -u "$AUTH" "$BASE/ws/rest/v1/$1" 2>/dev/null | python3 -c 'import json,sys;print(len(json.load(sys.stdin).get("results",[])))' 2>/dev/null || echo 0; }
+          CONCEPTS=$(cnt 'concept?q=malaria&limit=3'); PATIENTS=$(cnt 'patient?q=Smith&limit=3')
+          echo "Index serves search: concepts(malaria)=$CONCEPTS patients(Smith)=$PATIENTS"
+          { [ "${CONCEPTS:-0}" -ge 1 ] && [ "${PATIENTS:-0}" -ge 1 ]; } 2>/dev/null \
+            || fail "baked index present but search returned no hits (concepts=$CONCEPTS patients=$PATIENTS) — refusing to publish"
+
           echo "Stopping throwaway standalone..."
           stop_server
           for i in $(seq 1 30); do kill -0 "$BOOT_PID" 2>/dev/null || break; sleep 2; done
@@ -150,6 +165,20 @@ jobs:
           touch "$PRISTINE/appdata/lucene/.prebuilt"
           echo "Baked Lucene index into artifact ($DEST_COUNT files) + .prebuilt marker."
           rm -rf "$GITHUB_WORKSPACE/bakerun" 2>/dev/null || true
+
+      # Hard gate: never publish a standalone that would rebuild its search index on first run.
+      # If the bake above somehow did not leave a populated index + marker in the artifact, fail
+      # the build here so nothing is uploaded.
+      - name: Verify the baked search index is present (else fail the build)
+        working-directory: target
+        run: |
+          P="artifact/referenceapplication-standalone-${REFAPP_VERSION}/appdata/lucene"
+          [ -f "$P/.prebuilt" ] \
+            || { echo "::error::.prebuilt marker missing — refusing to publish a standalone that would rebuild the index on first run"; exit 1; }
+          N=$(find "$P/indexes" -type f 2>/dev/null | wc -l | tr -d ' ')
+          [ "${N:-0}" -ge 1 ] \
+            || { echo "::error::baked Lucene index is empty ($N files) — refusing to publish"; exit 1; }
+          echo "Verified baked index in artifact: $N files + .prebuilt marker."
 
       - name: Upload standalone as artifact
         uses: actions/upload-artifact@v4
