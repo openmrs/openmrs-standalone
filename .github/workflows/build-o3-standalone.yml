@@ -81,6 +81,76 @@ jobs:
           echo "Artifact tree (extracts in one step):"
           ls -1 artifact
 
+      # Pre-build ("bake") the Lucene search index so the downloaded standalone serves patient
+      # and concept search instantly on first run, instead of paying the index-rebuild cost (and
+      # showing empty search results) during first startup. We boot a THROWAWAY copy — never the
+      # uploaded artifact — against its bundled demo DB; on first boot the standalone rebuilds the
+      # index (no marker yet), and we copy only appdata/lucene back into the pristine artifact plus
+      # a .prebuilt marker the standalone reads (OpenmrsUtil.hasPrebuiltSearchIndex) to skip the
+      # rebuild. The published tree stays byte-identical to a normal build apart from that index.
+      - name: Bake the Lucene search index into the demo appdata
+        working-directory: target
+        run: |
+          set -uo pipefail
+          ART="referenceapplication-standalone-${REFAPP_VERSION}"
+          PRISTINE="$PWD/artifact/$ART"
+          [ -d "$PRISTINE" ] || { echo "::error::artifact dir $PRISTINE not found"; ls -1 artifact; exit 1; }
+
+          # The throwaway run dir MUST NOT live under /tmp (java.io.tmpdir): MariaDB4j deletes its
+          # data dir on shutdown when it sits under java.io.tmpdir, which would wipe the imported
+          # demo DB mid-run. $GITHUB_WORKSPACE is not under /tmp.
+          BAKE="$GITHUB_WORKSPACE/bakerun/$ART"
+          mkdir -p "$GITHUB_WORKSPACE/bakerun"
+          rsync -a "$PRISTINE/" "$BAKE/" || { echo "::error::failed to stage throwaway copy under $BAKE"; exit 1; }
+          cd "$BAKE" || { echo "::error::cannot cd into $BAKE"; exit 1; }
+
+          LOG=/tmp/bake-standalone.log
+          stop_server() {
+            [ -f .standalone.pid ] && kill -TERM "$(cat .standalone.pid)" 2>/dev/null || true
+            [ -n "${BOOT_PID:-}" ] && kill -TERM "$BOOT_PID" 2>/dev/null || true
+            pkill -f 'org.openmrs.standalone.ApplicationController' 2>/dev/null || true
+            pkill -f 'mariadbd' 2>/dev/null || true
+          }
+          fail() { echo "::error::$1"; echo "===== last 200 lines of standalone log ====="; tail -n 200 "$LOG" 2>/dev/null || true; stop_server; exit 1; }
+
+          echo "Booting throwaway standalone to build the search index..."
+          nohup java -jar openmrs-standalone.jar -commandline -noninteractive > "$LOG" 2>&1 &
+          BOOT_PID=$!
+
+          # The standalone triggers the rebuild on first boot; HibernateContextDAO logs this line
+          # when the index is fully built.
+          DONE=0
+          for i in $(seq 1 120); do            # ceiling ~20 min
+            kill -0 "$BOOT_PID" 2>/dev/null || fail "standalone process exited during index build"
+            if grep -q "Finished updating the search index" "$LOG" 2>/dev/null; then DONE=1; break; fi
+            echo "  ...building index (elapsed ~$((i*10))s)"
+            sleep 10
+          done
+          [ "$DONE" = 1 ] || fail "search index build did not finish in time"
+
+          LUCENE="$BAKE/appdata/lucene"
+          { [ -d "$LUCENE/indexes" ] && [ -n "$(find "$LUCENE/indexes" -type f -print -quit)" ]; } \
+            || fail "appdata/lucene/indexes was not populated"
+          echo "Built index: $(du -sh "$LUCENE" | cut -f1)"
+
+          echo "Stopping throwaway standalone..."
+          stop_server
+          for i in $(seq 1 30); do kill -0 "$BOOT_PID" 2>/dev/null || break; sleep 2; done
+          kill -KILL "$BOOT_PID" 2>/dev/null || true
+
+          # Copy ONLY the baked index into the pristine artifact, drop stale Lucene write locks,
+          # and add the marker that tells the standalone to skip the first-run rebuild.
+          SRC_COUNT=$(find "$LUCENE" -type f | wc -l | tr -d ' ')
+          rm -rf "$PRISTINE/appdata/lucene"
+          cp -a "$LUCENE" "$PRISTINE/appdata/lucene" || fail "failed to copy baked index into the artifact"
+          find "$PRISTINE/appdata/lucene" -name 'write.lock' -delete 2>/dev/null || true
+          DEST_COUNT=$(find "$PRISTINE/appdata/lucene" -type f | wc -l | tr -d ' ')
+          { [ "$SRC_COUNT" -gt 0 ] && [ "$DEST_COUNT" -ge 1 ]; } \
+            || fail "baked index copy incomplete: $DEST_COUNT files landed (src had $SRC_COUNT)"
+          touch "$PRISTINE/appdata/lucene/.prebuilt"
+          echo "Baked Lucene index into artifact ($DEST_COUNT files) + .prebuilt marker."
+          rm -rf "$GITHUB_WORKSPACE/bakerun" 2>/dev/null || true
+
       - name: Upload standalone as artifact
         uses: actions/upload-artifact@v4
         with:

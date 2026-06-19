@@ -266,6 +266,25 @@ public class OpenmrsUtil {
 		}
 	}
 
+	/**
+	 * Marker file dropped next to the Lucene index by the build pipeline when it has pre-built
+	 * (baked) the search index for the bundled demo database. Its presence lets the standalone
+	 * skip the expensive startup rebuild on first run, since the shipped index already matches
+	 * the imported demo data.
+	 */
+	private static final File PREBUILT_SEARCH_INDEX_MARKER =
+			new File("appdata" + File.separator + "lucene" + File.separator + ".prebuilt");
+
+	/**
+	 * @return true if a pre-built Lucene search index was bundled with this distribution. We key
+	 *         off an explicit marker file rather than the mere presence of the lucene directory,
+	 *         because OpenMRS itself creates an empty index skeleton on startup which would
+	 *         otherwise be mistaken for a populated index.
+	 */
+	public static boolean hasPrebuiltSearchIndex() {
+		return PREBUILT_SEARCH_INDEX_MARKER.isFile();
+	}
+
 	public static void rebuildEntireSearchIndex(String resourceUrl) {
 		final String SEARCH_INDEX_URL = resourceUrl + "/ws/rest/v1/searchindexupdate";
 		try {

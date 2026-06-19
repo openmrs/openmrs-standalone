@@ -216,8 +216,15 @@ public class ApplicationController {
 					// the index is rebuilt by hand. Must run in command-line mode too - it was
 					// previously gated behind the GUI-only browser launch - and only after an
 					// import, so ordinary restarts (which reuse the existing index) are not slowed.
+					// When the build pipeline has baked a matching index into the distribution
+					// (marker present), the shipped index already covers the bundled demo data,
+					// so we skip the rebuild and search works immediately on first run.
 					if (applyDatabaseChange != null) {
-						OpenmrsUtil.rebuildEntireSearchIndex(resourceUrl);
+						if (OpenmrsUtil.hasPrebuiltSearchIndex()) {
+							System.out.println("✅ Using the pre-built Lucene search index; skipping startup rebuild.");
+						} else {
+							OpenmrsUtil.rebuildEntireSearchIndex(resourceUrl);
+						}
 					}
 					
 					//if in non interactive mode, block such that tomcat does not exit
