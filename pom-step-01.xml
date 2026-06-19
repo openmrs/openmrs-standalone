@@ -73,8 +73,6 @@
                                 <replaceregexp file="${project.build.directory}/openmrs3x/openmrs-distro.properties"
                                                match="war.openmrs=.*"
                                                replace="war.openmrs=${openmrs.version}"/>
-                                <echo file="${project.build.directory}/openmrs3x/openmrs-distro.properties"
-                                      append="true" message="${line.separator}omod.chartsearchai=1.0.0-SNAPSHOT${line.separator}"/>
                             </target>
                         </configuration>
                         <goals>
@@ -105,21 +103,6 @@
                 <groupId>org.codehaus.mojo</groupId>
                 <artifactId>exec-maven-plugin</artifactId>
                 <executions>
-                    <execution>
-                        <id>build-chartsearchai-esm</id>
-                        <phase>process-resources</phase>
-                        <goals>
-                            <goal>exec</goal>
-                        </goals>
-                        <configuration>
-                            <executable>bash</executable>
-                            <workingDirectory>${project.basedir}</workingDirectory>
-                            <arguments>
-                                <argument>scripts/build-chartsearchai-esm.sh</argument>
-                                <argument>${project.build.directory}/distro/web/openmrs_spa</argument>
-                            </arguments>
-                        </configuration>
-                    </execution>
                     <execution>
                         <id>generate-checksums</id>
                         <phase>process-resources</phase>
