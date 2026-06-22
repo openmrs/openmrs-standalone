@@ -27,6 +27,8 @@ import java.util.Collections;
 import java.util.List;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.DisabledOnOs;
+import org.junit.jupiter.api.condition.OS;
 import org.junit.jupiter.api.io.TempDir;
 
 /**
@@ -142,6 +144,13 @@ class SystemMariaDbTest {
             "a parentless candidate must be skipped so a well-formed later candidate wins");
     }
 
+    // Windows has no POSIX executable bit: File.setExecutable(false, ..) is a no-op and
+    // File.canExecute() returns true for any readable file, so the "non-executable server file
+    // must not count" scenario cannot be constructed there. locateBaseDir is the Intel-Mac
+    // system-MariaDB fallback (only ever invoked under isMacIntel, never on Windows), where the
+    // exec bit works as asserted - so skip this negative case on Windows; Linux/macOS still cover it.
+    @DisabledOnOs(value = OS.WINDOWS,
+        disabledReason = "relies on the POSIX executable bit, which does not exist on Windows")
     @Test
     void locateBaseDir_nullWhenNoCandidateHasAServerBinary() throws Exception {
         File emptyBin = tempDir.resolve("empty").resolve("bin").toFile();
