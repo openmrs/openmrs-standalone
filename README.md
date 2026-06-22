@@ -3,7 +3,7 @@
 [![Download O3 Standalone](https://img.shields.io/badge/Download-O3_Standalone-blue?style=for-the-badge)](https://nightly.link/openmrs/openmrs-standalone/workflows/build-o3-standalone/openmrs-emr3/openmrs-standalone-o3.zip)
 
 Download the **O3 Standalone** — a single zip with everything included (OpenMRS 3 Reference
-Application 3.7.0-rc.1, demo data fully initialised, embedded database), no Docker required.
+Application 3.7.0-rc.2, demo data fully initialised, embedded database), no Docker required.
 Unzip it and run `openmrs-standalone.jar`. The download above always tracks the latest build
 of the [`openmrs-emr3`](https://github.com/openmrs/openmrs-standalone/tree/openmrs-emr3) branch.
 
