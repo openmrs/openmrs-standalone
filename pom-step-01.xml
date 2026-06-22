@@ -150,9 +150,12 @@
                             <finalName>openmrs-standalone</finalName>
                             <appendAssemblyId>false</appendAssemblyId>
                             <outputDirectory>${project.build.directory}</outputDirectory>
-                            <descriptorRefs>
-                                <descriptorRef>jar-with-dependencies</descriptorRef>
-                            </descriptorRefs>
+                            <!-- Custom jar-with-dependencies descriptor that merges
+                                 META-INF/services/* (so the MariaDB JDBC driver is registered
+                                 via the ServiceLoader, not dropped). See the descriptor file. -->
+                            <descriptors>
+                                <descriptor>src/main/assembly/jar-with-dependencies.xml</descriptor>
+                            </descriptors>
                             <archive>
                                 <manifest>
                                     <mainClass>org.openmrs.standalone.Bootstrap</mainClass>

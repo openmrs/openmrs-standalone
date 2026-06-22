@@ -333,7 +333,7 @@ public class StandaloneUtil {
 	private static boolean setMysqlPassword(String url, String mysqlPort, String username, String newPassword,
 	        String currentPassword) throws Exception {
 		try {
-			Class.forName("org.mariadb.jdbc.Driver").newInstance();
+			Class.forName(MariaDbController.MARIADB_DRIVER_CLASS).newInstance();
 
 			MariaDbController.startMariaDB(mysqlPort, currentPassword);
 
@@ -445,7 +445,7 @@ public class StandaloneUtil {
 	 */
 	public static void startupDatabaseToCreateDefaultUser(String mariaDBPort) throws Exception {
 		try {
-			Class.forName("org.mariadb.jdbc.Driver");
+			Class.forName(MariaDbController.MARIADB_DRIVER_CLASS);
 		} catch (ClassNotFoundException ex) {
 			throw new RuntimeException("Cannot find MySQL driver class", ex);
 		}

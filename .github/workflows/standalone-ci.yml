@@ -44,6 +44,21 @@ jobs:
       - name: Run Maven Install
         run: mvn install --settings .github/maven-settings.xml
 
+      # Guard against the silent packaging regression behind "No suitable driver found for
+      # jdbc:mariadb://": the jar-with-dependencies assembly must MERGE
+      # META-INF/services/java.sql.Driver (see src/main/assembly/jar-with-dependencies.xml) so the
+      # MariaDB driver auto-registers via the JDBC ServiceLoader. If a future change drops it, the
+      # jar still builds clean and the failure only surfaces at runtime - so fail loudly here.
+      - name: Verify MariaDB JDBC driver is registered in the standalone jar
+        run: |
+          JAR=target/openmrs-standalone.jar
+          [ -f "$JAR" ] || { echo "::error::$JAR not found"; exit 1; }
+          SERVICES=$(unzip -p "$JAR" META-INF/services/java.sql.Driver || true)
+          echo "java.sql.Driver service file:"; echo "$SERVICES"
+          echo "$SERVICES" | grep -qxF 'org.mariadb.jdbc.Driver' \
+            || { echo "::error::org.mariadb.jdbc.Driver missing from the standalone jar's java.sql.Driver service file - jdbc:mariadb connections would fail at runtime with 'No suitable driver found'"; exit 1; }
+          echo "OK: MariaDB JDBC driver is registered via the merged service file."
+
   build-windows:
     name: on Windows (Java 21)
     runs-on: windows-latest

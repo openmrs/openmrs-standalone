@@ -34,6 +34,8 @@ public class MariaDbController {
     private static final String MARIA_DB_DATA_DIR = Paths.get(MARIA_DB_BASE_DIR, "data").toString();
     public static final String ROOT_USER = "root";
     public static final String ROOT_PASSWORD = "";
+    /** Fully-qualified MariaDB JDBC driver class, registered before any jdbc:mariadb connection. */
+    public static final String MARIADB_DRIVER_CLASS = "org.mariadb.jdbc.Driver";
 
     private static DB mariaDB;
     private static DBConfigurationBuilder mariaDBConfig;
@@ -83,8 +85,16 @@ public class MariaDbController {
             mariaDB = ReusableDB.openEmbeddedDB(mariaDBConfig.build());
             mariaDB.start();
 
-            Connection conn = DriverManager.getConnection("jdbc:mariadb://localhost:" + port + "/", ROOT_USER, ROOT_PASSWORD);
-            try (Statement stmt = conn.createStatement()) {
+            // Defense-in-depth: ensure the MariaDB JDBC driver is registered before the first
+            // jdbc:mariadb connection. The assembled jar now merges META-INF/services/java.sql.Driver
+            // (see src/main/assembly/jar-with-dependencies.xml), so the driver auto-registers via the
+            // JDBC ServiceLoader. This explicit load is belt-and-suspenders for any classpath where
+            // that merge is absent - it previously failed here on a Windows restart with
+            // "No suitable driver found for jdbc:mariadb://..." because the merge was missing and
+            // nothing else had Class.forName'd the driver first.
+            Class.forName(MARIADB_DRIVER_CLASS);
+            try (Connection conn = DriverManager.getConnection("jdbc:mariadb://localhost:" + port + "/", ROOT_USER, ROOT_PASSWORD);
+                 Statement stmt = conn.createStatement()) {
                 stmt.execute("ALTER USER 'root'@'localhost' IDENTIFIED BY '" + ROOT_PASSWORD + "';");
                 stmt.execute("GRANT ALL PRIVILEGES ON *.* TO 'root'@'localhost' WITH GRANT OPTION;");
             }
