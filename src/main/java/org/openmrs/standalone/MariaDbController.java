@@ -125,17 +125,31 @@ public class MariaDbController {
         } else {
             // For Linux and Apple Silicon (arm64) macOS, we use the standard DB class with the
             // bundled binaries. (Intel macOS is handled above, since no x86_64 mac binary ships.)
-            // On macOS arm64 we first patch the bundled MariaDB binaries so they
-            // do not require Homebrew at /opt/homebrew/... — see MacOsBinaryPatcher.
+            if (MacOsBinaryPatcher.isMacOsArm64()) {
+                // The bundled arm64 binaries link to Homebrew dylibs (/opt/homebrew/.../libpcre2,
+                // openssl). Extract and rewrite them to the bundled copies BEFORE building, then
+                // disable mariaDB4j's own classpath unpacking so it cannot re-extract the pristine
+                // (Homebrew-linked) binaries over the patched ones inside newEmbeddedDB. Its
+                // "already extracted?" check is size-based, and codesign can change the patched
+                // file's size on some macOS versions, which would otherwise silently restore the
+                // broken binary and fail with "Library not loaded: /opt/homebrew/.../libpcre2" on
+                // machines without Homebrew. (setUnpackingFromClasspath must be set before build()
+                // - the builder is frozen afterwards.)
+                // Read the classpath location mariaDB4j would unpack from via a throwaway config
+                // (the builder's own getter is protected, and building freezes our real builder).
+                // The location is platform/db-version derived, so it is independent of port/dirs.
+                String binariesLocation = DBConfigurationBuilder.newBuilder().setPort(port).build()
+                        .getBinariesClassPathLocation();
+                MacOsBinaryPatcher.patch(binariesLocation, baseDir);
+                mariaDBConfig.setUnpackingFromClasspath(false);
+            }
             ch.vorburger.mariadb4j.DBConfiguration builtConfig = mariaDBConfig.build();
-            MacOsBinaryPatcher.patchIfNeeded(builtConfig, baseDir);
-            mariaDB = DB.newEmbeddedDB(builtConfig);
-            // On first boot MariaDB4j extracts its binaries into baseDir only now - after the
-            // launcher's startup cleanup ran - and on a quarantined install (zip downloaded
-            // with a browser) the extracted/copied dylibs can inherit the quarantine
-            // attribute, which makes dyld refuse to load them. Strip again right before the
-            // binaries are first executed.
+            // On a quarantined install (zip downloaded with a browser) the extracted/copied
+            // binaries and dylibs can carry the com.apple.quarantine attribute, which makes dyld
+            // refuse to load them. Strip it from baseDir before the binaries are first executed
+            // (newEmbeddedDB runs mariadb-install-db).
             StandaloneUtil.stripQuarantineAttributes(baseDir);
+            mariaDB = DB.newEmbeddedDB(builtConfig);
             mariaDB.start();
 
             // Ensure root user exists and has correct password and privileges

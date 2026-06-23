@@ -24,7 +24,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
 
-import ch.vorburger.mariadb4j.DBConfiguration;
 import ch.vorburger.mariadb4j.Util;
 
 /**
@@ -72,23 +71,28 @@ public final class MacOsBinaryPatcher {
     private MacOsBinaryPatcher() {}
 
     /**
-     * Performs the macOS-arm64 binary patching if the current platform requires it.
-     * On any other platform this is a no-op.
+     * Extracts the bundled MariaDB binaries from {@code binariesClassPathLocation} into
+     * {@code baseDir} and rewrites their Homebrew dylib load paths to the bundled copies.
+     * The caller must only invoke this on macOS arm64 (see {@link #isMacOsArm64()}) and must
+     * then disable mariaDB4j's own classpath unpacking so it does not re-extract the pristine
+     * binaries over the patched ones.
      */
-    public static void patchIfNeeded(DBConfiguration config, File baseDir) throws IOException, InterruptedException {
-        if (!isMacOsArm64()) {
-            return;
-        }
-
-        String binariesClassPathLocation = config.getBinariesClassPathLocation();
+    public static void patch(String binariesClassPathLocation, File baseDir) throws IOException, InterruptedException {
         if (binariesClassPathLocation == null || binariesClassPathLocation.isEmpty()) {
-            // mariaDB4j is configured not to unpack from classpath; nothing to patch.
+            // No classpath binaries to unpack/patch (e.g. a system install); nothing to do.
             return;
         }
 
         // 1. Pre-extract the MariaDB binaries so we can patch them before mariaDB4j's
         //    install step launches mariadb-install-db / mariadbd.
         Util.extractFromClasspathToFile(binariesClassPathLocation, baseDir);
+
+        // mariaDB4j normally sets the executable bit on bin/ and scripts/ during its own unpack.
+        // The caller disables that unpack (so it can't clobber our patched binaries), so restore
+        // the executable bit here - otherwise mariadb-install-db / mariadbd fail with
+        // "Permission denied".
+        markExecutable(new File(baseDir, "bin"));
+        markExecutable(new File(baseDir, "scripts"));
 
         // 2. Copy bundled dylibs into <baseDir>/lib/.
         File targetLibDir = new File(baseDir, "lib");
@@ -111,6 +115,19 @@ public final class MacOsBinaryPatcher {
         // 3. Rewrite load commands in every extracted binary that has a broken path.
         patchAllUnder(new File(baseDir, "bin"));
         patchAllUnder(new File(baseDir, "libs"));
+    }
+
+    /** Marks every regular file directly under {@code dir} executable (for all users). */
+    private static void markExecutable(File dir) {
+        File[] files = dir.listFiles();
+        if (files == null) {
+            return;
+        }
+        for (File f : files) {
+            if (f.isFile()) {
+                f.setExecutable(true, false);
+            }
+        }
     }
 
     private static void patchAllUnder(File dir) throws IOException, InterruptedException {
@@ -149,8 +166,14 @@ public final class MacOsBinaryPatcher {
             changed = true;
         }
         if (changed) {
-            // Re-sign ad-hoc; rewriting load commands invalidates any existing signature.
-            runReturningExitCode("codesign", "--force", "--sign", "-", file.getAbsolutePath());
+            // Re-sign ad-hoc; rewriting load commands invalidates any existing signature, and
+            // arm64 macOS refuses to run a binary whose signature no longer matches. Fail loudly
+            // if this does not succeed rather than shipping a binary the kernel will kill.
+            int rc = runReturningExitCode("codesign", "--force", "--sign", "-", file.getAbsolutePath());
+            if (rc != 0) {
+                throw new IOException("codesign re-sign failed (exit " + rc + ") for "
+                        + file.getAbsolutePath() + " after rewriting its dylib load paths");
+            }
         }
     }
 
@@ -194,7 +217,7 @@ public final class MacOsBinaryPatcher {
                 + primary + " and " + fallback);
     }
 
-    private static boolean isMacOsArm64() {
+    static boolean isMacOsArm64() {
         String os = System.getProperty("os.name", "").toLowerCase();
         String arch = System.getProperty("os.arch", "").toLowerCase();
         return os.contains("mac") && (arch.equals("aarch64") || arch.equals("arm64"));
