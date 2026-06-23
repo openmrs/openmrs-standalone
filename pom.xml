@@ -31,7 +31,6 @@
 		<junitVersion>5.12.2</junitVersion>
 		<mockitoVersion>3.12.4</mockitoVersion>
 		<openmrs.sdk.version>6.7.0</openmrs.sdk.version>
-		<omod.stockmanagement>2.0.4-core-2.8-SNAPSHOT</omod.stockmanagement>
 	</properties>
 	
 	<dependencies>
