@@ -30,6 +30,8 @@ import java.util.Properties;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
+import javax.swing.JOptionPane;
+
 import static org.openmrs.standalone.MariaDbController.stopMariaDB;
 
 /**
@@ -121,6 +123,21 @@ public class ApplicationController {
 		//depends on whether the GUI (not -commandline) was the original request.
 		nonInteractive = resolveNonInteractive(nonInteractive, commandLine, headless, System.console() != null);
 		commandLine = resolveCommandLine(commandLine, headless);
+
+		// Fail fast (and visibly) if the install path has a space: MariaDB's bundled installer would
+		// otherwise abort deep in startup with a cryptic error. This must run before MainFrame
+		// redirects stderr into its log window, so the message is surfaced explicitly through the
+		// active UI - a dialog in GUI mode (where a double-clicked jar has no visible console), the
+		// console in command-line mode. Keep this AFTER resolveCommandLine: that is what guarantees a
+		// headless JVM has already been downgraded to command-line mode, so the dialog branch in
+		// reportFatalStartupError only runs when a real display exists (no HeadlessException).
+		try {
+			StandaloneUtil.assertInstallPathHasNoSpaces();
+		} catch (IllegalStateException badInstallPath) {
+			reportFatalStartupError(badInstallPath.getMessage(), commandLine);
+			System.exit(1);
+		}
+
 		if (guiFallback) {
 			System.out.println("No graphical display detected; falling back to "
 			        + (nonInteractive ? "non-interactive " : "") + "command-line mode. "
@@ -146,6 +163,23 @@ public class ApplicationController {
 			tomcatPort = UserInterface.DEFAULT_TOMCAT_PORT + "";
 		
 		new ApplicationController(commandLine, nonInteractive, mode, tomcatPort, mySqlPort);
+	}
+
+	/**
+	 * Surfaces a fatal pre-startup error through the active UI. In command-line mode the message goes
+	 * to the console; in GUI mode it also pops a dialog, because a double-clicked jar has no visible
+	 * console and stderr would otherwise vanish. A graphical display is guaranteed in GUI mode, since
+	 * a headless environment is downgraded to command-line mode before this is reached.
+	 *
+	 * @param message the actionable error text to show the user
+	 * @param commandLine whether the application is running in command-line mode
+	 */
+	private static void reportFatalStartupError(String message, boolean commandLine) {
+		System.err.println(message);
+		if (!commandLine) {
+			JOptionPane.showMessageDialog(null, message, "OpenMRS Standalone cannot start",
+			        JOptionPane.ERROR_MESSAGE);
+		}
 	}
 
 	/**

@@ -613,4 +613,62 @@ public class StandaloneUtil {
 			Thread.currentThread().interrupt();
 		}
 	}
+
+	/**
+	 * Fails fast when the install path contains a space, on the platforms where it would otherwise
+	 * blow up deep inside MariaDB startup with a cryptic error.
+	 *
+	 * <p>mariaDB4j extracts a {@code /bin/sh} {@code mariadb-install-db} script and runs it to
+	 * initialise the data directory. That script locates {@code my_print_defaults} with an
+	 * <em>unquoted</em> {@code $basedir/bin} expansion, which word-splits under {@code /bin/sh} when
+	 * the path has a space - so it searches the wrong directories and aborts with
+	 * "FATAL ERROR: Could not find my_print_defaults", even though the binary is bundled. This is an
+	 * upstream limitation we cannot patch (the script lives inside the jar and is extracted at run
+	 * time), so the only reliable fix is to refuse to run from such a path with an actionable
+	 * message instead of the cryptic stack trace.
+	 *
+	 * <p>The usual cause on macOS is downloading the zip twice: the browser appends " 2" to the
+	 * duplicate, producing a folder name with a space.
+	 *
+	 * <p>No-op on Windows, where the install script is not used and spaces in paths (e.g.
+	 * {@code C:\Program Files\...}) are normal and handled.
+	 *
+	 * <p>Checks the default MariaDB base directory under the current install folder. A custom
+	 * absolute {@code connection.database.base_dir}/{@code data_dir} is not consulted - the shipped
+	 * configuration uses paths relative to the install folder, so a space can only enter via the
+	 * install location itself, which this covers.
+	 *
+	 * @throws IllegalStateException if the MariaDB base directory under the install folder contains a
+	 *         space
+	 */
+	public static void assertInstallPathHasNoSpaces() {
+		String baseDir = new File(MariaDbController.MARIA_DB_BASE_DIR).getAbsolutePath();
+		if (!installPathRejectedForSpace(System.getProperty("os.name", ""), baseDir)) {
+			return;
+		}
+		throw new IllegalStateException(
+		        "The OpenMRS standalone cannot start from a folder whose path contains a space:\n\n    "
+		        + baseDir + "\n\n"
+		        + "MariaDB's bundled installer fails when the path has a space in it. Move the whole "
+		        + "standalone folder to a location with no spaces in its name (a duplicate download "
+		        + "such as \"...-rc.2 2\" is a common cause - the \" 2\" is the space), then relaunch. "
+		        + "Also delete any half-initialised \"database/data\" directory that a failed start "
+		        + "may have left behind.");
+	}
+
+	/**
+	 * Pure decision behind {@link #assertInstallPathHasNoSpaces()}, split out so it can be unit-tested
+	 * without depending on the real OS or working directory.
+	 *
+	 * @param osName the value of the {@code os.name} system property
+	 * @param baseDirPath the MariaDB base directory path to inspect
+	 * @return true if startup should be rejected because the path contains a space on a platform that
+	 *         runs the {@code /bin/sh} installer (i.e. not Windows)
+	 */
+	static boolean installPathRejectedForSpace(String osName, String baseDirPath) {
+		if (osName != null && osName.toLowerCase().contains("win")) {
+			return false;
+		}
+		return baseDirPath != null && baseDirPath.indexOf(' ') >= 0;
+	}
 }

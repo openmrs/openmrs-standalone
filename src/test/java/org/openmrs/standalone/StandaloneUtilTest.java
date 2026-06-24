@@ -171,6 +171,40 @@ class StandaloneUtilTest {
         shouldChangePasswordWhenResetFlagIsTrue();
     }
 
+    // installPathRejectedForSpace: a space in the base dir must be rejected on the platforms that run
+    // the /bin/sh mariadb-install-db script (mac/Linux), but tolerated on Windows where spaces in
+    // paths (e.g. C:\Program Files\...) are normal and the installer script is not used.
+
+    @Test
+    public void installPathRejectedForSpace_macWithSpace_rejected() {
+        assertTrue(StandaloneUtil.installPathRejectedForSpace(
+                "Mac OS X", "/Users/veronica/Downloads/referenceapplication-standalone-3.7.0-rc.2 2/database"));
+    }
+
+    @Test
+    public void installPathRejectedForSpace_linuxWithSpace_rejected() {
+        assertTrue(StandaloneUtil.installPathRejectedForSpace("Linux", "/home/me/open mrs/database"));
+    }
+
+    @Test
+    public void installPathRejectedForSpace_macWithoutSpace_allowed() {
+        assertFalse(StandaloneUtil.installPathRejectedForSpace(
+                "Mac OS X", "/Users/veronica/Downloads/referenceapplication-standalone-3.7.0-rc.2/database"));
+    }
+
+    @Test
+    public void installPathRejectedForSpace_windowsWithSpace_allowed() {
+        // Windows does not run the install script, and "Program Files" must not be blocked.
+        assertFalse(StandaloneUtil.installPathRejectedForSpace(
+                "Windows 11", "C:\\Program Files\\openmrs\\database"));
+    }
+
+    @Test
+    public void installPathRejectedForSpace_nullInputs_allowed() {
+        assertFalse(StandaloneUtil.installPathRejectedForSpace(null, "/clean/path/database"));
+        assertFalse(StandaloneUtil.installPathRejectedForSpace("Linux", null));
+    }
+
     @Test
     public void shouldChangePasswordWhenResetFlagIsTrue() throws Exception {
         properties.setProperty(KEY_RESET_CONNECTION_PASSWORD, "true");

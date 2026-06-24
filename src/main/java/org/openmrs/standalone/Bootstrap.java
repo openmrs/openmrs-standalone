@@ -24,6 +24,8 @@ import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.io.PrintStream;
 import java.io.PrintWriter;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Properties;
 
 /**
@@ -99,11 +101,16 @@ public class Bootstrap {
 			Properties properties = OpenmrsUtil.getRuntimeProperties(StandaloneUtil.getContextName());
 			String vm_arguments = properties.getProperty("vm_arguments", "-Xmx512m -Xms512m -XX:NewSize=128m --add-exports=java.desktop/com.apple.eawt=ALL-UNNAMED --add-opens=java.base/java.lang=ALL-UNNAMED -Djava.security.manager=allow");
 			
-			// Spin up a separate java process calling a non-default Main class in our Jar.  
-			process = Runtime.getRuntime().exec(
-			    "java " + (showSplashScreen ? "-splash:splashscreen-loading.png" : "")
-			            + " " + vm_arguments + " -cp "
-			            + StandaloneUtil.getJarFileName() + " org.openmrs.standalone.ApplicationController" + args);
+			// Spin up a separate java process calling a non-default Main class in our Jar. Build the
+			// command as an explicit argument array rather than a single string. The string form of
+			// Runtime.exec() tokenises the whole command on whitespace, so any element that ever
+			// carried a path with a space (e.g. an absolute classpath entry) would be split into
+			// broken tokens. Today getJarFileName() returns a bare filename run from the install dir,
+			// so no element contains a space - this is defensive hardening that keeps each element
+			// intact regardless. (vm_arguments and args remain whitespace-separated token lists by
+			// design; they carry flags, never paths with spaces.)
+			List<String> command = buildCommand(showSplashScreen, vm_arguments, StandaloneUtil.getJarFileName(), args);
+			process = Runtime.getRuntime().exec(command.toArray(new String[0]));
 			
 			// Proxy the System.out and System.err from the spawned process back to the main window.  This
 			// is important or the spawned process could block.
@@ -135,8 +142,50 @@ public class Bootstrap {
 	}
 	
 	/**
+	 * Assembles the argv for the spawned JVM as an explicit list so each argument is passed to
+	 * {@code Runtime.exec} intact rather than re-split on whitespace (see {@link #launch}). Pure and
+	 * static so the argument ordering and the single-element handling of {@code jarFileName} can be
+	 * unit-tested without actually spawning a process.
+	 *
+	 * @param showSplashScreen whether to pass {@code -splash:...}
+	 * @param vmArguments space-separated JVM flags
+	 * @param jarFileName the classpath entry; kept as a single element even if it contains a space
+	 * @param args space-separated application arguments
+	 * @return the command and its arguments, one element per argv slot
+	 */
+	static List<String> buildCommand(boolean showSplashScreen, String vmArguments, String jarFileName, String args) {
+		List<String> command = new ArrayList<>();
+		command.add("java");
+		if (showSplashScreen) {
+			command.add("-splash:splashscreen-loading.png");
+		}
+		addTokens(command, vmArguments);
+		command.add("-cp");
+		command.add(jarFileName);
+		command.add("org.openmrs.standalone.ApplicationController");
+		addTokens(command, args);
+		return command;
+	}
+
+	/**
+	 * Splits a whitespace-separated argument string into individual arguments and appends the
+	 * non-empty ones to {@code command}. Mirrors the tokenisation the old single-string
+	 * {@code Runtime.exec(String)} performed, but lets the caller assemble an explicit argv.
+	 */
+	static void addTokens(List<String> command, String arguments) {
+		if (arguments == null) {
+			return;
+		}
+		for (String token : arguments.trim().split("\\s+")) {
+			if (!token.isEmpty()) {
+				command.add(token);
+			}
+		}
+	}
+
+	/**
 	 * This is the entry point for the entire executable jar.
-	 * 
+	 *
 	 * @param args the command line arguments.
 	 */
 	public static void main(String[] args) {
