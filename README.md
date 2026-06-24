@@ -34,6 +34,114 @@ automatically at startup; if you are running an older build, do it manually:
 The standalone now supports loading a pre-initialized SQL database dump (from an SDK 3.x server).
 This bypasses the slow XML/metadata bootstrapping and ensures demo data + search index are ready immediately.
 
+## HOW TO UPGRADE THE STANDALONE TO A NEW REFERENCE APPLICATION RELEASE
+
+This is the end-to-end runbook for moving the O3 standalone from one Reference
+Application release to the next (e.g. `3.7.0-rc.2` → `3.7.0-rc.3`). Read it fully
+before starting — the DB-dump regeneration has non-obvious timing.
+
+### 0. Branch & build model (read first)
+
+* **All O3 standalone work happens on the `openmrs-emr3` branch.** `master` is the
+  legacy 2.x standalone — do not put O3 workflows there.
+* `Build O3 Standalone` runs on **push to `openmrs-emr3`**. That push is what
+  refreshes the README download badge, because it points at
+  [nightly.link](https://nightly.link), which only serves artifacts from
+  push/schedule runs — **never** from manual `workflow_dispatch` runs.
+* Manual `workflow_dispatch` is effectively unavailable anyway: GitHub only fires
+  `workflow_dispatch` for workflows that live on the **default branch** (`master`),
+  and these workflows live only on `openmrs-emr3`. So the canonical trigger is a push.
+* For the same reason, **`generate-db-dumps.yml` cannot be dispatched** — regenerate
+  the dumps locally as described in step 2.
+
+### 1. Confirm the new refapp version is published
+
+The SDK resolves the distro from `org.openmrs:distro-emr-configuration`. Make sure
+your target version exists before doing anything else:
+
+```bash
+curl -sL https://mavenrepo.openmrs.org/public/org/openmrs/distro-emr-configuration/maven-metadata.xml \
+  | grep -o '<version>3\.7\.0[^<]*</version>'
+```
+
+### 2. Regenerate the bundled DB dumps (locally)
+
+The build bundles per-version dumps `src/main/db/{demo,empty}-db-${refapp.version}.sql`
+(see `src/main/assembly/zip-{demo,empty}-database.xml`). They MUST exist for the new
+version or the build's Lucene-bake gate fails. Needs Docker + JDK 21.
+
+**⚠️ Do not trust `scripts/generate-db-dumps.sh`'s fixed `sleep 60`** — for O3 that is
+far too short. Full initialization takes **~14 minutes**: concepts load to ~4254 first
+(~7 min), and only THEN does demo data generate (50 patients, ~6200 obs). Dumping early
+yields a broken ~1.6 MB file. Wait until the row counts stop changing.
+
+```bash
+VER=3.7.0-rc.3        # the new version
+CORE=2.8.7            # OpenMRS Core version (keep in sync with the workflow)
+
+# a) Build the distro (clear stale dirs first, or build-distro hits an interactive prompt under -B)
+rm -rf target/distro target/openmrs3x
+mvn -f pom-step-01.xml process-resources -Pci -B --settings .github/maven-settings.xml \
+    -Drefapp.version=$VER -Dopenmrs.version=$CORE
+
+# b) DEMO dump — boot with demo data, WAIT for full init, then dump
+cd target/distro
+docker compose up -d --build web
+# poll until concept+patient+obs stabilize (≈14 min); watch with:
+#   DB=$(docker compose ps -q db)
+#   docker exec $DB mysql -uroot -popenmrs -N -B -e \
+#     "SELECT (SELECT COUNT(*) FROM concept), (SELECT COUNT(*) FROM patient), (SELECT COUNT(*) FROM obs);" openmrs
+DB=$(docker compose ps -q db)
+docker exec $DB mysqldump --single-transaction --routines --triggers -u root -popenmrs openmrs \
+  > ../../src/main/db/demo-db-$VER.sql
+docker compose down -v
+
+# c) EMPTY dump — demo data is driven by the `referencedemodata` module via the
+#    Initializer GP `referencedemodata.createDemoPatientsOnNextStartup` (NOT by
+#    OMRS_CONFIG_ADD_DEMO_DATA). Force it to 0 for a genuinely demo-free dump.
+sed -i '' 's#<value>50</value>#<value>0</value>#' \
+  web/openmrs_config/globalproperties/referenceapplication-demo/globalproperties-core_demo.xml
+docker compose up -d --build web
+# wait until concepts stabilize (~4254) — patient/obs stay 0
+DB=$(docker compose ps -q db)
+docker exec $DB mysqldump --single-transaction --routines --triggers -u root -popenmrs openmrs \
+  > ../../src/main/db/empty-db-$VER.sql
+docker compose down -v
+cd ../..
+```
+
+**Sanity-check before committing** (demo must have data, empty must not):
+
+| dump  | concept | patient | obs  | size   |
+|-------|---------|---------|------|--------|
+| demo  | ~4254   | 50      | ~6200| ~18 MB |
+| empty | ~4254   | **0**   | 0    | ~15 MB |
+
+### 3. Bump the version strings
+
+* `.github/workflows/build-o3-standalone.yml` — the `workflow_dispatch` default, the
+  `REFAPP_VERSION` env fallback, and the build-step comment.
+* `README.md` — the prose line under the download badge. (The badge URL itself is
+  version-independent — leave it.)
+
+### 4. Remove the superseded dumps
+
+Delete the previous version's `src/main/db/{demo,empty}-db-<old>.sql` (repo convention —
+see the "Remove the superseded … DB dumps" commits).
+
+### 5. Commit and push to `openmrs-emr3`
+
+```bash
+git checkout openmrs-emr3
+git add -A && git commit -m "Base the O3 standalone download on Reference Application $VER"
+git push origin openmrs-emr3
+```
+
+The push triggers `Build O3 Standalone`. **Verify the run is green** — its Lucene-bake
+gate boots a throwaway copy and refuses to publish unless patient (`Smith`) and concept
+(`malaria`) search return hits, so a green run is end-to-end proof the demo dump works.
+Once green, the README download serves the new version automatically.
+
 ## 🛠️ HOW TO EXTRACT SQL DUMPS FROM A RUNNING SDK INSTANCE
 You can speed up the standalone by bundling it with an SQL dump of a fully initialized OpenMRS SDK 3.x server.
 
