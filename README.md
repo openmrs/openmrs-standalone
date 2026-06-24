@@ -152,8 +152,11 @@ cd ../..
 
 ### 3. Bump the version strings
 
-* `.github/workflows/build-o3-standalone.yml` — the `workflow_dispatch` default, the
-  `REFAPP_VERSION` env fallback, and the build-step comment.
+* `.github/workflows/build-o3-standalone.yml` — **two** version pairs:
+  * refapp — the `refapp_version` `workflow_dispatch` default and the `REFAPP_VERSION` env fallback;
+  * core — the `openmrs_version` `workflow_dispatch` default and the `OPENMRS_VERSION` env fallback
+    (only when the core version changed for this release — see step 2);
+  * and the build-step comment that names the version.
 * `README.md` — the prose line under the download badge. (The badge URL itself is
   version-independent — leave it.)
 
