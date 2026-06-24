@@ -102,8 +102,8 @@ pins its own OpenMRS Core/platform version; bundling a mismatched core can break
 from the distro the SDK resolves rather than copying the last build's number:
 
 ```bash
-curl -sL "https://mavenrepo.openmrs.org/public/org/openmrs/distro-emr-configuration/$VER/distro-emr-configuration-$VER.properties" \
-  | grep -iE 'war\.openmrs|openmrs\.platform|^omod\.openmrs-?(web|core)?'
+curl -sL "https://mavenrepo.openmrs.org/public/org/openmrs/distro-emr-configuration/$VER/distro-emr-configuration-$VER.pom" \
+  | grep -oE '<openmrs.version>[^<]*</openmrs.version>'
 ```
 
 Then keep `.github/workflows/build-o3-standalone.yml` in sync with whatever you use here.
