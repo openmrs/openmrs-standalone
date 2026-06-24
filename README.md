@@ -34,6 +34,28 @@ automatically at startup; if you are running an older build, do it manually:
 The standalone now supports loading a pre-initialized SQL database dump (from an SDK 3.x server).
 This bypasses the slow XML/metadata bootstrapping and ensures demo data + search index are ready immediately.
 
+## BUILDING & TESTING A CODE CHANGE LOCALLY
+
+If you only changed Java code (not the bundled distro/DB) and just want to compile and run the
+unit tests, **do not use `mvn compile` / `mvn test`**. The reactor binds `openmrs-sdk:build-distro`
+to the `process-resources` phase, so any normal lifecycle build first tries to rebuild the whole
+distro and, when `target/distro` already exists, hits an interactive "choose a different directory?"
+prompt that hangs (or fails under `-B`).
+
+Instead, invoke the plugin goals **directly**, which bypasses the lifecycle and that interactive step:
+
+```bash
+# compile main + test sources, then run the tests (real surefire, honours the project's Java 8 target)
+mvn -o -N compiler:compile compiler:testCompile surefire:test
+
+# run a single test class while iterating
+mvn -o -N surefire:test -Dtest=BootstrapTest -DfailIfNoTests=false
+```
+
+The MariaDB integration tests (`StandaloneUtilTest`, `MariaDbControllerTest`, `MariaDbRestartTest`)
+start a real embedded MariaDB and take ~1–2 min total; the rest are sub-second. The full assembled
+jar still requires the normal `mvn package` (which does run the distro build).
+
 ## HOW TO UPGRADE THE STANDALONE TO A NEW REFERENCE APPLICATION RELEASE
 
 This is the end-to-end runbook for moving the O3 standalone from one Reference
@@ -75,9 +97,20 @@ far too short. Full initialization takes **~14 minutes**: concepts load to ~4254
 (~7 min), and only THEN does demo data generate (50 patients, ~6200 obs). Dumping early
 yields a broken ~1.6 MB file. Wait until the row counts stop changing.
 
+**Determine `CORE` from the target distro, don't assume the previous value.** Each refapp release
+pins its own OpenMRS Core/platform version; bundling a mismatched core can break startup. Read it
+from the distro the SDK resolves rather than copying the last build's number:
+
+```bash
+curl -sL "https://mavenrepo.openmrs.org/public/org/openmrs/distro-emr-configuration/$VER/distro-emr-configuration-$VER.properties" \
+  | grep -iE 'war\.openmrs|openmrs\.platform|^omod\.openmrs-?(web|core)?'
+```
+
+Then keep `.github/workflows/build-o3-standalone.yml` in sync with whatever you use here.
+
 ```bash
 VER=3.7.0-rc.3        # the new version
-CORE=2.8.7            # OpenMRS Core version (keep in sync with the workflow)
+CORE=2.8.7            # OpenMRS Core version (from the distro above; keep the workflow in sync)
 
 # a) Build the distro (clear stale dirs first, or build-distro hits an interactive prompt under -B)
 rm -rf target/distro target/openmrs3x
