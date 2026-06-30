@@ -23,6 +23,10 @@
 		<tomcat.version>9.0.106</tomcat.version>
 		<openmrs.version>2.9.0-SNAPSHOT</openmrs.version>
 		<refapp.version>3.7.0-SNAPSHOT</refapp.version>
+		<!-- The SPA bridge omod. The refapp distro leaves this version unset, so the SDK
+		     defaults it to a -SNAPSHOT; pin it to a release for reproducible builds.
+		     Override with -Dspa.version. -->
+		<spa.version>3.0.0</spa.version>
 		<!-- Directory of chartsearchai assets (ONNX embedder, vocab, GGUF models) bundled into
 		     appdata/chartsearchai. Override with -Dchartsearchai.assets.dir=/path/to/assets;
 		     the default ships only a README placeholder. -->

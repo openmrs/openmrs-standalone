@@ -62,18 +62,23 @@
                 <artifactId>maven-antrun-plugin</artifactId>
                 <version>3.1.0</version>
                 <executions>
-                    <!-- Pin the OpenMRS core war to the platform version this standalone targets.
-                         All module versions are taken verbatim from the chosen Reference Application
-                         distro (e.g. stockmanagement ships at the distro's exact release) - we do not
-                         override any of them. -->
+                    <!-- Pin the OpenMRS core war to the platform version this standalone targets,
+                         and pin the SPA bridge omod to a release version (the refapp distro leaves it
+                         unset, so the SDK would otherwise default it to a -SNAPSHOT). Every other
+                         module version is taken verbatim from the chosen Reference Application distro
+                         (e.g. stockmanagement ships at the distro's exact release) - we do not
+                         override any of those. -->
                     <execution>
-                        <id>pin-core-war-version</id>
+                        <id>pin-distro-versions</id>
                         <phase>process-resources</phase>
                         <configuration>
                             <target>
                                 <replaceregexp file="${project.build.directory}/openmrs3x/openmrs-distro.properties"
                                                match="war.openmrs=.*"
                                                replace="war.openmrs=${openmrs.version}"/>
+                                <replaceregexp file="${project.build.directory}/openmrs3x/openmrs-distro.properties"
+                                               match="omod.spa=.*"
+                                               replace="omod.spa=${spa.version}"/>
                             </target>
                         </configuration>
                         <goals>
