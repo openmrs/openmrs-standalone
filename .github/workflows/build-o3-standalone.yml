@@ -11,7 +11,7 @@ on:
       refapp_version:
         description: 'O3 Reference Application version'
         required: false
-        default: '3.7.0-rc.4'
+        default: '3.7.0'
         type: string
       openmrs_version:
         description: 'OpenMRS Core version'
@@ -24,7 +24,7 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  REFAPP_VERSION: ${{ inputs.refapp_version || '3.7.0-rc.4' }}
+  REFAPP_VERSION: ${{ inputs.refapp_version || '3.7.0' }}
   OPENMRS_VERSION: ${{ inputs.openmrs_version || '2.8.7' }}
 
 jobs:
@@ -53,7 +53,7 @@ jobs:
       - name: Pre-run OpenMRS SDK Plugin
         run: mvn org.openmrs.maven.plugins:openmrs-sdk-maven-plugin:setup-sdk -B --settings .github/maven-settings.xml
 
-      # Build the O3 standalone distribution. The 3.7.0-rc.4 distro defines exactly the
+      # Build the O3 standalone distribution. The 3.7.0 distro defines exactly the
       # modules and versions to bundle. Docker init is skipped under -Pci; demo data ships
       # via the bundled src/main/db/demo-db-${REFAPP_VERSION}.sql dump. Tests run in
       # standalone-ci.yml.
