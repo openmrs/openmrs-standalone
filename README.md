@@ -159,6 +159,24 @@ cd ../..
   * and the build-step comment that names the version.
 * `README.md` — the prose line under the download badge. (The badge URL itself is
   version-independent — leave it.)
+* `pom.xml` — the `spa.version` property pins the SPA bridge omod (`omod.spa`) to a
+  **released** `spa-omod` version. The refapp distro leaves `omod.spa` unset, so the SDK
+  would otherwise default it to a `-SNAPSHOT` (non-reproducible — the bundled module could
+  change build to build). This is **independent of the refapp version** — usually leave it.
+  Bump it only to adopt a newer released spa module; list what's available with:
+
+  ```bash
+  curl -sL https://mavenrepo.openmrs.org/public/org/openmrs/module/spa-omod/maven-metadata.xml \
+    | grep -oE '<release>[^<]*</release>'
+  ```
+
+  The pin is applied by the `pin-distro-versions` antrun step in `pom-step-01.xml`, which
+  rewrites `omod.spa` in the generated distro definition before `build-distro` runs (same
+  mechanism as the core-war pin). Confirm a build bundled the release, not a snapshot:
+
+  ```bash
+  ls target/distro/web/openmrs_modules/spa-*.omod   # expect spa-${spa.version}.omod, not -SNAPSHOT
+  ```
 
 ### 4. Remove the superseded dumps
 
