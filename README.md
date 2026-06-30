@@ -59,7 +59,7 @@ jar still requires the normal `mvn package` (which does run the distro build).
 ## HOW TO UPGRADE THE STANDALONE TO A NEW REFERENCE APPLICATION RELEASE
 
 This is the end-to-end runbook for moving the O3 standalone from one Reference
-Application release to the next (e.g. `3.7.0-rc.2` → `3.7.0-rc.3`). Read it fully
+Application release to the next (e.g. `3.7.0-rc.4` → `3.7.0`). Read it fully
 before starting — the DB-dump regeneration has non-obvious timing.
 
 ### 0. Branch & build model (read first)
@@ -109,7 +109,7 @@ curl -sL "https://mavenrepo.openmrs.org/public/org/openmrs/distro-emr-configurat
 Then keep `.github/workflows/build-o3-standalone.yml` in sync with whatever you use here.
 
 ```bash
-VER=3.7.0-rc.3        # the new version
+VER=3.7.0             # the new version
 CORE=2.8.7            # OpenMRS Core version (from the distro above; keep the workflow in sync)
 
 # a) Build the distro (clear stale dirs first, or build-distro hits an interactive prompt under -B)
