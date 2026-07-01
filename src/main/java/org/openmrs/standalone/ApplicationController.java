@@ -359,6 +359,15 @@ public class ApplicationController {
 		}
 		
 		if (applyDatabaseChange != null) {
+			// Use the ports the UI actually resolved as available. setAvailablePorts()
+			// auto-increments past any port already in use (e.g. a leftover MariaDB from a
+			// previous standalone), so the field can hold 3317 while openmrs-runtime.properties
+			// still says 3316. Without this re-sync the wizard steps below would start (and
+			// persist) the stale ports and collide with whatever holds them. The normal start
+			// path already reads userInterface.getMySqlPort()/getTomcatPort() directly.
+			mySqlPort = userInterface.getMySqlPort();
+			tomcatPort = String.valueOf(userInterface.getTomcatPort());
+
 			File dest = new File("db");
 			if (dest.exists()) {
 				if (dest.isDirectory() && dest.listFiles() != null && Objects.requireNonNull(dest.listFiles()).length > 0) {

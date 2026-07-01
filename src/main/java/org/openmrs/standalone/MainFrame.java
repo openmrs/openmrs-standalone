@@ -326,22 +326,11 @@ public class MainFrame extends javax.swing.JFrame implements ActionListener, Use
 	 * Sets the default tomcat and mysql port numbers to those that are available.
 	 */
 	private void setAvailablePorts() {
-		tomcatPort = StandaloneUtil.fromStringToInt(txtTomcatPort.getText());
-		while (tomcatPort < StandaloneUtil.MAX_PORT_NUMBER) {
-			if (!StandaloneUtil.isPortAvailable(tomcatPort))
-				tomcatPort++;
-			else
-				break;
-		}
+		tomcatPort = StandaloneUtil.getAvailablePort(StandaloneUtil.fromStringToInt(txtTomcatPort.getText()), -1);
 		txtTomcatPort.setText(String.valueOf(tomcatPort));
-		
-		int mysqlPort = StandaloneUtil.fromStringToInt(txtMySqlPort.getText());
-		while (mysqlPort < StandaloneUtil.MAX_PORT_NUMBER) {
-			if (!StandaloneUtil.isPortAvailable(mysqlPort) || mysqlPort == tomcatPort)
-				mysqlPort++;
-			else
-				break;
-		}
+
+		//The MySQL port must also differ from the resolved Tomcat port.
+		int mysqlPort = StandaloneUtil.getAvailablePort(StandaloneUtil.fromStringToInt(txtMySqlPort.getText()), tomcatPort);
 		txtMySqlPort.setText(String.valueOf(mysqlPort));
 	}
 	

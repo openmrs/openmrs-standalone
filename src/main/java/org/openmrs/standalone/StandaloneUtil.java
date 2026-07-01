@@ -107,6 +107,28 @@ public class StandaloneUtil {
 		return false;
 	}
 	
+	/**
+	 * Returns the first available port at or after {@code startPort}, skipping {@code portToAvoid}
+	 * and any port that is not available. Used to keep the Tomcat and MySQL ports off ports already
+	 * in use (e.g. a leftover MariaDB from a previous standalone) and off each other. If none is
+	 * found below {@link #MAX_PORT_NUMBER}, returns {@code MAX_PORT_NUMBER}.
+	 *
+	 * @param startPort the port to start searching from
+	 * @param portToAvoid a port to skip regardless of availability (pass a non-port value such as -1
+	 *            for none)
+	 * @return the first available port at or after startPort, or MAX_PORT_NUMBER if none was found
+	 */
+	public static int getAvailablePort(int startPort, int portToAvoid) {
+		int port = startPort;
+		while (port < MAX_PORT_NUMBER) {
+			if (port != portToAvoid && isPortAvailable(port)) {
+				break;
+			}
+			port++;
+		}
+		return port;
+	}
+
 	private static void closeConnections(ServerSocket ss, DatagramSocket ds) {
 		if (ds != null)
 			ds.close();

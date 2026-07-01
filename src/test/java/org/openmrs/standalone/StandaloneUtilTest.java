@@ -10,6 +10,7 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.when;
 
 import java.io.IOException;
+import java.net.ServerSocket;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -242,5 +243,47 @@ class StandaloneUtilTest {
                 MariaDbController.stopMariaDB();
             }
         }
+    }
+
+    // getAvailablePort: the port-conflict avoidance the launch wizard relies on to keep the
+    // MySQL/Tomcat ports off ports already in use (e.g. a leftover MariaDB) and off each other.
+
+    @Test
+    void getAvailablePort_returnsStartPort_whenAvailableAndNotAvoided() {
+        int free = StandaloneUtil.getAvailablePort(40000, -1);
+        // Searching again from a known-free port, avoiding nothing, must return it unchanged.
+        assertEquals(free, StandaloneUtil.getAvailablePort(free, -1));
+    }
+
+    @Test
+    void getAvailablePort_skipsPortToAvoid() {
+        int free = StandaloneUtil.getAvailablePort(40000, -1);
+        int next = StandaloneUtil.getAvailablePort(free, free);
+        assertTrue(next > free, "should advance past the avoided port");
+        assertNotEquals(free, next);
+    }
+
+    @Test
+    void getAvailablePort_skipsPortInUse() throws IOException {
+        // Bind a real port below MAX_PORT_NUMBER that this test owns, so the "in use" state is
+        // established atomically (no resolve-then-bind race that could flake).
+        try (ServerSocket busy = bindAnyPortFrom(40000)) {
+            int held = busy.getLocalPort();
+            int result = StandaloneUtil.getAvailablePort(held, -1);
+            assertNotEquals(held, result, "should skip the port held by the open ServerSocket");
+            assertTrue(result > held);
+        }
+    }
+
+    /** Binds the first bindable port at or after startPort, so the caller owns a genuinely in-use port. */
+    private static ServerSocket bindAnyPortFrom(int startPort) throws IOException {
+        for (int port = startPort; port < StandaloneUtil.MAX_PORT_NUMBER; port++) {
+            try {
+                return new ServerSocket(port);
+            } catch (IOException tryNext) {
+                // port taken; try the next one
+            }
+        }
+        throw new IOException("no bindable port found from " + startPort);
     }
 }
