@@ -32,6 +32,21 @@ Two things that make a single-site migration simpler than the general case:
 
 ---
 
+## Contents
+
+- [Prerequisites (on the target server)](#prerequisites-on-the-target-server)
+- [Phase 0 — Record what you are running (do not skip)](#phase-0--record-what-you-are-running-do-not-skip)
+- [Phase 1 — Back up the standalone](#phase-1--back-up-the-standalone)
+- [Phase 2 — Generate the version-pinned Docker distro](#phase-2--generate-the-version-pinned-docker-distro)
+- [Phase 3 — Prevent demo data on first boot (belt-and-suspenders)](#phase-3--prevent-demo-data-on-first-boot-belt-and-suspenders)
+- [Phase 4 — Import the database (database container only)](#phase-4--import-the-database-database-container-only)
+- [Phase 5 — Start the backend and restore attachments](#phase-5--start-the-backend-and-restore-attachments)
+- [Phase 6 — Rebuild the search index and verify parity](#phase-6--rebuild-the-search-index-and-verify-parity)
+- [Phase 7 — Production hardening](#phase-7--production-hardening)
+- [Phase 8 — Cutover](#phase-8--cutover)
+- [Rollback](#rollback)
+- [Caveats](#caveats)
+
 ## Prerequisites (on the target server)
 
 - Docker and Docker Compose

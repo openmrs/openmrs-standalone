@@ -24,6 +24,21 @@ set by hand. That guarantees the version match.
 
 ---
 
+## Contents
+
+- [Prerequisites (on the target server)](#prerequisites-on-the-target-server)
+- [Phase 0 — Record what you are running (do not skip)](#phase-0--record-what-you-are-running-do-not-skip)
+- [Phase 1 — Back up the standalone and gather its artifacts](#phase-1--back-up-the-standalone-and-gather-its-artifacts)
+- [Phase 2 — Provision the external database and import](#phase-2--provision-the-external-database-and-import)
+- [Phase 3 — Lay down the OpenMRS application data directory](#phase-3--lay-down-the-openmrs-application-data-directory)
+- [Phase 4 — Write the runtime properties (point at the external DB)](#phase-4--write-the-runtime-properties-point-at-the-external-db)
+- [Phase 5 — Deploy the war and start Tomcat](#phase-5--deploy-the-war-and-start-tomcat)
+- [Phase 6 — Rebuild the search index and verify parity](#phase-6--rebuild-the-search-index-and-verify-parity)
+- [Phase 7 — Production hardening](#phase-7--production-hardening)
+- [Phase 8 — Cutover](#phase-8--cutover)
+- [Rollback](#rollback)
+- [Caveats](#caveats)
+
 ## Prerequisites (on the target server)
 
 - **Apache Tomcat 9** and a JDK supported by Platform 2.8.8 (the reference distribution images
