@@ -1,8 +1,11 @@
 # Migrating from the O3 Standalone to a production Docker deployment
 
 The **O3 Standalone** is a self-contained package — a bundled Tomcat plus an *embedded*
-MariaDB database in a single launcher — intended for evaluation, demos, training, and small
-single-machine use. It is **not** meant to be run as a production server.
+MariaDB database in a single launcher — great for evaluation, demos, training, and small
+single-machine use. You move to a full server deployment when you need what its architecture
+doesn't provide: more concurrent users, high availability, or a database you patch and scale
+independently. (The operational basics every production EMR needs — backups, keeping it running,
+hardening — apply to the standalone and to a server alike; they aren't what distinguishes them.)
 
 There is no separate "enterprise edition" of OpenMRS. Moving to production means running the
 **same** OpenMRS 3 Reference Application as a proper server deployment — here, the official

@@ -7,8 +7,14 @@ Application 3.7.1, demo data fully initialised, embedded database), no Docker re
 Unzip it and run `openmrs-standalone.jar`. The download above always tracks the latest build
 of the [`openmrs-emr3`](https://github.com/openmrs/openmrs-standalone/tree/openmrs-emr3) branch.
 
-The standalone is meant for evaluation, demos, training, and small single-machine use — not for
-running in production. To move a standalone instance to a production server, see:
+The standalone is built for evaluation, demos, training, and small single-machine use — and it can
+run a small single-site clinic too. Running any OpenMRS in production carries the same operator
+responsibilities (see [Running in production](#running-in-production)); those are not specific to
+the standalone.
+
+Move to a full server deployment when you need what the standalone's architecture doesn't provide:
+more concurrent users, high availability, or a database you patch and scale independently (the
+standalone embeds its database and runs as a single node). Two paths:
 
 * **[Migrating to a production Docker deployment](docs/migrating-to-docker-o3.md)** — the official O3 Docker distribution (recommended).
 * **[Migrating to a Tomcat + external database deployment](docs/migrating-to-tomcat-server.md)** — a conventional bare-metal/VM stack.
@@ -17,6 +23,7 @@ running in production. To move a standalone instance to a production server, see
 
 ## Contents
 
+- [Running in production](#running-in-production)
 - [Note for macOS users running a downloaded zip](#note-for-macos-users-running-a-downloaded-zip)
 - [Quick summary for building the standalone](#quick-summary-for-building-the-standalone)
 - [Building & testing a code change locally](#building--testing-a-code-change-locally)
@@ -31,6 +38,27 @@ running in production. To move a standalone instance to a production server, see
 - [How to generate a database to include with a distibution](#how-to-generate-a-database-to-include-with-a-distibution)
 - [Some rough statistics so far](#some-rough-statistics-so-far)
 - [🛠️ Reusable Embedded MariaDB (ReusableDB.java) for Windows Compatibility](#️-reusable-embedded-mariadb-reusabledbjava-for-windows-compatibility)
+
+## Running in production
+
+Running OpenMRS in production needs the same operational basics regardless of *how* you deploy it —
+the standalone, the Docker distribution, or a hand-rolled Tomcat + database server. None of these
+provide them out of the box; they are the operator's responsibility in every case:
+
+- **Automated backups with a tested restore** — schedule a database dump (and copy the attachments /
+  app-data directory), keep copies off the machine, and actually practise restoring them.
+- **Keep it running** — arrange for it to come back automatically after a reboot or crash, and
+  monitor that it is up. (A server is normally installed as a service; the standalone's
+  double-click launcher does not do this on its own — run it headless via `-commandline` under a
+  service manager if you need unattended restarts.)
+- **Network hardening** — if it is reachable beyond `localhost`, put it behind HTTPS and restrict
+  access, and keep the database off the public network.
+- **Machine & data security** — disk encryption, OS updates, and physical/access control for the
+  box that holds patient data.
+
+These are requirements for *any* production EMR, not a shortcoming of the standalone. What the
+standalone's architecture genuinely doesn't give you — and the reason to move to a server — is more
+concurrent users, high availability, and independent database patching/scaling, as noted at the top.
 
 ## Note for macOS users running a downloaded zip
 
