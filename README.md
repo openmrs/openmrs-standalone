@@ -17,22 +17,22 @@ running in production. To move a standalone instance to a production server, see
 
 ## Contents
 
-- [NOTE FOR MACOS USERS RUNNING A DOWNLOADED ZIP](#note-for-macos-users-running-a-downloaded-zip)
-- [QUICK SUMMARY FOR BUILDING THE STANDALONE](#quick-summary-for-building-the-standalone)
-- [BUILDING & TESTING A CODE CHANGE LOCALLY](#building--testing-a-code-change-locally)
-- [HOW TO UPGRADE THE STANDALONE TO A NEW REFERENCE APPLICATION RELEASE](#how-to-upgrade-the-standalone-to-a-new-reference-application-release)
-- [🛠️ HOW TO EXTRACT SQL DUMPS FROM A RUNNING SDK INSTANCE](#️-how-to-extract-sql-dumps-from-a-running-sdk-instance)
-- [HOW TO RUN FROM ECLIPSE](#how-to-run-from-eclipse)
-- [HOW TO RESPOND TO THE OPENMRS SETUP WIZARD](#how-to-respond-to-the-openmrs-setup-wizard)
-- [DISTRIBUTION FOLDER STRUCTURE (This is a MUST)](#distribution-folder-structure-this-is-a-must)
-- [DATABASE CONNECTION STRING](#database-connection-string)
-- [APPLICATION USER INTERFACE](#application-user-interface)
-- [HOW TO RUN FROM COMMAND LINE](#how-to-run-from-command-line)
-- [HOW TO GENERATE A DATABASE TO INCLUDE WITH A DISTIBUTION](#how-to-generate-a-database-to-include-with-a-distibution)
-- [SOME ROUGH STATISTICS SO FAR](#some-rough-statistics-so-far)
+- [Note for macOS users running a downloaded zip](#note-for-macos-users-running-a-downloaded-zip)
+- [Quick summary for building the standalone](#quick-summary-for-building-the-standalone)
+- [Building & testing a code change locally](#building--testing-a-code-change-locally)
+- [How to upgrade the standalone to a new Reference Application release](#how-to-upgrade-the-standalone-to-a-new-reference-application-release)
+- [🛠️ How to extract SQL dumps from a running SDK instance](#️-how-to-extract-sql-dumps-from-a-running-sdk-instance)
+- [How to run from Eclipse](#how-to-run-from-eclipse)
+- [How to respond to the OpenMRS setup wizard](#how-to-respond-to-the-openmrs-setup-wizard)
+- [Distribution folder structure (this is a MUST)](#distribution-folder-structure-this-is-a-must)
+- [Database connection string](#database-connection-string)
+- [Application user interface](#application-user-interface)
+- [How to run from command line](#how-to-run-from-command-line)
+- [How to generate a database to include with a distibution](#how-to-generate-a-database-to-include-with-a-distibution)
+- [Some rough statistics so far](#some-rough-statistics-so-far)
 - [🛠️ Reusable Embedded MariaDB (ReusableDB.java) for Windows Compatibility](#️-reusable-embedded-mariadb-reusabledbjava-for-windows-compatibility)
 
-## NOTE FOR MACOS USERS RUNNING A DOWNLOADED ZIP
+## Note for macOS users running a downloaded zip
 
 macOS tags every file extracted from a downloaded zip with the com.apple.quarantine
 attribute, which makes dyld refuse to load the bundled MariaDB dylibs (libpcre2, openssl)
@@ -41,7 +41,7 @@ automatically at startup; if you are running an older build, do it manually:
 
     xattr -dr com.apple.quarantine <extracted-standalone-directory>
 
-## QUICK SUMMARY FOR BUILDING THE STANDALONE
+## Quick summary for building the standalone
 
 * Increase the maven memory: e.g. export MAVEN_OPTS="-Xms1012m -Xmx2024m"
 * mvn clean
@@ -57,7 +57,7 @@ automatically at startup; if you are running an older build, do it manually:
 The standalone now supports loading a pre-initialized SQL database dump (from an SDK 3.x server).
 This bypasses the slow XML/metadata bootstrapping and ensures demo data + search index are ready immediately.
 
-## BUILDING & TESTING A CODE CHANGE LOCALLY
+## Building & testing a code change locally
 
 If you only changed Java code (not the bundled distro/DB) and just want to compile and run the
 unit tests, **do not use `mvn compile` / `mvn test`**. The reactor binds `openmrs-sdk:build-distro`
@@ -79,7 +79,7 @@ The MariaDB integration tests (`StandaloneUtilTest`, `MariaDbControllerTest`, `M
 start a real embedded MariaDB and take ~1–2 min total; the rest are sub-second. The full assembled
 jar still requires the normal `mvn package` (which does run the distro build).
 
-## HOW TO UPGRADE THE STANDALONE TO A NEW REFERENCE APPLICATION RELEASE
+## How to upgrade the standalone to a new Reference Application release
 
 This is the end-to-end runbook for moving the O3 standalone from one Reference
 Application release to the next (e.g. `3.7.0` → `3.7.1`). Read it fully
@@ -266,7 +266,7 @@ gate boots a throwaway copy and refuses to publish unless patient (`Smith`) and 
 (`malaria`) search return hits, so a green run is end-to-end proof the demo dump works.
 Once green, the README download serves the new version automatically.
 
-## 🛠️ HOW TO EXTRACT SQL DUMPS FROM A RUNNING SDK INSTANCE
+## 🛠️ How to extract SQL dumps from a running SDK instance
 You can speed up the standalone by bundling it with an SQL dump of a fully initialized OpenMRS SDK 3.x server.
 
 1. **Run your SDK instance and finish setup.**
@@ -285,7 +285,7 @@ Place the dump in:
 ```
 The standalone will auto-detect and load the corresponding SQL dump based on your refapp.version.
 
-## HOW TO RUN FROM ECLIPSE
+## How to run from Eclipse
 
 - Copy your war file into the "tomcat/webapps" folder. Where the tomcat folder is at the root of the project.
 
@@ -319,7 +319,7 @@ running setup, subsequent runs will always take you to the openmrs login screen.
 
 NOTE: Using Maven Package will generate the executable jar file in the target folder. How to run directly from eclipse using maven is not yet done.
 
-## HOW TO RESPOND TO THE OPENMRS SETUP WIZARD
+## How to respond to the OpenMRS setup wizard
 
 1. Copy the "connection.url" value from the default-runtime.properties file, located at the project root folder, and paste it into the "Database Connection:" text field of the openmrs setup wizard.
 
@@ -341,7 +341,7 @@ NOTE: Using Maven Package will generate the executable jar file in the target fo
 
 10. Click "Continue" to go to the next wizard screen and click "Finish".
 
-## DISTRIBUTION FOLDER STRUCTURE (This is a MUST)
+## Distribution folder structure (this is a MUST)
 
 The release/distribution (end user) folder structure should look like this:
 NOTE: Without this folder structure, you will get errors while trying to run the standalone application.
@@ -366,7 +366,7 @@ NOTE: Without this folder structure, you will get errors while trying to run the
 * splashscreen-loading.png
  * This is the splash screen displayed on startup. It can be any .png as long as the name remains the same because it is hardcoded in the application.
 
-## DATABASE CONNECTION STRING
+## Database connection string
 
 	jdbc:mariadb://127.0.0.1:3316/openmrs?autoReconnect=true&useUnicode=true&characterEncoding=UTF-8&zeroDateTimeBehavior=convertToNull
 
@@ -380,7 +380,7 @@ NOTE: When creating a new database using the openmrs database setup wizard, reme
 	  GUI query tools like Navicat, EMS MySQL Manager, etc
 
 
-## APPLICATION USER INTERFACE
+## Application user interface
 
 Tomcat Port					This is the port at which to run tomcat.
 MySQL Port					This is the port at which to run mariaDB4j (embedded mariadb database engine).
@@ -405,7 +405,7 @@ NOTE: Minimizing or Maximizing the application window does not have any effect o
 	  
 	
 	
-## HOW TO RUN FROM COMMAND LINE
+## How to run from command line
 
 Running from command line requires the -commandline switch.
 e.g. java -jar standalone.jar -commandline
@@ -418,7 +418,7 @@ browser			Use to launch a new browser instance.
 
  
  
-# HOW TO GENERATE A DATABASE TO INCLUDE WITH A DISTIBUTION
+# How to generate a database to include with a distibution
 
 1- Make sure you have no runtime properties file that the web application will find.
 2- Make sure you have no extra modules that the web application will find located in the appdata/modules folder.
@@ -433,7 +433,7 @@ NOTE: The default location of the "database" folder is that where the standalone
 
 
 	  
-## SOME ROUGH STATISTICS SO FAR
+## Some rough statistics so far
 
 The following are the various compressed standalone distribution sizes:
 
