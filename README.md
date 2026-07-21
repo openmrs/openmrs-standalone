@@ -8,8 +8,10 @@ Unzip it and run `openmrs-standalone.jar`. The download above always tracks the 
 of the [`openmrs-emr3`](https://github.com/openmrs/openmrs-standalone/tree/openmrs-emr3) branch.
 
 The standalone is meant for evaluation, demos, training, and small single-machine use — not for
-running in production. To move a standalone instance to a production server, see
-**[Migrating from the O3 Standalone to a production Docker deployment](docs/migrating-to-docker-o3.md)**.
+running in production. To move a standalone instance to a production server, see:
+
+* **[Migrating to a production Docker deployment](docs/migrating-to-docker-o3.md)** — the official O3 Docker distribution (recommended).
+* **[Migrating to a Tomcat + external database deployment](docs/migrating-to-tomcat-server.md)** — a conventional bare-metal/VM stack.
 
 ---
 
