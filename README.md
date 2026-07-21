@@ -19,6 +19,13 @@ standalone embeds its database and runs as a single node). Two paths:
 * **[Migrating to a production Docker deployment](docs/migrating-to-docker-o3.md)** — the official O3 Docker distribution (recommended).
 * **[Migrating to a Tomcat + external database deployment](docs/migrating-to-tomcat-server.md)** — a conventional bare-metal/VM stack.
 
+These two runbooks cover taking a standalone to a server, but they aren't the only ways to run
+OpenMRS 3. It can also run as the reference application's **multi-container Docker** layout
+(separate frontend/gateway/backend/db — for high availability or scaling the frontend
+independently), against an **external managed database**, or — for development — via the
+**OpenMRS SDK**; community **Kubernetes/Ansible** setups exist too, but those just automate the
+same runtimes. The Docker distribution is the recommended production path.
+
 ---
 
 ## Contents

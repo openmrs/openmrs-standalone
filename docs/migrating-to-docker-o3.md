@@ -109,10 +109,12 @@ docker compose config --services   # confirm the exact service names
 > **`openmrs-data`** (mounted at `/openmrs/data`). Confirm with `docker compose config --services`;
 > some SDK versions name the backend `backend` instead of `web`.
 >
-> (The OpenMRS reference application also publishes a separate **multi-container** `docker-compose`
-> — distinct `gateway` / `frontend` / `backend` / `db` — for deployments that scale the frontend
-> independently. This runbook targets the reproducible, version-pinned `build-distro` output; the
-> migration steps below are identical either way, only the service names differ.)
+> **Need high availability, or to scale/CDN the frontend independently?** Use the reference
+> application's **multi-container** layout instead — separate `gateway` / `frontend` / `backend` /
+> `db` containers, where the SPA is served by its own `frontend` container rather than by the
+> `web` backend. This runbook targets the reproducible, version-pinned `build-distro` output
+> (`db` + `web`); the migration steps below are identical either way — only the service names
+> differ (and you restore the database into the `db` service the same way).
 
 Review the generated `.env` / `docker-compose.yml` and set **real** database credentials (not the
 `openmrs`/`test` defaults) for `OMRS_DB_PASSWORD` / `MYSQL_ROOT_PASSWORD`, and confirm both the
