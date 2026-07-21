@@ -4,8 +4,13 @@ on:
   # Rebuild on every push so the README's nightly.link download stays current:
   # nightly.link only serves artifacts from push/schedule-triggered runs, so
   # workflow_dispatch rebuilds are invisible to the download button.
+  # Documentation-only changes don't affect the built artifact, so skip them
+  # (a commit that also touches any non-ignored file still triggers a build).
   push:
     branches: [openmrs-emr3]
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
   workflow_dispatch:
     inputs:
       refapp_version:
