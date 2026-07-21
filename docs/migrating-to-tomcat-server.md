@@ -149,6 +149,18 @@ Because the versions match, startup should connect, run no Liquibase changes, st
 module, and — via the bundled **`spa`** module — serve the O3 frontend at
 `http://<host>:8080/openmrs/spa`.
 
+What you should see in `catalina.out`:
+
+- `Using runtime properties file: /var/lib/openmrs/openmrs-runtime.properties` — confirms the
+  `-DOPENMRS_APPLICATION_DATA_DIRECTORY` setting worked. OpenMRS also logs a few benign
+  `Unable to find a runtime properties file at …` WARNs for the *other* locations it checks first
+  (e.g. the process working directory); those are normal as long as the "Using runtime properties
+  file" line points at your app-data directory. If instead you land on the web setup wizard, the
+  file wasn't found — re-check the path and the system property.
+- `liquibase-update-to-latest-2.8.x.xml contains 0 un-run change sets` — confirms the imported
+  database already matches the war's schema (a clean, version-aligned boot with nothing to
+  migrate). Un-run change sets here would mean a version mismatch — stop and reconcile versions.
+
 ## Phase 6 — Rebuild the search index and verify parity
 
 - In the app: **Administration → Manage Search Index** (patient/concept search won't work until
