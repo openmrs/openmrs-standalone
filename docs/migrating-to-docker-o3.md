@@ -80,19 +80,25 @@ grep -c 'INSERT INTO `patient`' ~/migration/openmrs-standalone.sql
 cd ~/migration
 mvn org.openmrs.maven.plugins:openmrs-sdk-maven-plugin:build-distro \
   -Ddistro=org.openmrs:distro-emr-configuration:3.7.1 \
-  -Ddir=openmrs-o3 -Dreset -B
+  -Ddir=openmrs-o3 -B          # use a fresh, non-existent dir; needs Docker + JDK 21
 cd openmrs-o3
-docker compose config --services   # note the exact service names
+docker compose config --services   # confirm the exact service names
 ```
 
-> This runbook calls the database service **`db`** and the backend service **`backend`**, and
-> assumes named volumes such as `db-data` (database) and `openmrs-data` (OpenMRS app data).
-> **Use the names your generated `docker-compose.yml` actually shows** (`config --services`) —
-> the backend service is sometimes named `web`.
+> The `build-distro` output for `distro-emr-configuration:3.7.1` is a **two-service** stack:
+> **`db`** (MariaDB) and **`web`** (the OpenMRS backend, which also serves the O3 frontend at
+> `/openmrs/spa` via the bundled `spa` module) — with named volumes **`db-data`** and
+> **`openmrs-data`** (mounted at `/openmrs/data`). Confirm with `docker compose config --services`;
+> some SDK versions name the backend `backend` instead of `web`.
+>
+> (The OpenMRS reference application also publishes a separate **multi-container** `docker-compose`
+> — distinct `gateway` / `frontend` / `backend` / `db` — for deployments that scale the frontend
+> independently. This runbook targets the reproducible, version-pinned `build-distro` output; the
+> migration steps below are identical either way, only the service names differ.)
 
-Review the generated `.env` / `docker-compose.yml` and set **real** database credentials (not
-`test`) for `OMRS_DB_PASSWORD` / `MYSQL_*`, and confirm both the database and the OpenMRS app
-data use **named volumes** so nothing is ephemeral.
+Review the generated `.env` / `docker-compose.yml` and set **real** database credentials (not the
+`openmrs`/`test` defaults) for `OMRS_DB_PASSWORD` / `MYSQL_ROOT_PASSWORD`, and confirm both the
+database and the OpenMRS app data use **named volumes** so nothing is ephemeral.
 
 ## Phase 3 — Prevent demo data on first boot (belt-and-suspenders)
 
@@ -109,41 +115,43 @@ grep -rl "createDemoPatientsOnNextStartup" web/ config* 2>/dev/null
 ```bash
 docker compose up -d db
 
+# root password = MYSQL_ROOT_PASSWORD from your .env (the generated default is 'openmrs')
+DBROOT=openmrs
+
 # wait until MariaDB is accepting connections
-until docker compose exec -T db mysqladmin ping -uroot -p"$MYSQL_ROOT_PASSWORD" --silent; do sleep 3; done
+until docker compose exec -T db mysqladmin ping -uroot -p"$DBROOT" --silent; do sleep 3; done
 
 # recreate a clean schema, then import your dump
-docker compose exec -T db mysql -uroot -p"$MYSQL_ROOT_PASSWORD" \
+docker compose exec -T db mysql -uroot -p"$DBROOT" \
   -e "DROP DATABASE IF EXISTS openmrs; CREATE DATABASE openmrs CHARACTER SET utf8 COLLATE utf8_general_ci;"
-docker compose exec -T db mysql -uroot -p"$MYSQL_ROOT_PASSWORD" openmrs < ~/migration/openmrs-standalone.sql
+docker compose exec -T db mysql -uroot -p"$DBROOT" openmrs < ~/migration/openmrs-standalone.sql
 
 # sanity-check the row counts against the standalone
-docker compose exec -T db mysql -uroot -p"$MYSQL_ROOT_PASSWORD" -e \
+docker compose exec -T db mysql -uroot -p"$DBROOT" -e \
   "SELECT (SELECT COUNT(*) FROM patient) patients, (SELECT COUNT(*) FROM obs) obs, (SELECT COUNT(*) FROM users) users;" openmrs
 ```
 
 ## Phase 5 — Start the backend and restore attachments
 
 ```bash
-docker compose up -d backend      # Liquibase no-ops (same version); Initializer re-affirms config
-docker compose logs -f backend    # watch for clean module startup, no errors/aborts
+docker compose up -d web        # builds the web image and starts it; Liquibase no-ops (same
+                                # version), Initializer re-affirms config, no demo data regenerates
+docker compose logs -f web      # watch for clean module startup, no errors/aborts
 
-# restore attachments / complex-obs into the app-data volume (path is OMRS_DATA_DIR, usually /openmrs/data)
-docker compose cp ~/migration/appdata-backup/complex_obs backend:/openmrs/data/
-docker compose exec backend chown -R 1001:0 /openmrs/data/complex_obs   # match the image's runtime UID
+# restore attachments / complex-obs into the app-data volume (OMRS_DATA_DIR = /openmrs/data)
+docker compose cp ~/migration/appdata-backup/complex_obs web:/openmrs/data/
+docker compose exec web chown -R 1001:0 /openmrs/data/complex_obs   # match the image's runtime UID
 ```
+
+Once `web` is up, the backend **and** the O3 frontend are served by that one container — the app
+is reachable at `http://<host>:<mapped-port>/openmrs/spa` (there is no separate frontend/gateway
+container in this distro).
 
 > If you use the **Attachments** module, confirm its storage-directory global property points at
 > `/openmrs/data/complex_obs` (or copy the files to wherever it is configured).
 >
 > **Custom modules** from Phase 0: drop their `.omod` files into the distro's modules directory
-> (or add them to the distro definition) and restart the backend.
-
-Bring up the rest of the stack:
-
-```bash
-docker compose up -d              # frontend + gateway
-```
+> (or add them to the distro definition) and rebuild/restart the `web` container.
 
 ## Phase 6 — Rebuild the search index and verify parity
 
@@ -155,9 +163,8 @@ docker compose up -d              # frontend + gateway
 
 ## Phase 7 — Production hardening
 
-- Put the **gateway** behind a reverse proxy with **HTTPS** (or terminate TLS at the gateway),
-  and set a real hostname.
-- Give the backend JVM adequate memory in the compose environment.
+- Put the **`web`** container behind a reverse proxy with **HTTPS**, and set a real hostname.
+- Give the `web` container's JVM adequate memory in the compose environment.
 - **Automate backups**: a nightly `docker compose exec -T db mysqldump … openmrs | gzip > …`,
   plus a snapshot of the `openmrs-data` volume (attachments).
 - Remove any dev-only port exposure (e.g. in `docker-compose.override.yml`).
@@ -181,8 +188,8 @@ users. Nothing in this runbook modifies the source standalone.
 ## Caveats
 
 - **Service and volume names** come from *your* generated `docker-compose.yml` (Phase 2's
-  `docker compose config --services`). This runbook uses `db` / `backend` / `openmrs-data` as
-  placeholders.
+  `docker compose config --services`). This runbook uses `db` / `web` / `openmrs-data`; some SDK
+  versions name the backend `backend`.
 - The attachments path assumes the default `OMRS_DATA_DIR=/openmrs/data`; confirm it in the
   generated compose file.
 - For higher availability you can point the distro at an **external managed database** instead of

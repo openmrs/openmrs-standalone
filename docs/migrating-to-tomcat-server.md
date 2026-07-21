@@ -17,9 +17,10 @@ As with the Docker path, there is no separate "enterprise edition" of OpenMRS �
 > uses **RefApp 3.7.1 / Core 2.8.8** as the example — substitute your actual versions.
 
 **The shortcut that makes this reliable:** your unzipped standalone already contains the fully
-assembled RefApp 3.7.1 — the `openmrs.war`, the complete module set (including the `spa` module
-that serves the O3 frontend), and the Initializer configuration. Reuse those artifacts rather
-than trying to reassemble the exact module set by hand. That guarantees the version match.
+assembled RefApp 3.7.1 — the `openmrs.war`, the complete module set (including the `spa` module),
+the built **O3 frontend assets** (`appdata/frontend`, which the spa module serves), and the
+Initializer configuration. Reuse those artifacts rather than trying to reassemble the exact module
+set by hand. That guarantees the version match.
 
 ---
 
@@ -52,11 +53,13 @@ mkdir -p ~/migration
 mysqldump --single-transaction --routines --triggers \
   -h 127.0.0.1 -P 3316 -u openmrs -p openmrs > ~/migration/openmrs-standalone.sql
 
-# 1b. The assembled RefApp 3.7.1 artifacts from the standalone directory:
-cp <standalone-dir>/tomcat/webapps/openmrs.war ~/migration/openmrs.war   # the platform war
-cp -a <standalone-dir>/appdata/modules        ~/migration/modules        # module set incl. spa
-cp -a <standalone-dir>/appdata/configuration  ~/migration/configuration  # Initializer config
-cp -a <standalone-dir>/appdata/complex_obs    ~/migration/complex_obs     # attachments (if present)
+# 1b. The assembled RefApp 3.7.1 artifacts from the standalone directory.
+#     Copy the WHOLE appdata/ — besides modules/ it contains owa/, configuration/, and (crucially)
+#     frontend/ (the built O3 SPA that the spa module serves) plus spa-build-config.json, and
+#     complex_obs/ if you have attachments. The embedded database lives under <standalone-dir>/database,
+#     NOT under appdata, so copying appdata wholesale is safe.
+cp  <standalone-dir>/tomcat/webapps/openmrs.war ~/migration/openmrs.war    # the platform war
+cp -a <standalone-dir>/appdata                  ~/migration/appdata        # modules, owa, configuration, frontend, ...
 ```
 
 Verify the dump is complete: `ls -lh ~/migration/openmrs-standalone.sql` and
@@ -65,8 +68,9 @@ Verify the dump is complete: `ls -lh ~/migration/openmrs-standalone.sql` and
 > Don't have the standalone directory handy? You can instead regenerate the exact 3.7.1 module
 > set and config with the OpenMRS SDK
 > (`mvn org.openmrs.maven.plugins:openmrs-sdk-maven-plugin:build-distro -Ddistro=org.openmrs:distro-emr-configuration:3.7.1 …`)
-> and take the war/modules/configuration from the generated distro. Reusing the standalone's own
-> artifacts is simpler and guarantees the version match.
+> and take the war, modules, configuration, and SPA (`openmrs_core/openmrs.war`, `openmrs_modules`,
+> `openmrs_config`, `openmrs_spa`) from the generated distro. Reusing the standalone's own artifacts
+> is simpler and guarantees the version match.
 
 ## Phase 2 — Provision the external database and import
 
@@ -93,13 +97,14 @@ Create a dedicated app-data directory owned by the Tomcat user (example uses `/v
 
 ```bash
 sudo mkdir -p /var/lib/openmrs
-sudo cp -a ~/migration/modules       /var/lib/openmrs/modules
-sudo cp -a ~/migration/configuration /var/lib/openmrs/configuration
-sudo cp -a ~/migration/complex_obs   /var/lib/openmrs/complex_obs
+sudo cp -a ~/migration/appdata/. /var/lib/openmrs/   # modules, owa, configuration, frontend, complex_obs, ...
 sudo chown -R tomcat:tomcat /var/lib/openmrs
 ```
 
-Add any **custom modules** from Phase 0 into `/var/lib/openmrs/modules`.
+This brings across the modules, the Initializer `configuration/`, the **`frontend/`** SPA assets
+(without which `/openmrs/spa` would load nothing), and `configuration_checksums/` (so Initializer
+skips re-processing config the imported database already has). Add any **custom modules** from
+Phase 0 into `/var/lib/openmrs/modules`.
 
 Belt-and-suspenders: your imported DB already has the demo flag consumed, but you can also set
 the demo global property to `0` in the config so no demo data can generate:
