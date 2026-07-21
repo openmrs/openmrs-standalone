@@ -100,6 +100,26 @@ Review the generated `.env` / `docker-compose.yml` and set **real** database cre
 `openmrs`/`test` defaults) for `OMRS_DB_PASSWORD` / `MYSQL_ROOT_PASSWORD`, and confirm both the
 database and the OpenMRS app data use **named volumes** so nothing is ephemeral.
 
+**Patch the generated `web/Dockerfile` (two 3.7.1 workarounds — without these, `docker compose up
+-d web` in Phase 5 fails).** The SDK generates it against a base image tag and a startup script
+that need two fixes on this release:
+
+```dockerfile
+# 1. The generated FROM tag `openmrs/openmrs-core:nightly-amazoncorretto-11` no longer exists on
+#    Docker Hub — pin it to the core version (2.8.8 for RefApp 3.7.1):
+FROM openmrs/openmrs-core:2.8.8-amazoncorretto-11
+
+# 2. The image's startup.sh runs a DB-auth pre-check via the `mariadb` CLI, but this core image
+#    ships only `mysql`; without a symlink the check fails 30× and the container exits before
+#    starting. Add right after the FROM line (the image runs as UID 1001, so switch to root):
+USER root
+RUN ln -sf /usr/bin/mysql /usr/bin/mariadb
+USER 1001
+```
+
+(Both are upstream distro/image issues on 3.7.1, not migration-specific — they may be fixed in a
+later release, in which case skip whichever no longer applies.)
+
 ## Phase 3 — Prevent demo data on first boot (belt-and-suspenders)
 
 Your imported database already has the demo flag consumed, but to be safe, set the demo global
@@ -118,8 +138,10 @@ docker compose up -d db
 # root password = MYSQL_ROOT_PASSWORD from your .env (the generated default is 'openmrs')
 DBROOT=openmrs
 
-# wait until MariaDB is accepting connections
-until docker compose exec -T db mysqladmin ping -uroot -p"$DBROOT" --silent; do sleep 3; done
+# Wait until MariaDB accepts an AUTHENTICATED query. Do NOT use `mysqladmin ping` here — during
+# the container's first-boot init it reports "alive" before the real server (with the root
+# password) is ready, so the import below would fail with "Access denied" / socket errors.
+until docker compose exec -T db mysql -uroot -p"$DBROOT" -e "SELECT 1" >/dev/null 2>&1; do sleep 3; done
 
 # recreate a clean schema, then import your dump
 docker compose exec -T db mysql -uroot -p"$DBROOT" \
@@ -167,7 +189,11 @@ container in this distro).
 - Give the `web` container's JVM adequate memory in the compose environment.
 - **Automate backups**: a nightly `docker compose exec -T db mysqldump … openmrs | gzip > …`,
   plus a snapshot of the `openmrs-data` volume (attachments).
-- Remove any dev-only port exposure (e.g. in `docker-compose.override.yml`).
+- Use the generated **`docker-compose.prod.yml`** for production rather than the dev
+  `docker-compose.override.yml`: the override publishes dev ports (`MYSQL_DEV_PORT`,
+  `TOMCAT_DEV_PORT`), while `docker-compose.prod.yml` exposes only the app on `${TOMCAT_PORT}`.
+  Run with `docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d` (Compose loads
+  `docker-compose.override.yml` automatically only when you don't pass explicit `-f` files).
 
 ## Phase 8 — Cutover
 
