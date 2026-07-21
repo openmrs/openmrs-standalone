@@ -15,6 +15,23 @@ running in production. To move a standalone instance to a production server, see
 
 ---
 
+## Contents
+
+- [NOTE FOR MACOS USERS RUNNING A DOWNLOADED ZIP](#note-for-macos-users-running-a-downloaded-zip)
+- [QUICK SUMMARY FOR BUILDING THE STANDALONE](#quick-summary-for-building-the-standalone)
+- [BUILDING & TESTING A CODE CHANGE LOCALLY](#building--testing-a-code-change-locally)
+- [HOW TO UPGRADE THE STANDALONE TO A NEW REFERENCE APPLICATION RELEASE](#how-to-upgrade-the-standalone-to-a-new-reference-application-release)
+- [🛠️ HOW TO EXTRACT SQL DUMPS FROM A RUNNING SDK INSTANCE](#️-how-to-extract-sql-dumps-from-a-running-sdk-instance)
+- [HOW TO RUN FROM ECLIPSE](#how-to-run-from-eclipse)
+- [HOW TO RESPOND TO THE OPENMRS SETUP WIZARD](#how-to-respond-to-the-openmrs-setup-wizard)
+- [DISTRIBUTION FOLDER STRUCTURE (This is a MUST)](#distribution-folder-structure-this-is-a-must)
+- [DATABASE CONNECTION STRING](#database-connection-string)
+- [APPLICATION USER INTERFACE](#application-user-interface)
+- [HOW TO RUN FROM COMMAND LINE](#how-to-run-from-command-line)
+- [HOW TO GENERATE A DATABASE TO INCLUDE WITH A DISTIBUTION](#how-to-generate-a-database-to-include-with-a-distibution)
+- [SOME ROUGH STATISTICS SO FAR](#some-rough-statistics-so-far)
+- [🛠️ Reusable Embedded MariaDB (ReusableDB.java) for Windows Compatibility](#️-reusable-embedded-mariadb-reusabledbjava-for-windows-compatibility)
+
 ## NOTE FOR MACOS USERS RUNNING A DOWNLOADED ZIP
 
 macOS tags every file extracted from a downloaded zip with the com.apple.quarantine
@@ -464,3 +481,4 @@ The OpenMRS Standalone project uses a custom wrapper around the MariaDB4j `DB` c
 DBConfigurationBuilder config = DBConfigurationBuilder.newBuilder();
 config.setPort(3316);
 ReusableDB db = ReusableDB.openEmbeddedDB(config.build());
+```
