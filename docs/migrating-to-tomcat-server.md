@@ -8,7 +8,10 @@ Docker distro when your operations team standardises on bare-metal/VM Tomcat and
 separately-administered database rather than containers.
 
 As with the Docker path, there is no separate "enterprise edition" of OpenMRS — you run the
-**same** OpenMRS 3 Reference Application, just as a properly managed server. The migration is a
+**same** OpenMRS 3 Reference Application, just as a properly managed server. You move off the
+standalone for architectural reasons (more concurrent users, high availability, or a database you
+patch and scale independently), not because of the operational basics — backups, keeping it
+running, hardening — which any production deployment needs equally. The migration is a
 **database + files move with strict version alignment**.
 
 > ⚠️ **Version alignment.** An OpenMRS database is tied to specific **Platform (core)**,
