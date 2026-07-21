@@ -187,6 +187,15 @@ users. Nothing in this runbook modifies the source standalone.
 - **Attachments live on disk**, not in the database — the `complex_obs` copy (Phases 1b/3) is the
   most commonly missed step. If you use the **Attachments** module, confirm its storage-directory
   global property matches `/var/lib/openmrs/complex_obs`.
+- **Absolute-path global properties.** A few settings baked into the shipped database hold
+  absolute paths under `/openmrs/data` (the app-data directory used when the bundled dumps were
+  generated) — for example `openconceptlab.oclLoadAtStartupPath`. On a Tomcat host with a
+  different app-data directory these resolve to nothing; that is harmless for the migration (the
+  concept dictionary is already in the imported database, so nothing is lost — at most a start-up
+  log warning). Repoint them to your `/var/lib/openmrs/...` path under
+  **Administration → Manage Global Properties** if you want the start-up paths to resolve. The
+  `spa.local.directory` property, by contrast, is `frontend` (relative to the app-data directory),
+  so the O3 frontend is found without any change.
 - Exact **Tomcat/JDK/MariaDB versions** should follow Platform 2.8.8's documented requirements;
   the versions named here are known-good examples, not the only supported ones.
 - This is a single-site runbook. For multi-node/HA you would front several Tomcat nodes with a
