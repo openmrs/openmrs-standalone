@@ -7,6 +7,10 @@ Application 3.7.1, demo data fully initialised, embedded database), no Docker re
 Unzip it and run `openmrs-standalone.jar`. The download above always tracks the latest build
 of the [`openmrs-emr3`](https://github.com/openmrs/openmrs-standalone/tree/openmrs-emr3) branch.
 
+The standalone is meant for evaluation, demos, training, and small single-machine use — not for
+running in production. To move a standalone instance to a production server, see
+**[Migrating from the O3 Standalone to a production Docker deployment](docs/migrating-to-docker-o3.md)**.
+
 ---
 
 ## NOTE FOR MACOS USERS RUNNING A DOWNLOADED ZIP
