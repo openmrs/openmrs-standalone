@@ -31,6 +31,7 @@ same runtimes. The Docker distribution is the recommended production path.
 ## Contents
 
 - [Running in production](#running-in-production)
+- [Upgrading a standalone that is already in production](#upgrading-a-standalone-that-is-already-in-production)
 - [Note for macOS users running a downloaded zip](#note-for-macos-users-running-a-downloaded-zip)
 - [Quick summary for building the standalone](#quick-summary-for-building-the-standalone)
 - [Building & testing a code change locally](#building--testing-a-code-change-locally)
@@ -66,6 +67,142 @@ provide them out of the box; they are the operator's responsibility in every cas
 These are requirements for *any* production EMR, not a shortcoming of the standalone. What the
 standalone's architecture genuinely doesn't give you — and the reason to move to a server — is more
 concurrent users, high availability, and independent database patching/scaling, as noted at the top.
+
+## Upgrading a standalone that is already in production
+
+When a new O3 Reference Application release ships, you upgrade a *running* standalone by
+carrying your existing data into a **fresh copy of the new build** — you do **not** upgrade
+in place, and you never edit the old install's files directly. The new build brings a new core
+war, new modules, a new frontend and new configuration; your job is to bring across only the
+things that hold your data. On first start, OpenMRS core runs its Liquibase migrations and
+upgrades the database schema for you.
+
+> This section is for **operators** with a live install and real patient data. If you are the
+> person *building/publishing* the standalone package from a new refapp version, you want
+> [How to upgrade the standalone to a new Reference Application release](#how-to-upgrade-the-standalone-to-a-new-reference-application-release)
+> instead.
+
+**⚠️ Rehearse the upgrade on a copy first.** Schema migrations are one-way. Do a full backup
+(below), run the whole procedure against that backup on a spare machine, confirm it comes up
+clean, and only then repeat it on production. Never let the first run of a new version touch the
+only copy of your data.
+
+### What holds your data (and what doesn't)
+
+Everything in the standalone folder is relative to `openmrs-standalone.jar`. Only three things
+carry *your* state — everything else is shipped fresh by the new build:
+
+| Keep (this is your data)                     | What it is                                                        |
+|----------------------------------------------|-------------------------------------------------------------------|
+| `database/` (in particular `database/data`)  | The embedded MariaDB data files — the whole patient database.     |
+| `<context>-runtime.properties`               | Connection URL **and the generated DB password** (see caveat).    |
+| `appdata/complex_obs/` and `appdata/person_images/` | Uploaded attachments/complex-obs files and patient photos — patient data that lives on disk, not in the DB. |
+
+| Let the new build win (do **not** copy the old one) | Why                                              |
+|-----------------------------------------------------|--------------------------------------------------|
+| `tomcat/webapps/openmrs.war`                        | New core platform.                               |
+| `appdata/modules/`                                  | New module versions ship here, not inside the war.|
+| `appdata/frontend/`                                 | New O3 SPA build.                                |
+| `appdata/configuration/`, `appdata/configuration_checksums/` | New distro configuration + Initializer checksums. |
+| `appdata/lucene/`                                   | Search index — rebuild it on the new version rather than reuse it. |
+
+**⚠️ The DB password lives in the runtime properties, not the data files.** On first setup the
+standalone replaces the placeholder password `test` with a random 12-character password and
+writes it back to `<context>-runtime.properties`. That password is what unlocks *your*
+`database/data`. So if you carry `database/data` across, you **must** carry the matching
+`<context>-runtime.properties` too — otherwise the new install cannot authenticate to your
+copied database. Keep the war name (`openmrs.war` → context `openmrs`) unchanged so the new build
+looks for the same `openmrs-runtime.properties`.
+
+**If you added your own modules** (ones not part of the refapp distro), copy just those `.omod`
+files from the old `appdata/modules/` into the new one, and confirm each has a version compatible
+with the new release. Don't bulk-copy the folder — that would shadow the new distro modules with
+old ones.
+
+### Procedure
+
+The shell below is for macOS/Linux; on Windows do the same folder copies/deletes in Explorer or
+PowerShell and use `database\bin\mariadb-dump.exe`. The `java -jar` steps are identical everywhere.
+`<old>`/`<new>` are the two version strings; adjust `3316` if you changed the MySQL port.
+
+```bash
+old=/path/to/openmrs-standalone-<old>
+
+# 0. While the OLD install is STILL RUNNING, take a portable logical dump. Use the client the
+#    standalone bundles (database/bin/mariadb-dump) — you do NOT need MySQL/MariaDB installed
+#    separately, and a foreign `mysqldump` can emit an incompatible dump. Root is passwordless:
+"$old"/database/bin/mariadb-dump --single-transaction --routines --triggers \
+  -h 127.0.0.1 -P 3316 -u root openmrs > openmrs-backup-<date>.sql
+
+# 1. Stop the standalone cleanly so the data files are consistent (File -> Quit, or
+#    `java -jar openmrs-standalone.jar -commandline stop`). Confirm nothing still holds the DB
+#    (e.g. `pkill -f standalone`).
+
+# 2. Full cold backup of the now-stopped OLD install; keep a copy off the machine:
+cp -a "$old" "$old".backup
+
+# 3. Unzip the NEW standalone somewhere separate (NOT over the old one) and cd into the
+#    extracted referenceapplication-standalone-<new>/ folder:
+unzip openmrs-standalone-o3.zip
+cd referenceapplication-standalone-<new>
+
+# 4. Carry your data into the new install:
+rm -rf database                             # ensure the new install has no DB of its own yet
+                                            # (none exists on a first unzip; guards a stray start)
+cp -a "$old"/database ./                     # your patient DB (raw data files)
+cp    "$old"/openmrs-runtime.properties ./   # the MATCHING DB password (see caveat above)
+rm -f needsconfig.txt                        # ⚠️ CRITICAL: the fresh unzip ships this marker, which
+                                            # forces the setup wizard on first start — and the wizard
+                                            # DELETES the database you just copied in. Removing it lets
+                                            # the new build boot straight against your data instead.
+# on-disk patient files, if you use them (created lazily on first upload; the paths follow the
+# obs.complex_obs_dir GP resolved against application_data_directory=appdata):
+cp -a "$old"/appdata/complex_obs   ./appdata/ 2>/dev/null || true   # attachments / complex obs
+cp -a "$old"/appdata/person_images ./appdata/ 2>/dev/null || true   # patient photos
+# …and any of YOUR OWN added .omod files (not the distro's) from appdata/modules/.
+
+# 5. Force a clean search index on the new version (analyzer/version can change):
+rm -rf appdata/lucene
+
+# 6. Start the new standalone. First start runs Liquibase migrations — give it time.
+java -jar openmrs-standalone.jar
+```
+
+The migration is automatic — the standalone ships `auto_update_database=true`, so first start runs
+the Liquibase changesets and takes you to the login page without an "update database" prompt. Watch
+the log during that first start (the UI text area, or `tomcat/logs/<date>.log`) and confirm the
+changesets complete without error before anyone logs in.
+
+**If you see the setup wizard instead of a login page, stop immediately** — it means
+`needsconfig.txt` was not removed in step 4, and finishing the wizard would delete your data.
+Quit, remove the file, and start again.
+
+**Fallback — if the raw data files won't start on the new build.** This only happens if the embedded
+MariaDB version changed between the two builds (rare — the standalone can't run its bundled MariaDB
+independently, so there is no manual "import into a stopped instance" path). Instead of copying
+`database/` and `openmrs-runtime.properties` in step 4, feed your logical dump through the
+standalone's *own* first-start importer, and let the new install generate its own DB user/password:
+
+1. In a fresh copy of the new standalone, replace the SQL inside the bundled `demodatabase.zip` with
+   your dump, keeping the internal `data/` folder — the zip must contain `data/openmrs-backup-<date>.sql`
+   (the standalone imports the first `.sql` it finds under `db/data/` after unzipping that archive).
+2. With no `database/` folder present yet (fresh unzip), start the standalone and choose the **demo
+   database** option in the setup wizard. First start imports your SQL, then OpenMRS migrates it. Do
+   **not** copy the old `openmrs-runtime.properties` on this path.
+
+### After the upgrade
+
+* **Rebuild the search index** — *Home → System Administration → Manage Search Index* (you deleted
+  `appdata/lucene` so it starts empty).
+* **Verify** — log in, run a patient search and a concept search, and click through the workflows
+  you rely on. A green login plus working search is the quickest proof the migration took.
+* **Skipping releases** — core migrations are cumulative, so jumping several refapp releases at
+  once usually works, but modules are less forgiving. Prefer upgrading one release at a time, and
+  always rehearse on the backup first.
+
+**Rollback:** if the migrated instance misbehaves, stop it and restore the
+`<old>.backup` copy from step 2 (or feed `openmrs-backup-<date>.sql` through a clean install of the
+OLD version using the same importer trick as the fallback). This is why steps 0 and 2 are not optional.
 
 ## Note for macOS users running a downloaded zip
 
@@ -116,9 +253,13 @@ jar still requires the normal `mvn package` (which does run the distro build).
 
 ## How to upgrade the standalone to a new Reference Application release
 
-This is the end-to-end runbook for moving the O3 standalone from one Reference
-Application release to the next (e.g. `3.7.0` → `3.7.1`). Read it fully
-before starting — the DB-dump regeneration has non-obvious timing.
+This is the end-to-end runbook for *building and publishing* the O3 standalone package for a new
+Reference Application release (e.g. `3.7.0` → `3.7.1`). Read it fully before starting — the
+DB-dump regeneration has non-obvious timing.
+
+> Running an existing install and just want to move your data onto a new build? See
+> [Upgrading a standalone that is already in production](#upgrading-a-standalone-that-is-already-in-production)
+> instead — this section is for maintainers rebuilding the distributable.
 
 ### 0. Branch & build model (read first)
 
