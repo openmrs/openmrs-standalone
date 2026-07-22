@@ -36,7 +36,7 @@ WARNINGS
 SYSTEM REQUIREMENTS
 ===================
 
-You must have ﻿Java 6+ installed on your system to run OpenMRS.
+You must have ﻿Java 17 or newer installed on your system to run this OpenMRS 3 Standalone. Java 8 and 11 will not start it.
 
 RUNNING THE STANDLONE APP
 =========================

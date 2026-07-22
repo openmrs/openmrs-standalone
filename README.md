@@ -30,6 +30,7 @@ same runtimes. The Docker distribution is the recommended production path.
 
 ## Contents
 
+- [Requirements](#requirements)
 - [Running in production](#running-in-production)
 - [Upgrading a standalone that is already in production](#upgrading-a-standalone-that-is-already-in-production)
 - [Note for macOS users running a downloaded zip](#note-for-macos-users-running-a-downloaded-zip)
@@ -46,6 +47,17 @@ same runtimes. The Docker distribution is the recommended production path.
 - [How to generate a database to include with a distibution](#how-to-generate-a-database-to-include-with-a-distibution)
 - [Some rough statistics so far](#some-rough-statistics-so-far)
 - [🛠️ Reusable Embedded MariaDB (ReusableDB.java) for Windows Compatibility](#️-reusable-embedded-mariadb-reusabledbjava-for-windows-compatibility)
+
+## Requirements
+
+To run the standalone, use **Java 17 or newer** — the LTS runtime the OpenMRS 3 stack supports, and
+what these builds are validated against (CI uses Java 21). It will **not** start on Java 8 or 11:
+the launcher's default JVM arguments use options those reject (`--add-opens` needs Java 9+;
+`-Djava.security.manager=allow` needs Java 12+). Nothing else needs installing — the database
+(MariaDB) and web server (Tomcat) are embedded in the download.
+
+Building the standalone from source is a separate, heavier toolchain (JDK 21 + Maven, and Docker for
+regenerating the bundled database dumps) — see [Quick summary for building the standalone](#quick-summary-for-building-the-standalone).
 
 ## Running in production
 
