@@ -241,6 +241,11 @@ Every demo visit lands on a single Visit Location — Community Outreach on 3.7.
 
 ### 3. Bump the version strings
 
+* `pom.xml` — the `refapp.version` and `openmrs.version` **defaults**. These are what a plain
+  `mvn install` uses (CI's publish workflow passes both explicitly, but `standalone-ci.yml` and a
+  local build do not), and `refapp.version` has to match the dumps in `src/main/db`: the
+  `zip-{demo,empty}-database` assemblies include `{demo,empty}-db-${refapp.version}.sql`, so a stale
+  default fails the build late, at packaging, with the unhelpful `archive cannot be empty`.
 * `.github/workflows/build-o3-standalone.yml` — **two** version pairs:
   * refapp — the `refapp_version` `workflow_dispatch` default and the `REFAPP_VERSION` env fallback;
   * core — the `openmrs_version` `workflow_dispatch` default and the `OPENMRS_VERSION` env fallback

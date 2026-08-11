@@ -21,8 +21,13 @@
 		<liquibase.plugin.version>4.23.2</liquibase.plugin.version>
 
 		<tomcat.version>9.0.106</tomcat.version>
-		<openmrs.version>2.9.0-SNAPSHOT</openmrs.version>
-		<refapp.version>3.7.0-SNAPSHOT</refapp.version>
+		<!-- Defaults for a plain `mvn install`. These MUST match the version of the bundled DB dumps
+		     in src/main/db (the zip-{demo,empty}-database assemblies include
+		     {demo,empty}-db-${refapp.version}.sql, and an unmatched version fails the build with
+		     "archive cannot be empty"), and the core version the chosen refapp pins. CI passes both
+		     explicitly; keep these in step at every version bump - see docs/releasing.md. -->
+		<openmrs.version>2.8.8</openmrs.version>
+		<refapp.version>3.7.1</refapp.version>
 		<!-- The SPA bridge omod. The refapp distro leaves this version unset, so the SDK
 		     defaults it to a -SNAPSHOT; pin it to a release for reproducible builds.
 		     Override with -Dspa.version. -->
