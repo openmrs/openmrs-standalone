@@ -31,7 +31,14 @@ Two things that make a single-site migration simpler than the general case:
   **attachments / complex-obs**, and any **custom modules you added yourself**.
 - **The migration is a database restore into a matching-version distro.** Because the versions
   match, Liquibase is a no-op and Initializer merely re-affirms its UUID-keyed configuration
-  idempotently — no demo data regenerates (the demo flag is already consumed in your database).
+  idempotently — no demo patients regenerate (the demo flag is already consumed in your database).
+  One visible difference: the standalone ships a **curated** copy of that configuration, with the
+  demo content package's placeholder locations (`Site 1`–`Site 50`) and developer forms stripped
+  (`scripts/strip-demo-fixtures.sh`), whereas this distro uses the upstream config as published —
+  so Initializer *will* create those 50 placeholder login locations in your migrated database on
+  first boot. Your own data is untouched. To keep them out, copy the standalone's
+  `appdata/configuration` over the generated distro's `web/openmrs_config` before you build the
+  `web` image (Phase 2 below); otherwise just retire the extra locations afterwards.
 
 ---
 

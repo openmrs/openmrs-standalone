@@ -31,6 +31,25 @@ jobs:
       - name: Run Maven Package
         run: mvn package --settings .github/maven-settings.xml
 
+      # This is the second publish path (tag push → GitHub Release), so it needs the same gate
+      # build-o3-standalone.yml applies on the branch path: never release a standalone carrying the
+      # refapp demo package's test fixtures, or whose Starter DB is less complete than the demo one.
+      # The committed dumps are what ship here, and neither defect is visible by inspection.
+      - name: Verify no demo fixtures and a converged starter DB
+        run: |
+          # set -e matters here, and the verify call is deliberately the LAST command: without both,
+          # a failing check would print its error and still exit 0 (the trailing cleanup would become
+          # the step's status), leaving a gate that blocks nothing. The runner's leftover extract dir
+          # is harmless — it is outside the release `files:` glob and the runner is ephemeral.
+          set -euo pipefail
+          ZIP=$(find target -maxdepth 1 -name 'referenceapplication-standalone-*.zip' | head -1)
+          [ -n "$ZIP" ] || { echo "::error::no standalone zip to verify"; exit 1; }
+          rm -rf target/gatecheck && mkdir -p target/gatecheck
+          unzip -q -o "$ZIP" -d target/gatecheck
+          ART_DIR=$(find target/gatecheck -mindepth 1 -maxdepth 1 -type d | head -1)
+          [ -n "$ART_DIR" ] || { echo "::error::$ZIP did not contain the standalone directory"; exit 1; }
+          bash scripts/verify-no-demo-fixtures.sh "$ART_DIR"
+
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:

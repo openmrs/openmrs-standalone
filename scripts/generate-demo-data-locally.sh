@@ -1,9 +1,13 @@
 #!/bin/bash
-# Generates the demo data SQL dump locally by:
-#   1. Building the OpenMRS distribution (if not already built)
-#   2. Starting OpenMRS in Docker with demo data enabled
-#   3. Polling the REST API until a valid authenticated session is returned
-#   4. Dumping the database to src/main/db/
+# Generates the demo data SQL dump locally, mirroring docs/releasing.md §2:
+#   1. Building the OpenMRS distribution (if not already built) and stripping the demo content
+#      package's test fixtures from its Initializer config
+#   2. Booting OpenMRS in Docker with demo generation OFF, so concepts load first
+#   3. Clamping ConceptNumeric bounds into their reference-range intersection — without this,
+#      demo generation aborts part-way and yields a partial dataset
+#   4. Turning demo generation on, restarting, and waiting for patients/observations to settle
+#   5. Restarting once more so startup-time metadata (role_privilege, stock parties) converges
+#   6. Dumping the database to src/main/db/
 #
 # Usage:
 #   ./scripts/generate-demo-data-locally.sh [--skip-build] [--timeout 1800] [--poll-interval 30]
@@ -57,6 +61,17 @@ else
   echo "⏭️  Skipping build (reusing $DISTRO_DIR)"
 fi
 
+# Drop the demo content package's test scaffolding, then refresh the checksums so they still
+# describe the config. Both are idempotent: the Maven build already did this, so this only bites
+# for --skip-build against a distro built before the filter existed.
+"$SCRIPT_DIR/strip-demo-fixtures.sh" "$DISTRO_DIR/web/openmrs_config"
+# Drop the checksums directory rather than regenerating over it: generate-checksums.sh only ever
+# writes, so a checksum left behind for a file the filter removed would silently suppress that file
+# if it ever returned with the same content (Initializer skips a file whose checksum still matches).
+rm -rf "$DISTRO_DIR/web/openmrs_config_checksums"
+"$SCRIPT_DIR/generate-checksums.sh" "$DISTRO_DIR/web/openmrs_config" \
+  "$DISTRO_DIR/web/openmrs_config_checksums"
+
 # ── Step 2: Prepare Docker Compose ──────────────────────────────────────────
 COMPOSE_FILE="$DISTRO_DIR/docker-compose.yml"
 OVERRIDE_FILE="$DISTRO_DIR/docker-compose.override.yml"
@@ -71,13 +86,33 @@ cleanup() {
 }
 trap cleanup EXIT
 
-# Fix the auto-generated Dockerfile base image tag if needed
-if [ -f "$DISTRO_DIR/web/Dockerfile" ] && grep -q 'nightly-amazoncorretto-11' "$DISTRO_DIR/web/Dockerfile"; then
-  sed -i.bak 's|openmrs/openmrs-core:nightly-amazoncorretto-11|openmrs/openmrs-core:2.8.x|g' \
-    "$DISTRO_DIR/web/Dockerfile" && rm -f "$DISTRO_DIR/web/Dockerfile.bak"
+# Two local-only fixes to the SDK-generated Dockerfile, neither touching source or CI:
+#   1. It is generated as `FROM openmrs/openmrs-core:nightly-amazoncorretto-11`, a tag that no longer
+#      exists on Docker Hub — pin it to the core version this distro was actually built against.
+#   2. That image ships /usr/bin/mysql but NOT `mariadb`, which the distro's startup.sh calls in its
+#      DB-auth pre-check; without the symlink the web container exits BEFORE creating the schema.
+# Kept identical to the copy in generate-empty-db-locally.sh — these scripts are deliberate mirrors.
+DOCKERFILE="$DISTRO_DIR/web/Dockerfile"
+# `|| true` so a missing/unreadable file reaches the check below instead of `set -e` killing the
+# script with a bare exit code and no explanation.
+CORE_VERSION=$(grep -E '^war\.openmrs=' "$DISTRO_DIR/web/openmrs-distro.properties" 2>/dev/null | cut -d= -f2 | tr -d ' \r' || true)
+if [ -z "$CORE_VERSION" ]; then
+  echo "❌ Could not read war.openmrs from $DISTRO_DIR/web/openmrs-distro.properties"
+  exit 1
 fi
+sed -i.bak "s|openmrs/openmrs-core:nightly-amazoncorretto-11|openmrs/openmrs-core:${CORE_VERSION}-amazoncorretto-11|g" \
+  "$DOCKERFILE" && rm -f "$DOCKERFILE.bak"
+grep -q 'ln -sf /usr/bin/mysql' "$DOCKERFILE" || { awk '{print}
+  /^FROM /{print ""; print "USER root"; print "RUN ln -sf /usr/bin/mysql /usr/bin/mariadb"; print "USER 1001"}' \
+  "$DOCKERFILE" > "$DOCKERFILE.tmp" && mv "$DOCKERFILE.tmp" "$DOCKERFILE"; }
+echo "🔧 Dockerfile pinned to openmrs-core:${CORE_VERSION}-amazoncorretto-11 with the mariadb symlink."
 
-# Enable demo data via compose override
+# Demo data is driven by the `referencedemodata` module via the Initializer global property
+# `referencedemodata.createDemoPatientsOnNextStartup` (shipped as 50), NOT by this environment
+# variable — it is kept only because the SDK images have historically read it. Boot 1 therefore
+# turns the GP OFF in the config, so concepts load with no demo data and step 5 gets a window to
+# clamp the ConceptNumeric bounds before generation runs. Without that window, generation aborts
+# part-way on 3.7.1 and there is no way to recover it in-flight. Mirrors docs/releasing.md §2.
 rm -f "$OVERRIDE_FILE"
 cat > "$OVERRIDE_FILE" <<'EOF'
 services:
@@ -87,55 +122,93 @@ services:
 EOF
 COMPOSE_ARGS+=(-f "$OVERRIDE_FILE")
 
+DEMO_GP_FILE="$DISTRO_DIR/web/openmrs_config/globalproperties/referenceapplication-demo/globalproperties-core_demo.xml"
+if [ ! -f "$DEMO_GP_FILE" ]; then
+  echo "❌ Demo global-property config not found at $DEMO_GP_FILE — has the distro config layout changed?"
+  exit 1
+fi
+# Match the property by name so an unrelated <value>50</value> elsewhere in the file cannot be hit.
+perl -0pi -e 's{(<property>referencedemodata\.createDemoPatientsOnNextStartup</property>\s*<value>)\d+(</value>)}{${1}0${2}}s' \
+  "$DEMO_GP_FILE"
+echo "🔧 Demo generation disabled for boot 1 (so the ConceptNumeric clamp can be applied first)."
+
 # ── Step 3: Start OpenMRS ───────────────────────────────────────────────────
-echo "🚀 Starting OpenMRS in Docker (demo mode)..."
+echo "🚀 Starting OpenMRS in Docker (boot 1 — concepts only, demo generation off)..."
 docker compose "${COMPOSE_ARGS[@]}" up -d --build web
 
-START_TIME=$(date +%s)
-
 # ── Step 4: Poll REST API until OpenMRS is fully initialized ────────────────
-echo "⏳ Polling OpenMRS REST API for a valid authenticated session..."
-echo "   Endpoint: http://localhost:8080/openmrs/ws/rest/v1/session"
-echo "   Poll interval: ${POLL_INTERVAL}s | Overall timeout: ${TIMEOUT}s"
+# NB: an authenticated session means the webapp is serving — it does NOT mean demo data has
+# finished generating. referencedemodata keeps creating patients and observations for several
+# minutes after REST starts answering, so this is only the first of three waits below.
+wait_for_openmrs() {
+  local START_TIME HTTP_CODE AUTHENTICATED NOW ELAPSED
+  START_TIME=$(date +%s)
+  echo "⏳ Polling OpenMRS REST API for a valid authenticated session..."
+  echo "   Endpoint: http://localhost:8080/openmrs/ws/rest/v1/session"
+  echo "   Poll interval: ${POLL_INTERVAL}s | Overall timeout: ${TIMEOUT}s"
 
-while true; do
-  # A successful response with "authenticated":true means OpenMRS is fully up
-  # and all modules (including demo data loading) have finished initializing.
-  HTTP_CODE=$(curl -sf -o /dev/null -w "%{http_code}" \
-    -u admin:Admin123 \
-    http://localhost:8080/openmrs/ws/rest/v1/session 2>/dev/null || echo "000")
+  while true; do
+    HTTP_CODE=$(curl -sf -o /dev/null -w "%{http_code}" \
+      -u admin:Admin123 \
+      http://localhost:8080/openmrs/ws/rest/v1/session 2>/dev/null || echo "000")
 
-  if [ "$HTTP_CODE" = "200" ]; then
-    AUTHENTICATED=$(curl -sf -u admin:Admin123 \
-      http://localhost:8080/openmrs/ws/rest/v1/session 2>/dev/null \
-      | grep -o '"authenticated":[a-z]*' | head -1 || echo "")
+    if [ "$HTTP_CODE" = "200" ]; then
+      AUTHENTICATED=$(curl -sf -u admin:Admin123 \
+        http://localhost:8080/openmrs/ws/rest/v1/session 2>/dev/null \
+        | grep -o '"authenticated":[a-z]*' | head -1 || echo "")
 
-    if [ "$AUTHENTICATED" = '"authenticated":true' ]; then
-      echo "✅ REST API returned authenticated session — OpenMRS is fully initialized."
-      break
+      if [ "$AUTHENTICATED" = '"authenticated":true' ]; then
+        echo "✅ REST API returned authenticated session — OpenMRS is serving."
+        return 0
+      fi
+      echo "   [$(date +%H:%M:%S)] HTTP 200 but not yet authenticated (startup in progress)..."
+    else
+      echo "   [$(date +%H:%M:%S)] HTTP $HTTP_CODE — waiting..."
     fi
-    echo "   [$(date +%H:%M:%S)] HTTP 200 but not yet authenticated (startup in progress)..."
-  else
-    echo "   [$(date +%H:%M:%S)] HTTP $HTTP_CODE — waiting..."
-  fi
 
-  NOW=$(date +%s)
-  ELAPSED=$((NOW - START_TIME))
-  if [ "$ELAPSED" -gt "$TIMEOUT" ]; then
-    echo "❌ Timeout after ${TIMEOUT}s waiting for OpenMRS REST API."
-    docker compose "${COMPOSE_ARGS[@]}" logs --tail=50 web
-    exit 1
-  fi
+    NOW=$(date +%s)
+    ELAPSED=$((NOW - START_TIME))
+    if [ "$ELAPSED" -gt "$TIMEOUT" ]; then
+      echo "❌ Timeout after ${TIMEOUT}s waiting for OpenMRS REST API."
+      docker compose "${COMPOSE_ARGS[@]}" logs --tail=50 web
+      exit 1
+    fi
 
-  sleep "$POLL_INTERVAL"
-done
+    sleep "$POLL_INTERVAL"
+  done
+}
 
-# ── Step 5: Determine version ──────────────────────────────────────────────
-cd "$PROJECT_ROOT"
-REFAPP_VERSION=$(mvn help:evaluate -Dexpression=refapp.version -q -DforceStdout -B 2>/dev/null || echo "unknown")
-echo "📦 RefApp version: $REFAPP_VERSION"
+# Polls a scalar SQL expression until it stops changing across 3 consecutive reads. Bounded, so an
+# unreachable database fails the dump instead of spinning here forever.
+# $1 = label, $2 = SQL expression, $3 = minimum value the result must reach
+wait_until_stable() {
+  local label="$1" sql="$2" minimum="$3"
+  local start prev value stable
+  start=$(date +%s); prev=""; stable=0
+  echo "⏳ Waiting for $label to settle..."
+  while [ "$stable" -lt 3 ]; do
+    value=$(docker exec "$DB_CONTAINER" mysql -uroot -p"$DB_ROOT_PASSWORD" -N -B \
+      -e "SELECT $sql;" openmrs 2>/dev/null | tr -d ' ')
+    if [ -n "$value" ] && [ "$value" = "$prev" ] && [ "${value:-0}" -ge "$minimum" ]; then
+      stable=$((stable + 1))
+    else
+      stable=0
+    fi
+    echo "   [$(date +%H:%M:%S)] $label=${value:-?} (stable=$stable)"
+    prev="$value"
+    if [ "$stable" -lt 3 ]; then
+      if [ "$(( $(date +%s) - start ))" -gt "$TIMEOUT" ]; then
+        echo "❌ $label never settled within ${TIMEOUT}s (last=${value:-<no reply from db>})."
+        docker compose "${COMPOSE_ARGS[@]}" logs --tail=50 web
+        exit 1
+      fi
+      sleep 15
+    fi
+  done
+}
 
-# ── Step 6: Dump the database ──────────────────────────────────────────────
+wait_for_openmrs
+
 DB_CONTAINER=$(docker compose "${COMPOSE_ARGS[@]}" ps -q db)
 if [ -z "$DB_CONTAINER" ]; then
   echo "❌ Could not find database container."
@@ -143,6 +216,82 @@ if [ -z "$DB_CONTAINER" ]; then
   exit 1
 fi
 
+# ── Step 5: Clamp ConceptNumeric bounds, then turn demo generation on ───────
+# referencedemodata clamps generated numeric obs to the concept's ConceptNumeric absolute bounds,
+# but core >= 2.8 validates obs against its ConceptReferenceRange bounds. Where those diverge, a
+# clamped value is still rejected and the activator aborts the WHOLE remaining run — with a fixed
+# RNG seed, identically every time. Clamping every ConceptNumeric into its reference-range
+# intersection first is version-independent: no offending concept ids to re-derive by hand.
+wait_until_stable "concepts" "(SELECT COUNT(*) FROM concept)" 1000
+
+echo "🔧 Clamping ConceptNumeric bounds into their reference-range intersection..."
+docker exec "$DB_CONTAINER" mysql -uroot -p"$DB_ROOT_PASSWORD" openmrs -e "
+UPDATE concept_numeric cn
+  JOIN (SELECT concept_id, MAX(low_absolute) AS rr_low, MIN(hi_absolute) AS rr_hi
+          FROM concept_reference_range GROUP BY concept_id) rr
+    ON rr.concept_id = cn.concept_id
+   SET cn.low_absolute = CASE WHEN rr.rr_low IS NOT NULL
+                              THEN GREATEST(COALESCE(cn.low_absolute, rr.rr_low), rr.rr_low)
+                              ELSE cn.low_absolute END,
+       cn.hi_absolute  = CASE WHEN rr.rr_hi IS NOT NULL
+                              THEN LEAST(COALESCE(cn.hi_absolute, rr.rr_hi), rr.rr_hi)
+                              ELSE cn.hi_absolute END
+ WHERE (rr.rr_low IS NOT NULL AND (cn.low_absolute IS NULL OR cn.low_absolute < rr.rr_low))
+    OR (rr.rr_hi  IS NOT NULL AND (cn.hi_absolute  IS NULL OR cn.hi_absolute  > rr.rr_hi));" \
+  || { echo "❌ Could not clamp ConceptNumeric bounds."; exit 1; }
+
+# Now switch demo generation on and restart so referencedemodata runs with the clamp in place.
+# `docker compose up -d web` would NOT recreate an already-running container — it must be `restart`.
+docker exec "$DB_CONTAINER" mysql -uroot -p"$DB_ROOT_PASSWORD" openmrs -e \
+  "UPDATE global_property SET property_value='50'
+    WHERE property='referencedemodata.createDemoPatientsOnNextStartup';" \
+  || { echo "❌ Could not re-enable demo generation."; exit 1; }
+echo "🔁 Restarting web to generate demo data..."
+docker compose "${COMPOSE_ARGS[@]}" restart web
+wait_for_openmrs
+
+# ── Step 6: Wait for demo generation, then converge, before dumping ─────────
+# Dumping as soon as REST answers yields a PARTIAL demo dataset — the classic symptom is a dump
+# with fewer patients than expected, or patients with no encounters.
+wait_until_stable "demo patients" "(SELECT COUNT(*) FROM patient)" 1
+wait_until_stable "demo observations" "(SELECT COUNT(*) FROM obs)" 1
+
+# referencedemodata aborts its whole remaining run on a single obs validation failure, leaving a
+# healthy-looking container and a half-built dataset. Fail loudly instead of shipping that.
+# Grepping the log file inside the container rather than `docker compose logs` — same evidence, but
+# the latter re-reads the whole stream and takes minutes on a loaded machine.
+WEB_CONTAINER=$(docker compose "${COMPOSE_ARGS[@]}" ps -q web)
+if [ -n "$WEB_CONTAINER" ] && docker exec "$WEB_CONTAINER" \
+     grep -q "Exception caught while creating demo data" /openmrs/data/openmrs.log 2>/dev/null; then
+  echo "❌ Demo generation aborted part-way (see docs/releasing.md §2 — ConceptNumeric vs"
+  echo "   ConceptReferenceRange bounds). Refusing to write a partial demo dump."
+  exit 1
+fi
+
+ORPHANS=$(docker exec "$DB_CONTAINER" mysql -uroot -p"$DB_ROOT_PASSWORD" -N -B \
+  -e "SELECT (SELECT COUNT(*) FROM patient) - (SELECT COUNT(DISTINCT patient_id) FROM encounter);" \
+  openmrs 2>/dev/null | tr -d ' ')
+if [ "${ORPHANS:-1}" != "0" ]; then
+  echo "❌ ${ORPHANS} demo patient(s) have no encounters — generation did not complete."
+  exit 1
+fi
+
+# Restart with demo already generated (the GP is consumed, so no second batch) so that startup-time
+# metadata converges: module privileges are created by each module's Liquibase changesets, but the
+# grants come from Initializer's roles CSV, which runs before the modules that follow it. Without
+# this the demo dump ships ~180 fewer role_privilege rows. See docs/releasing.md §2 step (d).
+echo "🔁 Restarting web so startup-time metadata converges..."
+docker compose "${COMPOSE_ARGS[@]}" restart web
+wait_for_openmrs
+wait_until_stable "role_privilege" "(SELECT COUNT(*) FROM role_privilege)" 1
+
+# ── Step 7: Determine version ──────────────────────────────────────────────
+cd "$PROJECT_ROOT"
+REFAPP_VERSION=$(mvn help:evaluate -Dexpression=refapp.version -q -DforceStdout -B 2>/dev/null || echo "unknown")
+echo "📦 RefApp version: $REFAPP_VERSION"
+
+# ── Step 8: Dump the database ──────────────────────────────────────────────
+# DB_CONTAINER was resolved and checked in step 4.
 OUTPUT_FILE="$OUTPUT_DIR/demo-db-${REFAPP_VERSION}.sql"
 echo "📤 Dumping database to: $OUTPUT_FILE"
 mkdir -p "$OUTPUT_DIR"

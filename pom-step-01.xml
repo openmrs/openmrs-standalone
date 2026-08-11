@@ -109,6 +109,25 @@
                 <groupId>org.codehaus.mojo</groupId>
                 <artifactId>exec-maven-plugin</artifactId>
                 <executions>
+                    <!-- Drop the demo content package's test scaffolding (the 50 "Site N" login
+                         locations, the developer forms) from the distro config. MUST stay ahead of
+                         generate-checksums so the shipped checksums describe the filtered config -
+                         executions of one plugin in the same phase run in declaration order. -->
+                    <execution>
+                        <id>strip-demo-fixtures</id>
+                        <phase>process-resources</phase>
+                        <goals>
+                            <goal>exec</goal>
+                        </goals>
+                        <configuration>
+                            <executable>bash</executable>
+                            <workingDirectory>${project.basedir}</workingDirectory>
+                            <arguments>
+                                <argument>scripts/strip-demo-fixtures.sh</argument>
+                                <argument>${project.build.directory}/distro/web/openmrs_config</argument>
+                            </arguments>
+                        </configuration>
+                    </execution>
                     <execution>
                         <id>generate-checksums</id>
                         <phase>process-resources</phase>

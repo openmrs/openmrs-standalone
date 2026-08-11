@@ -56,6 +56,14 @@ start a real embedded MariaDB and take ~1–2 min total; the rest are sub-second
 jar still requires the normal `mvn package` (which does run the distro build).
 
 ## How to extract SQL dumps from a running SDK instance
+
+> **To regenerate the dumps this project actually ships, follow [releasing.md §2](releasing.md#2-regenerate-the-bundled-db-dumps-locally)
+> instead of the recipe below.** A plain `mysqldump` of a freshly initialized server yields a dump
+> that looks fine and is subtly wrong: it needs the demo-fixture filter, a second boot before the
+> empty dump (or the privilege-level roles ship ~180 grants short), and the `ConceptNumeric` patch
+> that stops demo generation aborting part-way. The recipe here is the mechanics of getting *a* dump
+> into the build, not the procedure for a release.
+
 You can speed up the standalone by bundling it with an SQL dump of a fully initialized OpenMRS SDK 3.x server.
 
 1. **Run your SDK instance and finish setup.**

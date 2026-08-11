@@ -40,6 +40,19 @@ The build bundles per-version dumps `src/main/db/{demo,empty}-db-${refapp.versio
 (see `src/main/assembly/zip-{demo,empty}-database.xml`). They MUST exist for the new
 version or the build's Lucene-bake gate fails. Needs Docker + JDK 21.
 
+**The build strips the demo content package's test scaffolding** from the distro config —
+`scripts/strip-demo-fixtures.sh`, wired into `pom-step-01.xml` as the `strip-demo-fixtures` exec
+execution, which must stay ahead of `generate-checksums` so the shipped checksums describe the
+filtered config. It drops the 50 `Site N` placeholder locations (all tagged Login Location, so
+they buried the 7 real ones in the login picker, and they skewed demo data: `referencedemodata`'s
+fixed seed put *every* generated visit at "Site 42") and the developer forms (`Test Form 1`,
+`Form Engine Cookbook`, `Form Engine Cookbook Library`). Extend the fixture list there if a later
+refapp release adds more scaffolding. Note the distro cannot simply drop the whole
+`referenceapplication-demo` content package: `referenceapplication` alone is a 10-file overlay,
+while the demo package supplies every location, the patient identifier types and idgen source,
+visit/encounter types, roles, forms and 22 of the 24 OCL packages — without it you cannot pick a
+session location, register a patient, or record anything.
+
 **⚠️ Do not trust `scripts/generate-db-dumps.sh`'s fixed `sleep 60`** — for O3 that is
 far too short. Full initialization takes **~14 minutes**: concepts load to ~4254 first
 (~7 min), and only THEN does demo data generate (50 patients, thousands of obs). Dumping early
@@ -90,12 +103,30 @@ rm -rf target/distro target/openmrs3x
 mvn -f pom-step-01.xml process-resources -Pci -B --settings .github/maven-settings.xml \
     -Drefapp.version=$VER -Dopenmrs.version=$CORE
 
-# Two-phase flow (init demo-free → patch bounds → EMPTY dump → regenerate demo → DEMO dump).
-# This ordering lets you inject the ConceptNumeric fix between concept-load and demo generation,
-# which a single boot can't (demo runs in the same startup as concept load).
+# Three boots: init demo-free → patch bounds → restart to converge metadata → EMPTY dump →
+# turn demo on and restart → DEMO dump. The split lets you inject the ConceptNumeric fix between
+# concept-load and demo generation, which a single boot can't (demo runs in the same startup as
+# concept load), and the extra restart is what makes the starter DB complete (see step d).
 cd target/distro
 
-# b) Phase 1 — init WITHOUT demo (demo is driven by the `referencedemodata` module via the
+# Three local-only fixes to the SDK-generated distro, all needed before the first `docker compose
+# up`. None touch source or CI (CI builds with -Pci and never boots Docker):
+#   1. The generated Dockerfile pins `openmrs/openmrs-core:nightly-amazoncorretto-11`, a tag that no
+#      longer exists on Docker Hub.
+#   2. That image ships /usr/bin/mysql but NOT `mariadb`, which the distro's startup.sh calls in its
+#      DB-auth pre-check. Without the symlink the web container exits BEFORE creating the schema —
+#      symptom: the `openmrs` DB exists with 0 tables and the log says "Database not accepting
+#      credentials … after 30 attempts", while `mysql -uopenmrs -popenmrs` works fine from the host.
+#      Restarting does not help; only the symlink does. The image runs as UID 1001, hence root/back.
+#   3. docker-compose.override.yml publishes the db on ${MYSQL_DEV_PORT} (default 3306). The dumps go
+#      through `docker exec`, not the host port, so any free port will do when 3306 is taken.
+sed -i '' "s|openmrs-core:nightly-amazoncorretto-11|openmrs-core:$CORE-amazoncorretto-11|" web/Dockerfile
+grep -q 'ln -sf /usr/bin/mysql' web/Dockerfile || { awk '{print}
+  /^FROM /{print ""; print "USER root"; print "RUN ln -sf /usr/bin/mysql /usr/bin/mariadb"; print "USER 1001"}' \
+  web/Dockerfile > web/Dockerfile.tmp && mv web/Dockerfile.tmp web/Dockerfile; }
+sed -i '' 's/^MYSQL_DEV_PORT=.*/MYSQL_DEV_PORT=3399/' .env   # only if the host already uses 3306
+
+# b) Boot 1 — init WITHOUT demo (demo is driven by the `referencedemodata` module via the
 #    Initializer GP `referencedemodata.createDemoPatientsOnNextStartup`, NOT by
 #    OMRS_CONFIG_ADD_DEMO_DATA). Set it to 0 so only concepts load.
 sed -i '' 's#<value>50</value>#<value>0</value>#' \
@@ -106,17 +137,43 @@ DB=$(docker compose ps -q db)
 #   docker exec $DB mysql -uroot -popenmrs -N -B -e \
 #     "SELECT (SELECT COUNT(*) FROM concept),(SELECT COUNT(*) FROM patient),(SELECT COUNT(*) FROM obs);" openmrs
 
-# Patch the ConceptNumeric bounds flagged by the query above so the module clamps into the
-# reference-range intersection (values here are the 3.7.1 offenders — re-derive for a new version):
-docker exec $DB mysql -uroot -popenmrs -e \
-  "UPDATE concept_numeric SET low_absolute=0 WHERE concept_id=210;
-   UPDATE concept_numeric SET hi_absolute=99 WHERE concept_id=4184;" openmrs
+# c) Clamp every ConceptNumeric whose absolute bounds are wider than its reference-range
+# intersection, so the module's clamp can only produce values core will accept. This is
+# version-independent — no need to re-derive the offending concept ids by hand (on 3.7.1 it changes
+# exactly the two the query above reports: 210 low NULL→0, 4184 hi 999→99).
+docker exec $DB mysql -uroot -popenmrs openmrs -e "
+UPDATE concept_numeric cn
+  JOIN (SELECT concept_id, MAX(low_absolute) AS rr_low, MIN(hi_absolute) AS rr_hi
+          FROM concept_reference_range GROUP BY concept_id) rr
+    ON rr.concept_id = cn.concept_id
+   SET cn.low_absolute = CASE WHEN rr.rr_low IS NOT NULL
+                              THEN GREATEST(COALESCE(cn.low_absolute, rr.rr_low), rr.rr_low)
+                              ELSE cn.low_absolute END,
+       cn.hi_absolute  = CASE WHEN rr.rr_hi IS NOT NULL
+                              THEN LEAST(COALESCE(cn.hi_absolute, rr.rr_hi), rr.rr_hi)
+                              ELSE cn.hi_absolute END
+ WHERE (rr.rr_low IS NOT NULL AND (cn.low_absolute IS NULL OR cn.low_absolute < rr.rr_low))
+    OR (rr.rr_hi  IS NOT NULL AND (cn.hi_absolute  IS NULL OR cn.hi_absolute  > rr.rr_hi));"
+# Re-run the divergence query above afterwards: it must return no rows.
 
-# EMPTY dump (concepts + fix, no demo):
+# d) Boot 2 — restart with demo STILL OFF so startup-time metadata converges, and only then dump.
+#    Each module creates its own privileges from its Liquibase changesets as it starts, but the
+#    grants come from Initializer's roles_core-demo.csv, which names them as strings. Initializer
+#    runs before the modules that start after it (billing/cashier, appointments, reporting), so
+#    those privileges do not exist yet when the roles file is processed and the grants are silently
+#    dropped. Likewise stockmanagement creates one `stockmgmt_party` per location that exists when
+#    it starts. A second startup, with every privilege and location already present, completes both.
+#    Measured on 3.7.1: role_privilege 488 → 668 (Privilege Level: Full 215 → 307, High 213 → 301)
+#    and stockmgmt_party 3 → 11. Dumping after boot 1 - which is what earlier releases did - shipped
+#    a starter DB whose privilege-level roles were missing 180 grants the demo DB had.
+docker compose restart web
+# poll until role_privilege stops growing (~1 min; concepts are already loaded and are not re-imported)
+
+# EMPTY dump (concepts + fix, converged metadata, no demo):
 docker exec $DB mysqldump --single-transaction --routines --triggers -u root -popenmrs openmrs \
   > ../../src/main/db/empty-db-$VER.sql
 
-# c) Phase 2 — turn demo back on and restart so referencedemodata regenerates with the fix in place.
+# e) Boot 3 — turn demo back on and restart so referencedemodata regenerates with the fix in place.
 #    NB: `docker compose up -d web` will NOT recreate an already-running container — use `restart`.
 sed -i '' 's#<value>0</value>#<value>50</value>#' \
   web/openmrs_config/globalproperties/referenceapplication-demo/globalproperties-core_demo.xml
@@ -138,12 +195,49 @@ cd ../..
 patient must have encounters — a lower obs count with <50 patients-with-encounters means the
 generation crashed part-way, see the warning above):
 
-| dump  | concept | patient | obs    | pts w/ enc | size   |
-|-------|---------|---------|--------|------------|--------|
-| demo  | ~4254   | 50      | ~5300  | 50         | ~17 MB |
-| empty | ~4254   | **0**   | 0      | 0          | ~14 MB |
+| dump  | concept | location | `Site N` | form | patient | obs    | pts w/ enc | role_privilege | size   |
+|-------|---------|----------|----------|------|---------|--------|------------|----------------|--------|
+| demo  | ~4254   | 11       | **0**    | 7    | 50      | ~5800  | 50         | 668            | ~17 MB |
+| empty | ~4254   | 11       | **0**    | 7    | **0**   | 0      | 0          | 668            | ~14 MB |
 
-(3.7.1 actuals: demo = 4254 concept / 50 patient / 5348 obs / 271 visits / 1386 enc.)
+Two of those columns are new, and both fail silently if you skip a step:
+
+* **`Site N` must be 0 in both dumps** — a non-zero count means `strip-demo-fixtures.sh` did not run
+  (or upstream renamed the fixtures and the filter warned instead of matching):
+  `SELECT COUNT(*) FROM location WHERE name REGEXP '^Site [0-9]+$';`
+* **`role_privilege` must MATCH between the two dumps.** Whichever side is lower was dumped before its
+  convergence restart, so its `Privilege Level: Full`/`High` roles are missing grants — invisible
+  until someone creates a user and finds they cannot reach reporting, billing or appointments. Both
+  `scripts/generate-{empty-db,demo-data}-locally.sh` now restart before dumping for this reason.
+
+Both of those are also enforced automatically, by `scripts/verify-no-demo-fixtures.sh` — run from
+**both** publish paths (`build-o3-standalone.yml` on a branch push, `release.yml` on a tag) against
+the *assembled artifact*: shipped config plus both bundled DB zips. It also rejects a **truncated**
+dump (missing mysqldump's completion trailer, or implausibly small), which is the one failure the
+row-count checks above cannot see. Run it yourself on an extracted artifact before pushing a
+regeneration — it is much cheaper than a red release run:
+
+```bash
+unzip -q target/referenceapplication-standalone-$VER.zip -d /tmp/check
+scripts/verify-no-demo-fixtures.sh "/tmp/check/referenceapplication-standalone-$VER"
+```
+
+Faster still, and it does not need a packaged zip: `BundledDbDumpImportTest` imports the starter dump
+into a real embedded MariaDB through the standalone's own import path and asserts the same contract
+(no patients, no `Site N`, dictionary present, a Login Location, converged grants) in ~25 s —
+
+```bash
+mvn -o -N compiler:compile compiler:testCompile surefire:test -Dtest=BundledDbDumpImportTest
+```
+
+That test exists because the starter dump is otherwise never executed anywhere: CI boots only the
+*demo* dump (for the Lucene bake), and `OpenmrsUtil.importSqlFile` prints a failed import rather than
+throwing, so a malformed starter dump would first surface as a user picking "Starter Implementation".
+
+(3.7.1 actuals: demo = 4254 concept / 11 location / 7 form / 50 patient / 5821 obs / 278 visit /
+1415 enc / 668 role_privilege / 11 stockmgmt_party; empty is identical minus the patient data.
+Every demo visit lands on a single Visit Location — Community Outreach on 3.7.1 — because
+`referencedemodata` draws it once from a fixed seed; that is upstream behaviour, not a bad dump.)
 
 ### 3. Bump the version strings
 

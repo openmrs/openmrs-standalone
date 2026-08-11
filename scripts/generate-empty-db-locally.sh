@@ -1,8 +1,10 @@
 #!/bin/bash
-# Generates an empty (schema-only) SQL dump locally by:
-#   1. Building the OpenMRS distribution (if not already built)
-#   2. Starting OpenMRS in Docker without demo data
-#   3. Polling the REST API until a valid authenticated session is returned
+# Generates the Starter ("empty") SQL dump locally, mirroring docs/releasing.md §2:
+#   1. Building the OpenMRS distribution (if not already built) and stripping the demo content
+#      package's test fixtures from its Initializer config
+#   2. Booting OpenMRS in Docker with no demo data
+#   3. Restarting once so startup-time metadata (role_privilege, stock parties) converges — a
+#      first-boot snapshot ships privilege-level roles ~180 grants short
 #   4. Dumping the database to src/main/db/
 #
 # Usage:
@@ -57,6 +59,17 @@ else
   echo "⏭️  Skipping build (reusing $DISTRO_DIR)"
 fi
 
+# Drop the demo content package's test scaffolding, then refresh the checksums so they still
+# describe the config. Both are idempotent: the Maven build already did this, so this only bites
+# for --skip-build against a distro built before the filter existed.
+"$SCRIPT_DIR/strip-demo-fixtures.sh" "$DISTRO_DIR/web/openmrs_config"
+# Drop the checksums directory rather than regenerating over it: generate-checksums.sh only ever
+# writes, so a checksum left behind for a file the filter removed would silently suppress that file
+# if it ever returned with the same content (Initializer skips a file whose checksum still matches).
+rm -rf "$DISTRO_DIR/web/openmrs_config_checksums"
+"$SCRIPT_DIR/generate-checksums.sh" "$DISTRO_DIR/web/openmrs_config" \
+  "$DISTRO_DIR/web/openmrs_config_checksums"
+
 # ── Step 2: Prepare Docker Compose ──────────────────────────────────────────
 COMPOSE_FILE="$DISTRO_DIR/docker-compose.yml"
 OVERRIDE_FILE="$DISTRO_DIR/docker-compose.override.yml"
@@ -71,11 +84,26 @@ cleanup() {
 }
 trap cleanup EXIT
 
-# Fix the auto-generated Dockerfile base image tag if needed
-if [ -f "$DISTRO_DIR/web/Dockerfile" ] && grep -q 'nightly-amazoncorretto-11' "$DISTRO_DIR/web/Dockerfile"; then
-  sed -i.bak 's|openmrs/openmrs-core:nightly-amazoncorretto-11|openmrs/openmrs-core:2.8.x|g' \
-    "$DISTRO_DIR/web/Dockerfile" && rm -f "$DISTRO_DIR/web/Dockerfile.bak"
+# Two local-only fixes to the SDK-generated Dockerfile, neither touching source or CI:
+#   1. It is generated as `FROM openmrs/openmrs-core:nightly-amazoncorretto-11`, a tag that no longer
+#      exists on Docker Hub — pin it to the core version this distro was actually built against.
+#   2. That image ships /usr/bin/mysql but NOT `mariadb`, which the distro's startup.sh calls in its
+#      DB-auth pre-check; without the symlink the web container exits BEFORE creating the schema.
+# Kept identical to the copy in generate-demo-data-locally.sh — these scripts are deliberate mirrors.
+DOCKERFILE="$DISTRO_DIR/web/Dockerfile"
+# `|| true` so a missing/unreadable file reaches the check below instead of `set -e` killing the
+# script with a bare exit code and no explanation.
+CORE_VERSION=$(grep -E '^war\.openmrs=' "$DISTRO_DIR/web/openmrs-distro.properties" 2>/dev/null | cut -d= -f2 | tr -d ' \r' || true)
+if [ -z "$CORE_VERSION" ]; then
+  echo "❌ Could not read war.openmrs from $DISTRO_DIR/web/openmrs-distro.properties"
+  exit 1
 fi
+sed -i.bak "s|openmrs/openmrs-core:nightly-amazoncorretto-11|openmrs/openmrs-core:${CORE_VERSION}-amazoncorretto-11|g" \
+  "$DOCKERFILE" && rm -f "$DOCKERFILE.bak"
+grep -q 'ln -sf /usr/bin/mysql' "$DOCKERFILE" || { awk '{print}
+  /^FROM /{print ""; print "USER root"; print "RUN ln -sf /usr/bin/mysql /usr/bin/mariadb"; print "USER 1001"}' \
+  "$DOCKERFILE" > "$DOCKERFILE.tmp" && mv "$DOCKERFILE.tmp" "$DOCKERFILE"; }
+echo "🔧 Dockerfile pinned to openmrs-core:${CORE_VERSION}-amazoncorretto-11 with the mariadb symlink."
 
 # No demo data — remove any leftover override
 rm -f "$OVERRIDE_FILE"
@@ -84,51 +112,91 @@ rm -f "$OVERRIDE_FILE"
 echo "🚀 Starting OpenMRS in Docker (empty / schema-only mode)..."
 docker compose "${COMPOSE_ARGS[@]}" up -d --build web
 
-START_TIME=$(date +%s)
-
 # ── Step 4: Poll REST API until OpenMRS is fully initialized ────────────────
-echo "⏳ Polling OpenMRS REST API for a valid authenticated session..."
-echo "   Endpoint: http://localhost:8080/openmrs/ws/rest/v1/session"
-echo "   Poll interval: ${POLL_INTERVAL}s | Overall timeout: ${TIMEOUT}s"
+wait_for_openmrs() {
+  local START_TIME HTTP_CODE AUTHENTICATED NOW ELAPSED
+  START_TIME=$(date +%s)
+  echo "⏳ Polling OpenMRS REST API for a valid authenticated session..."
+  echo "   Endpoint: http://localhost:8080/openmrs/ws/rest/v1/session"
+  echo "   Poll interval: ${POLL_INTERVAL}s | Overall timeout: ${TIMEOUT}s"
 
-while true; do
-  # A successful response with "authenticated":true means OpenMRS is fully up
-  # and all modules have finished initializing.
-  HTTP_CODE=$(curl -sf -o /dev/null -w "%{http_code}" \
-    -u admin:Admin123 \
-    http://localhost:8080/openmrs/ws/rest/v1/session 2>/dev/null || echo "000")
+  while true; do
+    # A successful response with "authenticated":true means OpenMRS is fully up
+    # and all modules have finished initializing.
+    HTTP_CODE=$(curl -sf -o /dev/null -w "%{http_code}" \
+      -u admin:Admin123 \
+      http://localhost:8080/openmrs/ws/rest/v1/session 2>/dev/null || echo "000")
 
-  if [ "$HTTP_CODE" = "200" ]; then
-    AUTHENTICATED=$(curl -sf -u admin:Admin123 \
-      http://localhost:8080/openmrs/ws/rest/v1/session 2>/dev/null \
-      | grep -o '"authenticated":[a-z]*' | head -1 || echo "")
+    if [ "$HTTP_CODE" = "200" ]; then
+      AUTHENTICATED=$(curl -sf -u admin:Admin123 \
+        http://localhost:8080/openmrs/ws/rest/v1/session 2>/dev/null \
+        | grep -o '"authenticated":[a-z]*' | head -1 || echo "")
 
-    if [ "$AUTHENTICATED" = '"authenticated":true' ]; then
-      echo "✅ REST API returned authenticated session — OpenMRS is fully initialized."
-      break
+      if [ "$AUTHENTICATED" = '"authenticated":true' ]; then
+        echo "✅ REST API returned authenticated session — OpenMRS is fully initialized."
+        return 0
+      fi
+      echo "   [$(date +%H:%M:%S)] HTTP 200 but not yet authenticated (startup in progress)..."
+    else
+      echo "   [$(date +%H:%M:%S)] HTTP $HTTP_CODE — waiting..."
     fi
-    echo "   [$(date +%H:%M:%S)] HTTP 200 but not yet authenticated (startup in progress)..."
-  else
-    echo "   [$(date +%H:%M:%S)] HTTP $HTTP_CODE — waiting..."
-  fi
 
-  NOW=$(date +%s)
-  ELAPSED=$((NOW - START_TIME))
-  if [ "$ELAPSED" -gt "$TIMEOUT" ]; then
-    echo "❌ Timeout after ${TIMEOUT}s waiting for OpenMRS REST API."
-    docker compose "${COMPOSE_ARGS[@]}" logs --tail=50 web
-    exit 1
-  fi
+    NOW=$(date +%s)
+    ELAPSED=$((NOW - START_TIME))
+    if [ "$ELAPSED" -gt "$TIMEOUT" ]; then
+      echo "❌ Timeout after ${TIMEOUT}s waiting for OpenMRS REST API."
+      docker compose "${COMPOSE_ARGS[@]}" logs --tail=50 web
+      exit 1
+    fi
 
-  sleep "$POLL_INTERVAL"
-done
+    sleep "$POLL_INTERVAL"
+  done
+}
 
-# ── Step 5: Determine version ──────────────────────────────────────────────
-cd "$PROJECT_ROOT"
-REFAPP_VERSION=$(mvn help:evaluate -Dexpression=refapp.version -q -DforceStdout -B 2>/dev/null || echo "unknown")
-echo "📦 RefApp version: $REFAPP_VERSION"
+# Polls a scalar SQL expression until it stops changing across 3 consecutive reads. Bounded, so an
+# unreachable database fails the dump instead of spinning here forever. Kept identical to the copy in
+# generate-demo-data-locally.sh — these two scripts are deliberate mirrors of each other.
+# $1 = label, $2 = SQL expression, $3 = minimum value the result must reach
+wait_until_stable() {
+  local label="$1" sql="$2" minimum="$3"
+  local start prev value stable
+  start=$(date +%s); prev=""; stable=0
+  echo "⏳ Waiting for $label to settle..."
+  while [ "$stable" -lt 3 ]; do
+    value=$(docker exec "$DB_CONTAINER" mysql -uroot -p"$DB_ROOT_PASSWORD" -N -B \
+      -e "SELECT $sql;" openmrs 2>/dev/null | tr -d ' ')
+    if [ -n "$value" ] && [ "$value" = "$prev" ] && [ "${value:-0}" -ge "$minimum" ]; then
+      stable=$((stable + 1))
+    else
+      stable=0
+    fi
+    echo "   [$(date +%H:%M:%S)] $label=${value:-?} (stable=$stable)"
+    prev="$value"
+    if [ "$stable" -lt 3 ]; then
+      if [ "$(( $(date +%s) - start ))" -gt "$TIMEOUT" ]; then
+        echo "❌ $label never settled within ${TIMEOUT}s (last=${value:-<no reply from db>})."
+        docker compose "${COMPOSE_ARGS[@]}" logs --tail=50 web
+        exit 1
+      fi
+      sleep 15
+    fi
+  done
+}
 
-# ── Step 6: Dump the database ──────────────────────────────────────────────
+wait_for_openmrs
+
+# ── Step 5: Restart once so startup-time metadata converges ────────────────
+# A first boot does NOT produce a complete starter database. Each module creates its own privileges
+# from its Liquibase changesets as it starts, but the grants come from Initializer's roles CSV,
+# which names privileges as strings — and Initializer runs before the modules that start after it
+# (billing/cashier, appointments, reporting), so those grants are silently dropped. stockmanagement
+# likewise creates one `stockmgmt_party` per location that exists when it starts. A second startup,
+# with every privilege and location already present, completes both. Measured on refapp 3.7.1:
+# role_privilege 488 → 668 and stockmgmt_party 3 → 11. So dump only after this restart.
+echo "🔁 Restarting web so startup-time metadata converges..."
+docker compose "${COMPOSE_ARGS[@]}" restart web
+wait_for_openmrs
+
 DB_CONTAINER=$(docker compose "${COMPOSE_ARGS[@]}" ps -q db)
 if [ -z "$DB_CONTAINER" ]; then
   echo "❌ Could not find database container."
@@ -136,6 +204,15 @@ if [ -z "$DB_CONTAINER" ]; then
   exit 1
 fi
 
+wait_until_stable "role_privilege" "(SELECT COUNT(*) FROM role_privilege)" 1
+
+# ── Step 6: Determine version ──────────────────────────────────────────────
+cd "$PROJECT_ROOT"
+REFAPP_VERSION=$(mvn help:evaluate -Dexpression=refapp.version -q -DforceStdout -B 2>/dev/null || echo "unknown")
+echo "📦 RefApp version: $REFAPP_VERSION"
+
+# ── Step 7: Dump the database ──────────────────────────────────────────────
+# DB_CONTAINER was resolved and checked in step 5.
 OUTPUT_FILE="$OUTPUT_DIR/empty-db-${REFAPP_VERSION}.sql"
 echo "📤 Dumping database to: $OUTPUT_FILE"
 mkdir -p "$OUTPUT_DIR"
