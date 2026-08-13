@@ -95,13 +95,17 @@ jobs:
         working-directory: target
         run: bash "$GITHUB_WORKSPACE/scripts/verify-no-demo-fixtures.sh" "artifact/referenceapplication-standalone-${REFAPP_VERSION}"
 
-      # Pre-build ("bake") the Lucene search index so the downloaded standalone serves patient
-      # and concept search instantly on first run, instead of paying the index-rebuild cost (and
-      # showing empty search results) during first startup. We boot a THROWAWAY copy — never the
-      # uploaded artifact — against its bundled demo DB; on first boot the standalone rebuilds the
-      # index (no marker yet), and we copy only appdata/lucene back into the pristine artifact plus
-      # a .prebuilt marker the standalone reads (OpenmrsUtil.hasPrebuiltSearchIndex) to skip the
-      # rebuild. The published tree stays byte-identical to a normal build apart from that index.
+      # Pre-build ("bake") the Lucene search index so the downloaded standalone serves patient and
+      # concept search instantly on first run, instead of paying the index-rebuild cost (and showing
+      # empty search results) during first startup. We boot a THROWAWAY copy — never the uploaded
+      # artifact — against its bundled demo DB; on first boot the standalone rebuilds the index (no
+      # marker yet), and we copy only appdata/lucene back into the pristine artifact plus a .prebuilt
+      # marker. The published tree stays byte-identical to a normal build apart from that index.
+      #
+      # This benefits the DEMO database option only. The index describes demo data, so
+      # ApplicationController.canReusePrebuiltSearchIndex reuses it exclusively for a demo import —
+      # choosing "Starter Implementation" rebuilds regardless of the marker, because reusing an index
+      # that lists 50 patients absent from that database would be worse than the rebuild it saves.
       - name: Bake the Lucene search index into the demo appdata
         working-directory: target
         run: |
@@ -188,7 +192,7 @@ jobs:
         run: |
           P="artifact/referenceapplication-standalone-${REFAPP_VERSION}/appdata/lucene"
           [ -f "$P/.prebuilt" ] \
-            || { echo "::error::.prebuilt marker missing — refusing to publish a standalone that would rebuild the index on first run"; exit 1; }
+            || { echo "::error::.prebuilt marker missing — refusing to publish a standalone whose DEMO option would rebuild the index on first run (the Starter option rebuilds either way, by design)"; exit 1; }
           N=$(find "$P/indexes" -type f 2>/dev/null | wc -l | tr -d ' ')
           [ "${N:-0}" -ge 1 ] \
             || { echo "::error::baked Lucene index is empty ($N files) — refusing to publish"; exit 1; }

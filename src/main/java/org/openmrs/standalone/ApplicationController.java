@@ -191,6 +191,26 @@ public class ApplicationController {
 	 * @param headless whether the JVM has no graphical display
 	 * @return true if the command-line interface should be used
 	 */
+	/**
+	 * Whether the bundled, pre-built Lucene index can be reused instead of rebuilding it after an
+	 * import.
+	 * <p>
+	 * The build pipeline bakes that index by booting the standalone against its <em>demo</em>
+	 * database, so it only describes demo data. Reusing it after importing anything else ships an
+	 * index that disagrees with the database: choose "Starter Implementation" and search is backed by
+	 * an index listing the 50 demo patients, none of which exist in that database. The marker file
+	 * alone cannot tell the two apart, so the database mode has to be part of the decision.
+	 * <p>
+	 * Pure so it can be unit-tested.
+	 *
+	 * @param mode the database the user chose to import
+	 * @param hasPrebuiltIndex whether the distribution shipped a baked index (marker present)
+	 * @return true only when the shipped index actually matches the imported database
+	 */
+	static boolean canReusePrebuiltSearchIndex(DatabaseMode mode, boolean hasPrebuiltIndex) {
+		return hasPrebuiltIndex && mode == DatabaseMode.DEMO_DATABASE;
+	}
+
 	static boolean resolveCommandLine(boolean commandLineRequested, boolean headless) {
 		return commandLineRequested || headless;
 	}
@@ -254,7 +274,8 @@ public class ApplicationController {
 					// (marker present), the shipped index already covers the bundled demo data,
 					// so we skip the rebuild and search works immediately on first run.
 					if (applyDatabaseChange != null) {
-						if (OpenmrsUtil.hasPrebuiltSearchIndex()) {
+						if (canReusePrebuiltSearchIndex(applyDatabaseChange,
+								OpenmrsUtil.hasPrebuiltSearchIndex())) {
 							System.out.println("✅ Using the pre-built Lucene search index; skipping startup rebuild.");
 						} else {
 							OpenmrsUtil.rebuildEntireSearchIndex(resourceUrl);

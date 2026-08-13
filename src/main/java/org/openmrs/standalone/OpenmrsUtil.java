@@ -266,9 +266,13 @@ public class OpenmrsUtil {
 
 	/**
 	 * Marker file dropped next to the Lucene index by the build pipeline when it has pre-built
-	 * (baked) the search index for the bundled demo database. Its presence lets the standalone
-	 * skip the expensive startup rebuild on first run, since the shipped index already matches
-	 * the imported demo data.
+	 * (baked) the search index for the bundled demo database.
+	 * <p>
+	 * Its presence lets the standalone skip the expensive startup rebuild on first run — but ONLY
+	 * when the demo database is the one being imported, since that is the data the index was baked
+	 * against. See {@link ApplicationController#canReusePrebuiltSearchIndex(DatabaseMode, boolean)}:
+	 * reusing it after a Starter or wizard import would leave search backed by an index describing
+	 * 50 patients that database does not contain.
 	 */
 	private static final File PREBUILT_SEARCH_INDEX_MARKER =
 			new File("appdata" + File.separator + "lucene" + File.separator + ".prebuilt");

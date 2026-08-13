@@ -11,6 +11,37 @@ import org.junit.jupiter.api.Test;
  */
 class ApplicationControllerTest {
 
+	// canReusePrebuiltSearchIndex: the baked index describes the DEMO database only, so reusing it
+	// after importing any other database ships an index that disagrees with the data.
+
+	@Test
+	void canReusePrebuiltSearchIndex_demoImportWithBakedIndex_reusesIt() {
+		assertTrue(ApplicationController.canReusePrebuiltSearchIndex(
+				DatabaseMode.DEMO_DATABASE, true));
+	}
+
+	@Test
+	void canReusePrebuiltSearchIndex_starterImport_rebuildsEvenWithBakedIndex() {
+		// The regression this guards: skipping here leaves the Starter option searching an index
+		// built from the demo database, which lists 50 patients that are not in it.
+		assertFalse(ApplicationController.canReusePrebuiltSearchIndex(
+				DatabaseMode.EMPTY_DATABASE, true));
+	}
+
+	@Test
+	void canReusePrebuiltSearchIndex_wizardImport_rebuildsEvenWithBakedIndex() {
+		assertFalse(ApplicationController.canReusePrebuiltSearchIndex(
+				DatabaseMode.USE_INITIALIZATION_WIZARD, true));
+	}
+
+	@Test
+	void canReusePrebuiltSearchIndex_noBakedIndex_alwaysRebuilds() {
+		assertFalse(ApplicationController.canReusePrebuiltSearchIndex(
+				DatabaseMode.DEMO_DATABASE, false));
+		assertFalse(ApplicationController.canReusePrebuiltSearchIndex(
+				DatabaseMode.EMPTY_DATABASE, false));
+	}
+
 	// resolveCommandLine: GUI request on a headless host must downgrade to the command line.
 
 	@Test
