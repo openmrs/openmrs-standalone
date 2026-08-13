@@ -60,11 +60,18 @@ jobs:
 
       # Build the O3 standalone distribution. The 3.7.1 distro defines exactly the
       # modules and versions to bundle. Docker init is skipped under -Pci; demo data ships
-      # via the bundled src/main/db/demo-db-${REFAPP_VERSION}.sql dump. Tests run in
-      # standalone-ci.yml.
+      # via the bundled src/main/db/demo-db-${REFAPP_VERSION}.sql dump.
+      #
+      # Tests run HERE, not only in standalone-ci.yml. That workflow triggers on the same push but
+      # GitHub cannot make one workflow depend on another, so a red run there would not stop this one
+      # uploading — and this is the artifact the README's nightly.link button serves. Some assertions
+      # exist nowhere else: BundledDbDumpImportTest checks the Starter dump ships no patients and that
+      # 'Privilege Level: Full' clears an absolute floor of 250 grants, where the shell gate below can
+      # only check the two dumps against each other. A few minutes of tests against a job that already
+      # waits up to 20 for the index bake is the cheapest insurance here.
       - name: Build standalone distribution
         run: |
-          mvn clean package -Pci -B -DskipTests \
+          mvn clean package -Pci -B \
             --settings .github/maven-settings.xml \
             -Drefapp.version=$REFAPP_VERSION \
             -Dopenmrs.version=$OPENMRS_VERSION

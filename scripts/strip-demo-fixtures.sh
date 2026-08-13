@@ -212,19 +212,25 @@ done
 # ── Demo patient generation ─────────────────────────────────────────────────
 # Set to 0, not deleted - see the header. Matched across newlines because the property and its value sit
 # on separate lines.
-DEMO_GP=$(grep -rl 'referencedemodata.createDemoPatientsOnNextStartup' "$CONFIG_DIR/globalproperties" 2>/dev/null | head -1)
-if [ -n "$DEMO_GP" ]; then
-    before=$(perl -0ne 'print $1 if m{<property>referencedemodata\.createDemoPatientsOnNextStartup</property>\s*<value>(\d+)</value>}s' "$DEMO_GP")
-    perl -0pi -e 's{(<property>referencedemodata\.createDemoPatientsOnNextStartup</property>\s*<value>)\d+(</value>)}{${1}0${2}}s' "$DEMO_GP"
-    after=$(perl -0ne 'print $1 if m{<property>referencedemodata\.createDemoPatientsOnNextStartup</property>\s*<value>(\d+)</value>}s' "$DEMO_GP")
+# Every file that carries it, not just the first: today only the demo package sets this property, but
+# the header already anticipates upstream moving it, and setting it in the base package too would give
+# two occurrences. Patching only the first would leave the other at 50, silently, which is the one
+# outcome this whole script exists to prevent.
+DEMO_GP_PATCHED=0
+while IFS= read -r gp; do
+    [ -n "$gp" ] || continue
+    before=$(perl -0ne 'print $1 if m{<property>referencedemodata\.createDemoPatientsOnNextStartup</property>\s*<value>(\d+)</value>}s' "$gp")
+    perl -0pi -e 's{(<property>referencedemodata\.createDemoPatientsOnNextStartup</property>\s*<value>)\d+(</value>)}{${1}0${2}}s' "$gp"
+    after=$(perl -0ne 'print $1 if m{<property>referencedemodata\.createDemoPatientsOnNextStartup</property>\s*<value>(\d+)</value>}s' "$gp")
     if [ "$after" = "0" ]; then
-        echo "   ~ ${DEMO_GP#"$CONFIG_DIR"/}: demo patient generation ${before:-?} -> 0"
+        echo "   ~ ${gp#"$CONFIG_DIR"/}: demo patient generation ${before:-?} -> 0"
+        DEMO_GP_PATCHED=$((DEMO_GP_PATCHED + 1))
     else
-        echo "❌ Could not set createDemoPatientsOnNextStartup to 0 in $DEMO_GP (value is '${after:-unset}')"
+        echo "❌ Could not set createDemoPatientsOnNextStartup to 0 in $gp (value is '${after:-unset}')"
         exit 1
     fi
-else
-    warn "createDemoPatientsOnNextStartup not found - upstream may have moved it; a starter database could generate demo patients."
-fi
+done <<< "$(grep -rl 'referencedemodata.createDemoPatientsOnNextStartup' "$CONFIG_DIR/globalproperties" 2>/dev/null || true)"
+[ "$DEMO_GP_PATCHED" -gt 0 ] \
+    || warn "createDemoPatientsOnNextStartup not found - upstream may have moved it; a starter database could generate demo patients."
 
 echo "✅ Demo fixtures stripped ($WARNINGS warning(s))."

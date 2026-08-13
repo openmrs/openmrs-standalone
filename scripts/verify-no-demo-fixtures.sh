@@ -77,12 +77,15 @@ fi
 # The single most dangerous shipped value. Only the pre-computed checksums stop Initializer applying it,
 # so if it is ever back at 50 a starter implementation that edits any config file gets 50 demo patients
 # in its production database on the next boot.
-DEMO_GP=$(grep -rl 'createDemoPatientsOnNextStartup' "$CFG" 2>/dev/null | head -1)
-if [ -n "$DEMO_GP" ]; then
-    VAL=$(perl -0ne 'print $1 if m{<property>referencedemodata\.createDemoPatientsOnNextStartup</property>\s*<value>(\d+)</value>}s' "$DEMO_GP")
+# Checks EVERY file that carries it, not just the first. strip-demo-fixtures.sh patches all of them, and
+# a gate that only inspected one would pass an artifact whose second globalproperties file still said 50 —
+# exactly the silent outcome both scripts exist to prevent.
+while IFS= read -r gp; do
+    [ -n "$gp" ] || continue
+    VAL=$(perl -0ne 'print $1 if m{<property>referencedemodata\.createDemoPatientsOnNextStartup</property>\s*<value>(\d+)</value>}s' "$gp")
     [ "${VAL:-x}" = "0" ] \
-        || fail "shipped config sets createDemoPatientsOnNextStartup=${VAL:-unset}, not 0 — a starter implementation could generate ${VAL:-?} demo patients into production"
-fi
+        || fail "shipped config file ${gp#"$CFG"/} sets createDemoPatientsOnNextStartup=${VAL:-unset}, not 0 — a starter implementation could generate ${VAL:-?} demo patients into production"
+done <<< "$(grep -rl 'createDemoPatientsOnNextStartup' "$CFG" 2>/dev/null || true)"
 
 # Pruning nothing here, so these tags come from the demo package's own locations. Resolve the column
 # from the header and count rows that actually set it: matching the header text alone would pass
