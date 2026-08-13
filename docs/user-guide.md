@@ -220,8 +220,15 @@ cp -a "$old"/appdata/complex_obs   ./appdata/ 2>/dev/null || true   # attachment
 cp -a "$old"/appdata/person_images ./appdata/ 2>/dev/null || true   # patient photos
 # …and any of YOUR OWN added .omod files (not the distro's) from appdata/modules/.
 
-# 5. Force a clean search index on the new version (analyzer/version can change):
-rm -rf appdata/lucene
+# 5. Force a clean search index on the new version:
+rm -rf appdata/lucene                        # ⚠️ Do not skip this. The fresh unzip ships a search
+                                             # index pre-built against the bundled DEMO database,
+                                             # plus a marker saying so. Because step 4 removed
+                                             # needsconfig.txt, this boot imports nothing, so the
+                                             # standalone leaves that index alone — patient search
+                                             # would return demo people who are not in YOUR data
+                                             # while missing your own. Analyzers can also change
+                                             # between versions. Deleting it removes the marker too.
 
 # 6. Start the new standalone. First start runs Liquibase migrations — give it time.
 java -jar openmrs-standalone.jar

@@ -27,9 +27,11 @@ set -euo pipefail
 #     everywhere else; registration falls back to core's default address template.
 #   * payment mode `Paypal`, leaving Cash and Bank transfer.
 #   * patient identifier type `SSN` - US Social Security, with a `^[A-Z]{1}-[0-9]{7}$` format regex.
-#   * relationship types `Uncle/Nephew`, `Friend/Friend`, and `Aunt/Niece` (already retired upstream, so
-#     removing it changes nothing observable). `Clinician/Patient`, `Community Health Worker/Patient` and
-#     `Other/Other` stay.
+#   * relationship types `Uncle/Nephew`, `Friend/Friend` and `Aunt/Niece`. Only `Aunt/Niece` ships
+#     retired upstream (`Void/Retire` = true), so dropping that one changes nothing observable; the
+#     other two are active upstream and do disappear from the relationship-type picker, which is the
+#     point - they are demo flavour, not metadata an implementation needs. `Clinician/Patient`,
+#     `Community Health Worker/Patient` and `Other/Other` stay.
 #
 # AND WHAT IS EDITED RATHER THAN REMOVED
 #

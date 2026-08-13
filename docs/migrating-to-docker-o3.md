@@ -36,7 +36,8 @@ Two things that make a single-site migration simpler than the general case:
   (`scripts/strip-demo-fixtures.sh` — see its header for the full list), whereas this distro uses the
   upstream config as published. So on first boot Initializer *will* re-introduce what the standalone
   filtered out: the 50 `Site N` login locations, the developer forms, the Cambodian address hierarchy,
-  the `SSN` identifier type and the `Paypal` payment mode — and it will rename your hospital back from
+  the `SSN` identifier type, the `Paypal` payment mode and the `Uncle/Nephew`, `Aunt/Niece` and
+  `Friend/Friend` relationship types — and it will rename your hospital back from
   `My Hospital` to `Ubuntu Hospital`, since the standalone's rename lives in that config rather than in
   your database. Your own data is untouched. To keep all of it out, copy the standalone's
   `appdata/configuration` over the generated distro's `web/openmrs_config` before you build the

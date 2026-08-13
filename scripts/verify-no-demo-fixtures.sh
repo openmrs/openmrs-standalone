@@ -101,7 +101,10 @@ count_tagged() { # $1 = tag name; echoes the count, or -1 if a CSV is ragged
             NF!=hdr{ragged=1; exit 3}
             col && toupper($col)=="TRUE"{c++}
             END{if(!ragged) print c+0}' "$csv"); then
-            echo "$csv has a row whose field count differs from its header — a quoted comma is shifting the columns, so this gate cannot tell which column is 'Tag|$tag'" >&2
+            # Carries the ::error:: prefix itself: GitHub parses workflow commands out of the step's
+            # log regardless of stream, so the release-cutter gets the real cause as an annotation
+            # rather than as a plain line they have to go hunting for below the failure.
+            echo "::error::$csv has a row whose field count differs from its header — a quoted comma is shifting the columns, so this gate cannot tell which column is 'Tag|$tag'" >&2
             echo "-1"
             return
         fi
@@ -111,8 +114,6 @@ count_tagged() { # $1 = tag name; echoes the count, or -1 if a CSV is ragged
 }
 
 # $1 = tag name, $2 = why it matters
-# `if`, not `[ … ] && fail`: with that form the whole function returns 1 on every non-ragged run, so
-# any future caller that tests its status would read a clean artifact as a failed check.
 require_tagged() {
     local tag="$1" why="$2" n
     n=$(count_tagged "$tag")
@@ -198,7 +199,32 @@ check_renamed() { # $1 = label, $2 = dump path
 # was the one case nothing covered.
 check_demo_patients_off() { # $1 = label, $2 = dump path
     grep -qaF "createDemoPatientsOnNextStartup','0'" "$2" \
-        || fail "bundled $1 database does not ship createDemoPatientsOnNextStartup=0 — a starter implementation that edits any config file could generate demo patients into production"
+        || fail "bundled $1 database does not ship createDemoPatientsOnNextStartup=0 — ReferenceDemoDataActivator generates that many patients whenever this is above 0 and runtime property referencedemodata.createDemoPatients is missing or true, and missing DEFAULTS to true"
+}
+
+# The only check here that can tell the two dumps APART. Every other one evaluates identically on
+# both (measured), so a mis-copied mysqldump in docs/releasing.md §2 — two near-identical commands a
+# few lines apart, differing only in the destination filename — would ship the demo database as the
+# Starter option and pass this whole gate. mysqldump omits the INSERT statement entirely for an empty
+# table, so the presence of that line is the population test. Nothing else covers it: the assertion
+# on patient counts lives in BundledDbDumpImportTest, which reads src/main/db/ directly rather than
+# the assembled zip, and the build workflow packages with -DskipTests.
+check_patient_rows() { # $1 = label, $2 = dump path, $3 = none|some
+    local label="$1" sql="$2" want="$3" t populated=""
+    for t in patient obs visit; do
+        # `INTO \`table\`` rather than `INSERT INTO \`table\``: --insert-ignore and --replace make
+        # mysqldump write `INSERT IGNORE INTO` and `REPLACE INTO`, either of which would slip past the
+        # longer literal and hand back a false pass. The trailing backtick keeps the table name exact,
+        # so patient_identifier_type - which both dumps do carry - is not mistaken for patient data.
+        grep -qaF "INTO \`$t\`" "$sql" && populated="$populated $t"
+    done
+    populated=${populated# }
+    if [ "$want" = none ] && [ -n "$populated" ]; then
+        fail "bundled $label database carries rows in: $populated — the whole point of the Starter option is that it does not. The demo dump was almost certainly bundled as $label"
+    fi
+    if [ "$want" = some ] && [ -z "$populated" ]; then
+        fail "bundled $label database has no patient, obs or visit rows — the Starter dump was almost certainly bundled as $label"
+    fi
 }
 
 check_no_sites starter "$EMPTY_SQL"
@@ -207,6 +233,8 @@ check_renamed starter "$EMPTY_SQL"
 check_renamed demo "$DEMO_SQL"
 check_demo_patients_off starter "$EMPTY_SQL"
 check_demo_patients_off demo "$DEMO_SQL"
+check_patient_rows starter "$EMPTY_SQL" none
+check_patient_rows demo "$DEMO_SQL" some
 check_complete starter "$EMPTY_SQL"
 check_complete demo "$DEMO_SQL"
 

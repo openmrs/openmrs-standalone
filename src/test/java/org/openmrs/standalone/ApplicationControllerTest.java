@@ -35,6 +35,16 @@ class ApplicationControllerTest {
 	}
 
 	@Test
+	void canReusePrebuiltSearchIndex_doNotModifyDatabase_rebuildsEvenWithBakedIndex() {
+		// NO_CHANGES imports nothing, so this looks like the one case that could keep the baked
+		// index - but it is what the GUI's "Do Not Modify the Database" sets, which is what someone
+		// upgrading in place picks after copying their own database into a fresh unzip. That tree
+		// still carries the index baked against the demo data, so it must rebuild.
+		assertFalse(ApplicationController.canReusePrebuiltSearchIndex(
+				DatabaseMode.NO_CHANGES, true));
+	}
+
+	@Test
 	void canReusePrebuiltSearchIndex_noBakedIndex_alwaysRebuilds() {
 		assertFalse(ApplicationController.canReusePrebuiltSearchIndex(
 				DatabaseMode.DEMO_DATABASE, false));

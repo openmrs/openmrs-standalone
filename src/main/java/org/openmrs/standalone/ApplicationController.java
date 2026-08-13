@@ -268,12 +268,15 @@ public class ApplicationController {
 						StandaloneUtil.launchBrowser(userInterface.getTomcatPort(), contextName);
 					}
 
-					// Rebuild the Lucene search index after a fresh database import
-					// (demo/empty/wizard). The index lives on the filesystem, not in the
-					// imported SQL dump, so without this patient search returns nothing until
-					// the index is rebuilt by hand. Must run in command-line mode too - it was
-					// previously gated behind the GUI-only browser launch - and only after an
-					// import, so ordinary restarts (which reuse the existing index) are not slowed.
+					// Rebuild the Lucene search index whenever the user has just answered the
+					// database question - demo, empty, wizard, or "do not modify". The index lives on
+					// the filesystem, not in the imported SQL dump, so without this patient search
+					// returns nothing until the index is rebuilt by hand. Must run in command-line
+					// mode too - it was previously gated behind the GUI-only browser launch - and
+					// only on those boots, so ordinary restarts (which reuse the existing index) are
+					// not slowed. NO_CHANGES imports nothing, but it is what someone upgrading in
+					// place picks to keep the database they copied in, and this tree still carries
+					// the index baked against the bundled demo data - so it needs the rebuild most.
 					// When the build pipeline has baked a matching index into the distribution
 					// (marker present), the shipped index already covers the bundled demo data,
 					// so we skip the rebuild and search works immediately on first run.
@@ -286,9 +289,16 @@ public class ApplicationController {
 							// live index directory, so the baked demo index it described is gone either
 							// way. Nothing else clears it - deleteActiveDatabase() only removes database/
 							// and unzipDatabase() writes to db/ - so a surviving marker would make a later
-							// Demo import in this same directory skip a rebuild it now needs. Clearing
-							// before the rebuild also fails safe: if the rebuild request does not get
-							// through, the next boot rebuilds again rather than trusting a stale index.
+							// Demo import in this same directory skip a rebuild it now needs.
+							//
+							// Ordering it before rather than after the rebuild is not self-healing: the
+							// call below is fire-and-forget, and an ordinary restart leaves
+							// applyDatabaseChange null, so nothing retries an index that fails to
+							// rebuild - only choosing a database mode again would.
+							// It is the lesser of two evils - a marker left pointing at an index the
+							// rebuild has already begun overwriting is worse than no marker, because a
+							// later Demo import would trust it. Recover through Home > System
+							// Administration > Manage Search Index.
 							OpenmrsUtil.clearPrebuiltSearchIndexMarker();
 							OpenmrsUtil.rebuildEntireSearchIndex(resourceUrl);
 						}

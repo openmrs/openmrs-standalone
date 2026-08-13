@@ -44,10 +44,13 @@ local.properties
 .buildpath
 .DS_Store
 
-# LogWriter writes to <currentdir>/tomcat/logs, so running the test suite (or the standalone) from
-# the project root leaves a log directory behind. Untracked and easy to sweep into a `git add -A`.
-tomcat/
-
-# Same story for the search index marker: OpenmrsUtil resolves it to <currentdir>/appdata/lucene,
-# which OpenmrsUtilTest creates and normally removes - but not if the JVM is killed mid-test.
-appdata/
+# Runtime droppings from running the standalone (or the test suite) in the project root: LogWriter
+# writes to <currentdir>/tomcat/logs, and OpenmrsUtil resolves the search index marker to
+# <currentdir>/appdata/lucene, which OpenmrsUtilTest creates and removes unless the JVM is killed
+# mid-test. Both untracked and easy to sweep into a `git add -A`.
+#
+# Anchored with a leading slash, or these would also match nested paths: unanchored `tomcat/` hid
+# src/main/config/tomcat/conf/ from `git add`, so a new file there was silently skipped while the
+# six already-tracked ones stayed visible. Artifact copies of both live under target/, ignored above.
+/tomcat/
+/appdata/

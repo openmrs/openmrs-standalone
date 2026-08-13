@@ -159,8 +159,10 @@ class BundledDbDumpImportTest {
                         "Starter database lost the 'Clinician/Patient' relationship type");
                 assertEquals("0", stringValue(stmt, "SELECT property_value FROM global_property"
                                 + " WHERE property = 'referencedemodata.createDemoPatientsOnNextStartup'"),
-                        "createDemoPatientsOnNextStartup must ship as 0, or editing any config file can"
-                                + " generate 50 demo patients into a production database");
+                        "createDemoPatientsOnNextStartup must ship as 0: ReferenceDemoDataActivator"
+                                + " generates that many patients whenever it is above 0 and runtime"
+                                + " property referencedemodata.createDemoPatients is missing or true,"
+                                + " and missing defaults to true");
 
                 // A dump taken before the convergence restart (docs/releasing.md §2 step d) leaves the
                 // privilege-level roles short of the grants the demo database has.

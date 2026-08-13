@@ -124,12 +124,14 @@ This brings across the modules, the Initializer `configuration/`, the **`fronten
 skips re-processing config the imported database already has). Add any **custom modules** from
 Phase 0 into `/var/lib/openmrs/modules`.
 
-Belt-and-suspenders: your imported DB already has the demo flag consumed, but you can also set
-the demo global property to `0` in the config so no demo data can generate:
+Belt-and-suspenders: confirm the demo global property is `0` in the config, so no demo data can
+generate even if Initializer re-applies it. A standalone from 3.7.1 onward already ships it as `0`
+(`scripts/strip-demo-fixtures.sh` sets it), so this is a check rather than an edit — but an
+`appdata` copied from an older standalone will still say `50`:
 
 ```bash
 grep -rl "createDemoPatientsOnNextStartup" /var/lib/openmrs/configuration 2>/dev/null
-# in that globalproperties file, change <value>50</value> to <value>0</value>
+# in that globalproperties file, confirm <value>0</value>; change it if it still says 50
 ```
 
 ## Phase 4 — Write the runtime properties (point at the external DB)

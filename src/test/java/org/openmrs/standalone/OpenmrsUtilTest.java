@@ -18,24 +18,32 @@ import org.junit.jupiter.api.Test;
  */
 class OpenmrsUtilTest {
 
-	private static final File APPDATA = new File("appdata");
+	// The path under test comes from OpenmrsUtil itself; see the field's comment for why.
+	private static final File MARKER = OpenmrsUtil.PREBUILT_SEARCH_INDEX_MARKER;
 
-	private static final File LUCENE = new File(APPDATA, "lucene");
+	private static final File LUCENE = MARKER.getParentFile();
 
-	private static final File MARKER = new File(LUCENE, ".prebuilt");
+	private static final File APPDATA = LUCENE.getParentFile();
 
-	private boolean createdAppdata;
+	private boolean createdMarker;
 
 	private boolean createdLucene;
 
+	private boolean createdAppdata;
+
 	/**
 	 * Removes only what the test itself created. A developer may run this suite from inside an
-	 * extracted standalone, where appdata/lucene is their live index directory - deleting it would
-	 * cost them a full rebuild.
+	 * extracted standalone, where appdata/lucene is their live index directory - deleting the marker
+	 * there would cost them the full rebuild the marker exists to avoid. Note that JUnit runs
+	 * @AfterEach even for a test that aborted on a failed assumption, so every delete here has to be
+	 * gated on this instance having created the thing: an unconditional MARKER.delete() removed a
+	 * developer's real marker on the very run that had just declined to touch it.
 	 */
 	@AfterEach
 	void removeOnlyWhatWeCreated() {
-		MARKER.delete();
+		if (createdMarker) {
+			MARKER.delete();
+		}
 		if (createdLucene) {
 			LUCENE.delete();
 		}
@@ -44,13 +52,18 @@ class OpenmrsUtilTest {
 		}
 	}
 
+	/** Refuses to run against a marker we did not create: it would belong to a real baked index. */
+	private void skipIfARealMarkerIsPresent() {
+		assumeFalse(MARKER.isFile(), MARKER.getPath() + " already exists - not touching it");
+	}
+
 	private void giveUsAMarker() throws IOException {
-		// Refuse to run against a marker we did not create: it would belong to a real baked index.
-		assumeFalse(MARKER.isFile(), "appdata/lucene/.prebuilt already exists - not touching it");
+		skipIfARealMarkerIsPresent();
 		createdAppdata = !APPDATA.isDirectory();
 		createdLucene = !LUCENE.isDirectory();
 		assertTrue(LUCENE.isDirectory() || LUCENE.mkdirs(), "could not create " + LUCENE.getPath());
 		assertTrue(MARKER.createNewFile(), "could not create " + MARKER.getPath());
+		createdMarker = true;
 	}
 
 	@Test
@@ -66,7 +79,7 @@ class OpenmrsUtilTest {
 
 	@Test
 	void clearPrebuiltSearchIndexMarker_noMarker_isAQuietNoOp() {
-		assumeFalse(MARKER.isFile(), "appdata/lucene/.prebuilt already exists - not touching it");
+		skipIfARealMarkerIsPresent();
 
 		// Called on every non-demo import, including the common case of a distribution that shipped
 		// no baked index at all, so an absent marker must not be treated as a failure.

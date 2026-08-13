@@ -274,11 +274,17 @@ public class OpenmrsUtil {
 	 * reusing it after a Starter or wizard import would leave search backed by an index describing
 	 * 50 patients that database does not contain.
 	 */
-	private static final File PREBUILT_SEARCH_INDEX_MARKER =
+	// Package-private, not private, so OpenmrsUtilTest asserts against this exact path instead of
+	// re-deriving the three segments by hand: nothing would tie the two copies together, and the
+	// test would keep passing against a path the standalone no longer uses.
+	static final File PREBUILT_SEARCH_INDEX_MARKER =
 			new File("appdata" + File.separator + "lucene" + File.separator + ".prebuilt");
 
 	/**
-	 * @return true if a pre-built Lucene search index was bundled with this distribution. We key
+	 * @return true if this distribution's bundled, pre-built Lucene index is still the one on disk.
+	 *         Not simply "an index was bundled": {@link #clearPrebuiltSearchIndexMarker()} drops the
+	 *         marker once a rebuild has replaced that index, because callers use this to decide
+	 *         whether the on-disk index can be trusted to describe the bundled demo database. We key
 	 *         off an explicit marker file rather than the mere presence of the lucene directory,
 	 *         because OpenMRS itself creates an empty index skeleton on startup which would
 	 *         otherwise be mistaken for a populated index.
