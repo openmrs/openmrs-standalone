@@ -52,6 +52,33 @@ class ApplicationControllerTest {
 				DatabaseMode.EMPTY_DATABASE, false));
 	}
 
+	// mustRebuildUnimportedDatabase: a boot that imports nothing, with the marker still present, is
+	// someone who brought their own database into a tree carrying the demo-baked index.
+
+	@Test
+	void mustRebuildUnimportedDatabase_noImportWithBakedIndex_rebuilds() {
+		// The in-place upgrade in docs/user-guide.md: database/ copied in, needsconfig.txt deleted, so
+		// no database mode is ever chosen. Without this, patient search describes demo people.
+		assertTrue(ApplicationController.mustRebuildUnimportedDatabase(null, true));
+	}
+
+	@Test
+	void mustRebuildUnimportedDatabase_ordinaryRestart_doesNotRebuild() {
+		// Whichever branch ran on the previous boot consumed the marker, so restarts stay fast.
+		assertFalse(ApplicationController.mustRebuildUnimportedDatabase(null, false));
+	}
+
+	@Test
+	void mustRebuildUnimportedDatabase_anyImport_leavesTheDecisionToTheImportPath() {
+		// Not this predicate's job: an import already rebuilds or reuses deliberately, and firing here
+		// too would rebuild twice on the same boot.
+		for (DatabaseMode mode : DatabaseMode.values()) {
+			assertFalse(ApplicationController.mustRebuildUnimportedDatabase(mode, true),
+				"mode " + mode + " is an import, so the import path owns the index decision");
+			assertFalse(ApplicationController.mustRebuildUnimportedDatabase(mode, false));
+		}
+	}
+
 	// resolveCommandLine: GUI request on a headless host must downgrade to the command line.
 
 	@Test
