@@ -223,6 +223,19 @@ mkdir -p "$DB_CHECK/empty" "$DB_CHECK/demo"
 unzip -o -q "$ART_DIR/emptydatabase.zip" -d "$DB_CHECK/empty" || fail "could not read bundled emptydatabase.zip"
 unzip -o -q "$ART_DIR/demodatabase.zip"  -d "$DB_CHECK/demo"  || fail "could not read bundled demodatabase.zip"
 
+# Exactly one dump per zip, not just at least one. StandaloneUtil imports sqlFiles[0] from
+# File.listFiles(), whose order is filesystem-dependent and unspecified, and the `head -1` below makes
+# its own independent pick — so a second .sql would let the standalone import one dump while this gate
+# verified the other, silently. The assembly descriptors pin an exact filename per version, so this
+# cannot happen today; the check is here to keep it that way, since the two ways of choosing would
+# disagree without either side complaining.
+count_sql() { find "$1" -name '*.sql' | wc -l | tr -d ' '; }
+for z in empty:emptydatabase.zip demo:demodatabase.zip; do
+    n=$(count_sql "$DB_CHECK/${z%%:*}")
+    [ "$n" = "1" ] \
+        || fail "bundled ${z#*:} holds $n .sql files, expected exactly 1 — the standalone imports whichever File.listFiles() returns first, which need not be the one this gate checks"
+done
+
 EMPTY_SQL=$(find "$DB_CHECK/empty" -name '*.sql' | head -1)
 DEMO_SQL=$(find "$DB_CHECK/demo" -name '*.sql' | head -1)
 [ -n "$EMPTY_SQL" ] || fail "bundled emptydatabase.zip contains no .sql"
