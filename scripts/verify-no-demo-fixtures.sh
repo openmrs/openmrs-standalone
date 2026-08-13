@@ -135,6 +135,56 @@ require_tagged "Login Location" \
 require_tagged "Queue Location" \
     "no shipped location is tagged 'Queue Location' — /home (Service queues) would throw on load"
 
+# ── Initializer checksums ───────────────────────────────────────────────────
+# Every config file Initializer can load must sit beside a checksum file holding the MD5 of its CURRENT
+# content. That is the only thing stopping Initializer re-applying the whole configuration on first boot
+# — confirmed on a real boot of a built artifact, where it loaded nothing at all.
+#
+# scripts/generate-checksums.sh runs in the same process-resources phase as strip-demo-fixtures.sh and
+# AFTER it, so the checksums describe the filtered files. A future filter added in a later phase, or the
+# two executions reordered in pom-step-01.xml, would leave every checksum it touched stale and silently
+# change first-boot behaviour. Nothing above notices, because every content check still passes: the file
+# is exactly what we wanted, and only the checksum beside it disagrees.
+CHKSUM_DIR="$ART_DIR/appdata/configuration_checksums"
+[ -d "$CHKSUM_DIR" ] \
+    || fail "no appdata/configuration_checksums in the artifact — Initializer would re-apply the entire configuration on first boot"
+if command -v md5sum >/dev/null 2>&1; then
+    md5_of() { md5sum "$1" | cut -d' ' -f1; }
+elif command -v md5 >/dev/null 2>&1; then
+    md5_of() { md5 -q "$1"; }
+else
+    fail "neither md5sum nor md5 is available — cannot verify the Initializer checksums"
+fi
+STALE=0
+VERIFIED=0
+while IFS= read -r cf; do
+    [ -n "$cf" ] || continue
+    # Only what Initializer loads. The .gitkeep placeholders legitimately have no checksum.
+    case "$cf" in *.csv | *.xml | *.json | *.zip) ;; *) continue ;; esac
+    rel=${cf#"$CFG"/}
+    case "$rel" in */*/*) ;; *) continue ;; esac   # <domain>/<package>/<file>
+    domain=${rel%%/*}
+    rest=${rel#*/}
+    stem=${rest#*/}
+    expected="$CHKSUM_DIR/$domain/${rest%%/*}_${stem%.*}.checksum"
+    if [ ! -f "$expected" ]; then
+        echo "::error::shipped config $rel has no checksum file — Initializer would apply it on first boot"
+        STALE=$((STALE + 1))
+    elif [ "$(cat "$expected")" = "$(md5_of "$cf")" ]; then
+        VERIFIED=$((VERIFIED + 1))
+    else
+        echo "::error::stale checksum for $rel — it was edited after generate-checksums.sh ran, so Initializer will re-apply it on first boot"
+        STALE=$((STALE + 1))
+    fi
+done <<< "$(find "$CFG" -type f)"
+[ "$STALE" -eq 0 ] \
+    || fail "$STALE shipped config file(s) disagree with their Initializer checksum — see the annotations above"
+# Guard against the check silently matching nothing, which is how two earlier checks in this file
+# managed to pass while verifying zero rows. The real config carries ~94 loadable files.
+[ "$VERIFIED" -ge 50 ] \
+    || fail "only $VERIFIED config checksums verified — this check matched almost nothing, so it is not guarding anything"
+echo "Initializer checksums: $VERIFIED config file(s) match, none stale."
+
 # ── Bundled databases ──────────────────────────────────────────────────────
 # Start from a clean scratch dir: an earlier failed run leaves extracted SQL behind, and `unzip -o`
 # only overwrites same-named files, so a stale dump could be compared instead of the one shipping.
