@@ -307,6 +307,23 @@ check_patient_rows() { # $1 = label, $2 = dump path, $3 = none|some
     fi
 }
 
+# The two strip edits whose database side nothing checked. The config-side probes for these sit near the
+# top of this file and only look at $CFG, so a dump cut before either edit would carry the content in its
+# tables and pass everything else here — and the dumps are exactly where this regresses, since they are
+# committed files that a maintainer regenerates by hand.
+#
+# The address hierarchy is the sharper of the two: 344 rows of Cambodian provinces, districts and communes
+# that appear directly in the registration form's address fields, which is the complaint that started this
+# work. Row presence, not the table's existence — the schema ships the tables either way, empty.
+check_no_stripped_content() { # $1 = label, $2 = dump path
+    if grep -qaF 'INTO `address_hierarchy_entry`' "$2"; then
+        fail "bundled $1 database carries address_hierarchy_entry rows — it was dumped before strip-demo-fixtures.sh removed the Cambodian address hierarchy, so registration would offer Cambodian provinces"
+    fi
+    if grep -qaF 'Paypal' "$2"; then
+        fail "bundled $1 database still contains the 'Paypal' payment mode — dumped before strip-demo-fixtures.sh removed it"
+    fi
+}
+
 check_no_sites starter "$EMPTY_SQL"
 check_no_sites demo "$DEMO_SQL"
 check_renamed starter "$EMPTY_SQL"
@@ -315,6 +332,8 @@ check_demo_patients_off starter "$EMPTY_SQL"
 check_demo_patients_off demo "$DEMO_SQL"
 check_patient_rows starter "$EMPTY_SQL" none
 check_patient_rows demo "$DEMO_SQL" some
+check_no_stripped_content starter "$EMPTY_SQL"
+check_no_stripped_content demo "$DEMO_SQL"
 check_complete starter "$EMPTY_SQL"
 check_complete demo "$DEMO_SQL"
 
