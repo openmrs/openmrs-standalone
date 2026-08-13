@@ -49,9 +49,10 @@ SITES=$(grep -rho "Site [0-9]" "$LOC" 2>/dev/null | wc -l | tr -d ' ')
 
 CFG="$ART_DIR/appdata/configuration"
 
-# Every other edit strip-demo-fixtures.sh makes, asserted by its visible effect. Each one is silent if
-# the filter stops matching: the script only WARNS on a miss so an upstream rename cannot break the
-# build, which is exactly why the gate has to check the outcome.
+# The strip edits a plain content probe can assert; the ones needing column- or filename-awareness follow
+# below, so that between them every edit the script makes is checked by its outcome. Each is silent if the
+# filter stops matching: the script only WARNS on a miss so an upstream rename cannot break the build,
+# which is exactly why the gate has to check the outcome.
 for probe in \
     "Ubuntu Hospital:the demo hospital was not renamed" \
     "Paypal:payment mode 'Paypal' is still configured" \
@@ -64,6 +65,32 @@ done
 
 [ -d "$CFG/addresshierarchy" ] \
     && fail "shipped config still has an addresshierarchy domain — it is Cambodian and wrong for any other site"
+
+# The demo relationship types and the developer forms. Both edits went unchecked on the config side for a
+# while, and neither is visible to anything else here: the bundled dumps are committed files rather than
+# products of this build, so a strip that stopped matching would ship them in the config while the dumps
+# stayed clean. Initializer would not load them on first boot either — the checksums generated after strip
+# mark them already-applied — so they would sit inert until the first config edit re-applied the domain and
+# materialised a developer form, or Uncle/Nephew, in a production system.
+if [ -d "$CFG/relationshiptypes" ]; then
+    DEMO_RT=$(find "$CFG/relationshiptypes" -name '*.csv' -exec awk -F',' '
+        function trim(s){gsub(/^[ \t]+|[ \t]+$/,"",s);return s}
+        NR==1{for(i=1;i<=NF;i++) if(tolower(trim($i))=="name") c=i; next}
+        c && (trim($c)=="Uncle/Nephew" || trim($c)=="Aunt/Niece" || trim($c)=="Friend/Friend"){n++}
+        END{print n+0}' {} \; | paste -sd+ - | bc)
+    [ "${DEMO_RT:-0}" = "0" ] \
+        || fail "shipped config still defines $DEMO_RT demo relationship type(s) — Uncle/Nephew, Aunt/Niece or Friend/Friend survived strip-demo-fixtures.sh"
+fi
+
+# Fail if the forms domain itself is missing rather than reporting zero developer forms: the distro ships
+# seven real forms, so an empty result means the layout moved and this check stopped looking at anything.
+[ -d "$CFG/ampathforms" ] \
+    || fail "no ampathforms domain in the shipped config — the layout changed, so the developer-form check below is not looking at anything"
+DEV_FORMS=$(find "$CFG/ampathforms" "$CFG/ampathformstranslations" -type f \
+    \( -name 'test_form-*' -o -name 'form-engine-cookbook-*' -o -name 'test_form_1_translations_*' \) 2>/dev/null \
+    | wc -l | tr -d ' ')
+[ "${DEV_FORMS:-0}" = "0" ] \
+    || fail "shipped config still carries $DEV_FORMS developer form file(s) — 'Test Form 1', the Form Engine Cookbook or its orphan translation survived strip-demo-fixtures.sh"
 
 # `SSN` needs a column-aware check: the bare string appears in unrelated prose.
 if [ -d "$CFG/patientidentifiertypes" ]; then
