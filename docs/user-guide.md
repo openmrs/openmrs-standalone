@@ -163,7 +163,7 @@ carry *your* state — everything else is shipped fresh by the new build:
 | `appdata/modules/`                                  | New module versions ship here, not inside the war.|
 | `appdata/frontend/`                                 | New O3 SPA build.                                |
 | `appdata/configuration/`, `appdata/configuration_checksums/` | New distro configuration + Initializer checksums. |
-| `appdata/lucene/`                                   | Search index — rebuild it on the new version rather than reuse it. |
+| `appdata/lucene/`                                   | Search index — the new build ships one and rebuilds it against your data on first start (step 5). |
 
 **⚠️ The DB password lives in the runtime properties, not the data files.** On first setup the
 standalone replaces the placeholder password `test` with a random 12-character password and
@@ -220,15 +220,14 @@ cp -a "$old"/appdata/complex_obs   ./appdata/ 2>/dev/null || true   # attachment
 cp -a "$old"/appdata/person_images ./appdata/ 2>/dev/null || true   # patient photos
 # …and any of YOUR OWN added .omod files (not the distro's) from appdata/modules/.
 
-# 5. Force a clean search index on the new version:
-rm -rf appdata/lucene                        # ⚠️ Do not skip this. The fresh unzip ships a search
-                                             # index pre-built against the bundled DEMO database,
-                                             # plus a marker saying so. Because step 4 removed
-                                             # needsconfig.txt, this boot imports nothing, so the
-                                             # standalone leaves that index alone — patient search
-                                             # would return demo people who are not in YOUR data
-                                             # while missing your own. Analyzers can also change
-                                             # between versions. Deleting it removes the marker too.
+# 5. Leave appdata/lucene alone — do NOT delete it and do NOT copy your old one over.
+#    The fresh unzip ships a search index pre-built against the bundled DEMO database. Standalone
+#    3.7.1 and later notice that this boot imported no database, rebuild that index against YOUR
+#    data on first start, and log "Updating the search index" while doing it.
+#
+#    Deleting it is worse, not safer: OpenMRS only recreates an empty skeleton on startup and does
+#    not repopulate it, so a deleted index leaves patient and concept search returning nothing until
+#    you rebuild by hand. Both behaviours were measured on a built standalone.
 
 # 6. Start the new standalone. First start runs Liquibase migrations — give it time.
 java -jar openmrs-standalone.jar
@@ -258,8 +257,11 @@ standalone's *own* first-start importer, and let the new install generate its ow
 
 ### After the upgrade
 
-* **Rebuild the search index** — *Home → System Administration → Manage Search Index* (you deleted
-  `appdata/lucene` so it starts empty).
+* **Run a search before rebuilding by hand** — a patient search and a concept search. If you left
+  `appdata/lucene` in place (step 5), the first start already rebuilt the index against your data and
+  both should return results. Rebuild through *Home → System Administration → Manage Search Index*
+  only if they come back empty — which is what you would see if that automatic rebuild was
+  interrupted, or if your build shipped no pre-built index for it to notice.
 * **Verify** — log in, run a patient search and a concept search, and click through the workflows
   you rely on. A green login plus working search is the quickest proof the migration took.
 * **Skipping releases** — core migrations are cumulative, so jumping several refapp releases at
