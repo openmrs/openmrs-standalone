@@ -281,13 +281,15 @@ public class OpenmrsUtil {
 			new File("appdata" + File.separator + "lucene" + File.separator + ".prebuilt");
 
 	/**
-	 * @return true if this distribution's bundled, pre-built Lucene index is still the one on disk.
-	 *         Not simply "an index was bundled": {@link #clearPrebuiltSearchIndexMarker()} drops the
-	 *         marker once a rebuild has replaced that index, because callers use this to decide
-	 *         whether the on-disk index can be trusted to describe the bundled demo database. We key
-	 *         off an explicit marker file rather than the mere presence of the lucene directory,
-	 *         because OpenMRS itself creates an empty index skeleton on startup which would
-	 *         otherwise be mistaken for a populated index.
+	 * @return true if this distribution has not booted yet and {@code appdata/lucene} is therefore
+	 *         still the index baked against the bundled demo database. Not simply "an index was
+	 *         bundled": the marker is single-use, and the first boot consumes it either way - see
+	 *         {@link #clearPrebuiltSearchIndexMarker()} - because callers use this to decide whether
+	 *         the on-disk index can be trusted to describe that demo database, and it stops being
+	 *         trustworthy as soon as OpenMRS starts updating the index in place. We key off an
+	 *         explicit marker file rather than the mere presence of the lucene directory, because
+	 *         OpenMRS itself creates an empty index skeleton on startup which would otherwise be
+	 *         mistaken for a populated index.
 	 */
 	public static boolean hasPrebuiltSearchIndex() {
 		return PREBUILT_SEARCH_INDEX_MARKER.isFile();
@@ -295,9 +297,14 @@ public class OpenmrsUtil {
 
 	/**
 	 * Drops the marker, so {@link #hasPrebuiltSearchIndex()} stops claiming the on-disk index is the
-	 * baked demo one. Called whenever the standalone rebuilds the index, because that rebuild
-	 * overwrites {@code appdata/lucene} in place — the marker would otherwise outlive the index it
-	 * describes and let a later Demo import skip a rebuild it needs.
+	 * baked demo one. The first boot calls this whichever path it takes, which is what makes the
+	 * marker single-use:
+	 * <ul>
+	 * <li>before rebuilding, because the rebuild overwrites {@code appdata/lucene} in place, and a
+	 * marker outliving it would let a later Demo import skip a rebuild it needs;</li>
+	 * <li>after reusing the baked index, because OpenMRS then updates that index in place as soon as
+	 * anyone registers a patient, so it no longer matches what was baked.</li>
+	 * </ul>
 	 */
 	public static void clearPrebuiltSearchIndexMarker() {
 		if (!PREBUILT_SEARCH_INDEX_MARKER.isFile()) {
