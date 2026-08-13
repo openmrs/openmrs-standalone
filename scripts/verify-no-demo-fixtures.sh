@@ -87,32 +87,49 @@ fi
 # Pruning nothing here, so these tags come from the demo package's own locations. Resolve the column
 # from the header and count rows that actually set it: matching the header text alone would pass
 # whenever the column merely exists, which is no check at all.
-count_tagged() { # $1 = tag name
+# Runs inside $( ), so it CANNOT use fail(): stdout is captured by the caller, and `exit` would only
+# end the subshell. The diagnosis therefore goes to stderr, and raggedness comes back as the sentinel
+# -1 for the call site to act on. Getting this wrong hid the real cause behind a wrong ::error::
+# annotation, which sent the release-cutter looking for a missing location tag that was present.
+count_tagged() { # $1 = tag name; echoes the count, or -1 if a CSV is ragged
     local tag="$1" total=0 n csv
     while IFS= read -r csv; do
         [ -n "$csv" ] || continue
-        n=$(awk -F',' -v want="Tag|$tag" '
+        if ! n=$(awk -F',' -v want="Tag|$tag" '
             NR==1{hdr=NF; for(i=1;i<=NF;i++) if($i==want) col=i; next}
             NF==0{next}
             NF!=hdr{ragged=1; exit 3}
             col && toupper($col)=="TRUE"{c++}
-            END{if(!ragged) print c+0}' "$csv") \
-          || fail "$csv has a row whose field count differs from its header — a quoted comma is shifting the columns, so this gate cannot tell which column is 'Tag|$tag'"
+            END{if(!ragged) print c+0}' "$csv"); then
+            echo "$csv has a row whose field count differs from its header — a quoted comma is shifting the columns, so this gate cannot tell which column is 'Tag|$tag'" >&2
+            echo "-1"
+            return
+        fi
         total=$((total + n))
     done <<< "$(find "$LOC" -type f -name '*.csv')"
     echo "$total"
 }
 
-LOGIN_TAGGED=$(count_tagged "Login Location")
-[ "${LOGIN_TAGGED:-0}" -ge 1 ] \
-    || fail "no shipped location is tagged 'Login Location' — the login screen would offer an empty picker and nobody could sign in"
+# $1 = tag name, $2 = why it matters
+# `if`, not `[ … ] && fail`: with that form the whole function returns 1 on every non-ragged run, so
+# any future caller that tests its status would read a clean artifact as a failed check.
+require_tagged() {
+    local tag="$1" why="$2" n
+    n=$(count_tagged "$tag")
+    if [ "$n" = "-1" ]; then
+        fail "cannot verify the '$tag' tag — see the parse diagnosis above; fix the locations CSV before publishing"
+    fi
+    [ "${n:-0}" -ge 1 ] || fail "$why"
+}
+
+require_tagged "Login Location" \
+    "no shipped location is tagged 'Login Location' — the login screen would offer an empty picker and nobody could sign in"
 
 # /home resolves to the Service Queues dashboard, and esm-service-queues-app throws
 # `Cannot read properties of undefined (reading 'id')` when no location carries this tag — so the first
 # screen after login would be an error page. Measured, not theorised.
-QUEUE_TAGGED=$(count_tagged "Queue Location")
-[ "${QUEUE_TAGGED:-0}" -ge 1 ] \
-    || fail "no shipped location is tagged 'Queue Location' — /home (Service queues) would throw on load"
+require_tagged "Queue Location" \
+    "no shipped location is tagged 'Queue Location' — /home (Service queues) would throw on load"
 
 # ── Bundled databases ──────────────────────────────────────────────────────
 # Start from a clean scratch dir: an earlier failed run leaves extracted SQL behind, and `unzip -o`
@@ -162,17 +179,34 @@ PLACEHOLDER=$(sed -n 's/^HOSPITAL_PLACEHOLDER="\(.*\)"$/\1/p' "$(dirname "$0")/s
 [ -n "$PLACEHOLDER" ] \
     || fail "could not read HOSPITAL_PLACEHOLDER from $(dirname "$0")/strip-demo-fixtures.sh — this gate cannot tell what the demo hospital should have been renamed to"
 
+# `grep -qaF` directly, never `grep -oaF ... | grep -q .`: grep -q exits on its first match and closes
+# the pipe, the upstream grep dies of SIGPIPE with status 141, and `pipefail` makes 141 the pipeline's
+# status. That silently skipped the `&& fail` once a dump carried enough matches to fill the pipe buffer
+# (~900 on macOS, ~3600 on the Linux runner), and flipped the other way on the `|| fail` below, failing
+# a perfectly good artifact. A check that gets less reliable the more rows carry the old name is the
+# wrong shape for a publish gate.
 check_renamed() { # $1 = label, $2 = dump path
-    grep -oaF "'Ubuntu Hospital'" "$2" | grep -q . \
+    grep -qaF "'Ubuntu Hospital'" "$2" \
         && fail "bundled $1 database still contains 'Ubuntu Hospital' — it was dumped before strip-demo-fixtures.sh renamed it"
-    grep -oaF "'$PLACEHOLDER'" "$2" | grep -q . \
+    grep -qaF "'$PLACEHOLDER'" "$2" \
         || fail "bundled $1 database has no '$PLACEHOLDER' location — was it dumped from an unfiltered config?"
+}
+
+# The config is checked for this above, but the dumps are what actually ship the value, and this gate is
+# the only thing that opens the bundled zips. BundledDbDumpImportTest asserts it too, but from
+# src/main/db/, so an assembly that bundled the wrong file — the very failure this gate exists to catch —
+# was the one case nothing covered.
+check_demo_patients_off() { # $1 = label, $2 = dump path
+    grep -qaF "createDemoPatientsOnNextStartup','0'" "$2" \
+        || fail "bundled $1 database does not ship createDemoPatientsOnNextStartup=0 — a starter implementation that edits any config file could generate demo patients into production"
 }
 
 check_no_sites starter "$EMPTY_SQL"
 check_no_sites demo "$DEMO_SQL"
 check_renamed starter "$EMPTY_SQL"
 check_renamed demo "$DEMO_SQL"
+check_demo_patients_off starter "$EMPTY_SQL"
+check_demo_patients_off demo "$DEMO_SQL"
 check_complete starter "$EMPTY_SQL"
 check_complete demo "$DEMO_SQL"
 

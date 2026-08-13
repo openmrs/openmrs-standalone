@@ -47,3 +47,7 @@ local.properties
 # LogWriter writes to <currentdir>/tomcat/logs, so running the test suite (or the standalone) from
 # the project root leaves a log directory behind. Untracked and easy to sweep into a `git add -A`.
 tomcat/
+
+# Same story for the search index marker: OpenmrsUtil resolves it to <currentdir>/appdata/lucene,
+# which OpenmrsUtilTest creates and normally removes - but not if the JVM is killed mid-test.
+appdata/

@@ -287,6 +287,26 @@ public class OpenmrsUtil {
 		return PREBUILT_SEARCH_INDEX_MARKER.isFile();
 	}
 
+	/**
+	 * Drops the marker, so {@link #hasPrebuiltSearchIndex()} stops claiming the on-disk index is the
+	 * baked demo one. Called whenever the standalone rebuilds the index, because that rebuild
+	 * overwrites {@code appdata/lucene} in place — the marker would otherwise outlive the index it
+	 * describes and let a later Demo import skip a rebuild it needs.
+	 */
+	public static void clearPrebuiltSearchIndexMarker() {
+		if (!PREBUILT_SEARCH_INDEX_MARKER.isFile()) {
+			return;
+		}
+		if (PREBUILT_SEARCH_INDEX_MARKER.delete()) {
+			System.out.println("Cleared the pre-built search index marker; the index no longer describes the demo database.");
+		} else {
+			// Not fatal, but say so: the next import of the demo database would skip its rebuild and
+			// search it through an index built from different data.
+			System.out.println("⚠️  Could not delete " + PREBUILT_SEARCH_INDEX_MARKER.getPath()
+			        + "; delete it by hand, or a later Demo setup may skip its search index rebuild.");
+		}
+	}
+
 	public static void rebuildEntireSearchIndex(String resourceUrl) {
 		final String SEARCH_INDEX_URL = resourceUrl + "/ws/rest/v1/searchindexupdate";
 		try {

@@ -191,6 +191,10 @@ public class ApplicationController {
 	 * @param headless whether the JVM has no graphical display
 	 * @return true if the command-line interface should be used
 	 */
+	static boolean resolveCommandLine(boolean commandLineRequested, boolean headless) {
+		return commandLineRequested || headless;
+	}
+
 	/**
 	 * Whether the bundled, pre-built Lucene index can be reused instead of rebuilding it after an
 	 * import.
@@ -201,6 +205,10 @@ public class ApplicationController {
 	 * an index listing the 50 demo patients, none of which exist in that database. The marker file
 	 * alone cannot tell the two apart, so the database mode has to be part of the decision.
 	 * <p>
+	 * The converse also has to hold, which is why the caller clears the marker whenever it rebuilds:
+	 * once a non-demo rebuild has overwritten {@code appdata/lucene}, a surviving marker would make a
+	 * later Demo import skip a rebuild it now needs.
+	 * <p>
 	 * Pure so it can be unit-tested.
 	 *
 	 * @param mode the database the user chose to import
@@ -209,10 +217,6 @@ public class ApplicationController {
 	 */
 	static boolean canReusePrebuiltSearchIndex(DatabaseMode mode, boolean hasPrebuiltIndex) {
 		return hasPrebuiltIndex && mode == DatabaseMode.DEMO_DATABASE;
-	}
-
-	static boolean resolveCommandLine(boolean commandLineRequested, boolean headless) {
-		return commandLineRequested || headless;
 	}
 
 	/**
@@ -278,6 +282,14 @@ public class ApplicationController {
 								OpenmrsUtil.hasPrebuiltSearchIndex())) {
 							System.out.println("✅ Using the pre-built Lucene search index; skipping startup rebuild.");
 						} else {
+							// Clear the marker first: this rebuild overwrites appdata/lucene, which is the
+							// live index directory, so the baked demo index it described is gone either
+							// way. Nothing else clears it - deleteActiveDatabase() only removes database/
+							// and unzipDatabase() writes to db/ - so a surviving marker would make a later
+							// Demo import in this same directory skip a rebuild it now needs. Clearing
+							// before the rebuild also fails safe: if the rebuild request does not get
+							// through, the next boot rebuilds again rather than trusting a stale index.
+							OpenmrsUtil.clearPrebuiltSearchIndexMarker();
 							OpenmrsUtil.rebuildEntireSearchIndex(resourceUrl);
 						}
 					}
