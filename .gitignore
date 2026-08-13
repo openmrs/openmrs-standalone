@@ -43,3 +43,7 @@ local.properties
 # PDT-specific
 .buildpath
 .DS_Store
+
+# LogWriter writes to <currentdir>/tomcat/logs, so running the test suite (or the standalone) from
+# the project root leaves a log directory behind. Untracked and easy to sweep into a `git add -A`.
+tomcat/

@@ -40,18 +40,28 @@ The build bundles per-version dumps `src/main/db/{demo,empty}-db-${refapp.versio
 (see `src/main/assembly/zip-{demo,empty}-database.xml`). They MUST exist for the new
 version or the build's Lucene-bake gate fails. Needs Docker + JDK 21.
 
-**The build strips the demo content package's test scaffolding** from the distro config —
+**The build makes the demo content package fit for a real implementation** —
 `scripts/strip-demo-fixtures.sh`, wired into `pom-step-01.xml` as the `strip-demo-fixtures` exec
 execution, which must stay ahead of `generate-checksums` so the shipped checksums describe the
-filtered config. It drops the 50 `Site N` placeholder locations (all tagged Login Location, so
-they buried the 7 real ones in the login picker, and they skewed demo data: `referencedemodata`'s
-fixed seed put *every* generated visit at "Site 42") and the developer forms (`Test Form 1`,
-`Form Engine Cookbook`, `Form Engine Cookbook Library`). Extend the fixture list there if a later
-refapp release adds more scaffolding. Note the distro cannot simply drop the whole
-`referenceapplication-demo` content package: `referenceapplication` alone is a 10-file overlay,
-while the demo package supplies every location, the patient identifier types and idgen source,
-visit/encounter types, roles, forms and 22 of the 24 OCL packages — without it you cannot pick a
-session location, register a patient, or record anything.
+filtered config. Read that script's header for the reasoning; the short version is:
+
+| edit | why it is safe |
+|---|---|
+| drops the 50 `Site N` locations | filler; all tagged Login + Visit, so they buried the real ones |
+| drops `Test Form 1`, `Form Engine Cookbook`, `Cookbook Library`, the orphan FR translation | developer scaffolding |
+| drops the `addresshierarchy` domain | 344 rows of **Cambodian** provinces; registration falls back to core's address template |
+| drops payment mode `Paypal`, identifier type `SSN` | Paypal is odd for a hospital, `SSN` is US-specific with a format regex |
+| drops relationship types `Uncle/Nephew`, `Friend/Friend`, `Aunt/Niece` | the last is already retired upstream; `Clinician/Patient` and `CHW/Patient` stay |
+| **renames** `Ubuntu Hospital` → `My Hospital` | it is the hierarchy's parent and the only Visit Location, so deleting it would orphan its children. The rename also rewrites the `Parent` column of all 5 children and the description — they reference the parent by NAME, not uuid |
+| **sets** `createDemoPatientsOnNextStartup` to 0 | not deleted, because `generate-demo-data-locally.sh` patches that same property. Today only the shipped checksums stop Initializer applying `50`, so a site that edits any config file could find 50 demo patients in production |
+
+**Do not extend this into dropping the whole `referenceapplication-demo` package.** It is not "the
+data the demo needs" — it is the worked example of a content package an implementation should write,
+and it holds nearly everything that makes O3 usable without configuration. Measured on a distro built
+from `referenceapplication` alone: 378 concepts, no visit type, no identifier source, no diagnoses and
+no formulary — you can log in and then do nothing. What *is* deliberately kept: the clinical forms, the
+programs (HIV Care and Treatment, PMTCT and PEP/PrEP are among the most widely run OpenMRS programs),
+the billable services, appointment services and queues. Each is what makes its feature work on day one.
 
 **⚠️ Do not trust `scripts/generate-db-dumps.sh`'s fixed `sleep 60`** — for O3 that is
 far too short. Full initialization takes **~14 minutes**: concepts load to ~4254 first
@@ -195,13 +205,21 @@ cd ../..
 patient must have encounters — a lower obs count with <50 patients-with-encounters means the
 generation crashed part-way, see the warning above):
 
-| dump  | concept | location | `Site N` | form | patient | obs    | pts w/ enc | role_privilege | size   |
-|-------|---------|----------|----------|------|---------|--------|------------|----------------|--------|
-| demo  | ~4254   | 11       | **0**    | 7    | 50      | ~5800  | 50         | 668            | ~17 MB |
-| empty | ~4254   | 11       | **0**    | 7    | **0**   | 0      | 0          | 668            | ~14 MB |
+| dump  | concept | location | `Site N` | form | program | drug | patient | obs    | pts w/ enc | role_privilege | size    |
+|-------|---------|----------|----------|------|---------|------|---------|--------|------------|----------------|---------|
+| demo  | ~4254   | 11       | **0**    | 7    | 4       | 323  | 50      | ~5800  | 50         | 668            | ~18 MB  |
+| empty | ~4254   | 11       | **0**    | 7    | 4       | 323  | **0**   | 0      | 0          | 668            | ~15 MB  |
 
-Two of those columns are new, and both fail silently if you skip a step:
+Both dumps carry the full dictionary and the same metadata — the *only* intended difference is patient
+data. If the empty dump's concept, form, program or drug counts drop, the filter has over-reached and a
+clinician will find empty tabs.
 
+Also verify the filter's edits reached the DATABASES, not just the config — both dumps are cut from a
+boot of that config, so a stale dump is how this regresses:
+
+* **`Ubuntu Hospital` must appear in neither dump, and `My Hospital` in both.**
+* **`createDemoPatientsOnNextStartup` must be `0`** in both:
+  `SELECT property_value FROM global_property WHERE property LIKE '%createDemoPatients%';`
 * **`Site N` must be 0 in both dumps** — a non-zero count means `strip-demo-fixtures.sh` did not run
   (or upstream renamed the fixtures and the filter warned instead of matching):
   `SELECT COUNT(*) FROM location WHERE name REGEXP '^Site [0-9]+$';`

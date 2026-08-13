@@ -111,11 +111,56 @@ class BundledDbDumpImportTest {
                 assertTrue(loginLocations(stmt) >= 1,
                         "Starter database needs at least one Login Location or nobody can sign in");
 
-                // The refapp demo content package's placeholder locations must not be here —
-                // see scripts/strip-demo-fixtures.sh.
+                // /home resolves to the Service Queues dashboard, and esm-service-queues-app throws
+                // `Cannot read properties of undefined (reading 'id')` when no location carries this
+                // tag — so without it the first screen after login is an error page. Measured, and
+                // invisible to every other check here: the dump imports, login succeeds, and every
+                // other route renders.
+                assertTrue(locationsTagged(stmt, "Queue Location") >= 1,
+                        "Starter database needs a Queue Location or /home (Service queues) throws on load");
+
+                // A clinician has to be able to work on day one, without configuring anything.
+                assertTrue(count(stmt, "SELECT COUNT(*) FROM visit_type") >= 1,
+                        "Starter database needs a visit type or no visit can be started");
+                assertTrue(count(stmt, "SELECT COUNT(*) FROM idgen_identifier_source") >= 1,
+                        "Starter database needs an identifier source or no patient can be registered");
+                assertEquals(1, count(stmt, "SELECT COUNT(*) FROM metadatamapping_metadata_term_mapping"
+                                + " WHERE code = 'emr.primaryIdentifierType'"),
+                        "O3 resolves the primary identifier through this emrapi mapping — registration"
+                                + " breaks without it even though the identifier type exists");
+                assertTrue(count(stmt, "SELECT COUNT(*) FROM concept c JOIN concept_class cc"
+                                + " ON cc.concept_class_id = c.class_id WHERE cc.name = 'Diagnosis'") > 0,
+                        "Starter database needs diagnosis concepts or no diagnosis can be recorded");
+                assertTrue(count(stmt, "SELECT COUNT(*) FROM drug") > 0,
+                        "Starter database needs drug products or nothing can be prescribed");
+
+                // The demo content strip-demo-fixtures.sh removes or renames. Each is silent if the
+                // filter stops matching upstream, because it warns rather than failing.
                 assertEquals(0, count(stmt,
                                 "SELECT COUNT(*) FROM location WHERE name REGEXP '^Site [0-9]+$'"),
                         "Starter database still contains 'Site N' placeholder locations");
+                assertEquals(0, count(stmt, "SELECT COUNT(*) FROM location"
+                                + " WHERE name = 'Ubuntu Hospital'"),
+                        "Starter database still names the demo hospital — the rename did not reach the dump");
+                assertEquals(0, count(stmt, "SELECT COUNT(*) FROM patient_identifier_type"
+                                + " WHERE name = 'SSN'"),
+                        "Starter database still defines the US-specific 'SSN' identifier type");
+                assertEquals(0, count(stmt, "SELECT COUNT(*) FROM form WHERE name IN"
+                                + " ('Test Form 1', 'Form Engine Cookbook', 'Form Engine Cookbook Library')"),
+                        "Starter database still contains developer forms");
+                assertEquals(0, count(stmt, "SELECT COUNT(*) FROM relationship_type"
+                                + " WHERE CONCAT(a_is_to_b, '/', b_is_to_a) IN"
+                                + " ('Uncle/Nephew', 'Aunt/Niece', 'Friend/Friend')"),
+                        "Starter database still contains the demo relationship types");
+                // The clinically useful ones must survive the same edit — a filter that over-matched
+                // would leave a hospital unable to record who brought the patient in.
+                assertTrue(count(stmt, "SELECT COUNT(*) FROM relationship_type"
+                                + " WHERE CONCAT(a_is_to_b, '/', b_is_to_a) = 'Clinician/Patient'") == 1,
+                        "Starter database lost the 'Clinician/Patient' relationship type");
+                assertEquals("0", stringValue(stmt, "SELECT property_value FROM global_property"
+                                + " WHERE property = 'referencedemodata.createDemoPatientsOnNextStartup'"),
+                        "createDemoPatientsOnNextStartup must ship as 0, or editing any config file can"
+                                + " generate 50 demo patients into a production database");
 
                 // A dump taken before the convergence restart (docs/releasing.md §2 step d) leaves the
                 // privilege-level roles short of the grants the demo database has.
@@ -132,10 +177,22 @@ class BundledDbDumpImportTest {
     }
 
     private int loginLocations(Statement stmt) throws SQLException {
+        return locationsTagged(stmt, "Login Location");
+    }
+
+    /** Counts un-retired locations carrying the named location tag. */
+    private int locationsTagged(Statement stmt, String tag) throws SQLException {
         return count(stmt, "SELECT COUNT(*) FROM location l"
                 + " JOIN location_tag_map m ON m.location_id = l.location_id"
                 + " JOIN location_tag t ON t.location_tag_id = m.location_tag_id"
-                + " WHERE t.name = 'Login Location' AND l.retired = 0");
+                + " WHERE t.name = '" + tag + "' AND l.retired = 0");
+    }
+
+    /** Reads a single string column, or null when the row is absent. */
+    private String stringValue(Statement stmt, String sql) throws SQLException {
+        try (ResultSet rs = stmt.executeQuery(sql)) {
+            return rs.next() ? rs.getString(1) : null;
+        }
     }
 
     private int count(Statement stmt, String sql) throws SQLException {
