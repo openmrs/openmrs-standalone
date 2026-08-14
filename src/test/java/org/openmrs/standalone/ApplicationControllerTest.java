@@ -35,11 +35,12 @@ class ApplicationControllerTest {
 	}
 
 	@Test
-	void canReusePrebuiltSearchIndex_doNotModifyDatabase_rebuildsEvenWithBakedIndex() {
-		// NO_CHANGES imports nothing, so this looks like the one case that could keep the baked
-		// index - but it is what the GUI's "Do Not Modify the Database" sets, which is what someone
-		// upgrading in place picks after copying their own database into a fresh unzip. That tree
-		// still carries the index baked against the demo data, so it must rebuild.
+	void canReusePrebuiltSearchIndex_noChanges_rebuildsEvenWithBakedIndex() {
+		// Defensive cover for a mode no caller can currently produce: MainFrame never wires up its
+		// "Do Not Modify the Database" button, and CommandLine offers only demo/empty/expert. If
+		// anything ever does reach here it must not reuse an index baked from a different database,
+		// so pin the answer now rather than discover it then. The in-place upgrade is NOT this case -
+		// it chooses no mode at all; see mustRebuildUnimportedDatabase below.
 		assertFalse(ApplicationController.canReusePrebuiltSearchIndex(
 				DatabaseMode.NO_CHANGES, true));
 	}

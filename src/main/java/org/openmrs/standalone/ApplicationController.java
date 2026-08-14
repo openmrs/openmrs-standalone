@@ -294,20 +294,26 @@ public class ApplicationController {
 					}
 
 					// Rebuild the Lucene search index whenever the user has just answered the
-					// database question - demo, empty, wizard, or "do not modify". The index lives on
-					// the filesystem, not in the imported SQL dump, so without this patient search
-					// returns nothing until the index is rebuilt by hand. Must run in command-line
-					// mode too - it was previously gated behind the GUI-only browser launch.
-					// NO_CHANGES imports nothing, but it is what someone upgrading in place picks to
-					// keep the database they copied in, and this tree still carries the index baked
-					// against the bundled demo data - so it needs the rebuild most.
+					// database question. The index lives on the filesystem, not in the imported SQL
+					// dump, so without this patient search returns nothing until the index is rebuilt
+					// by hand. Must run in command-line mode too - it was previously gated behind the
+					// GUI-only browser launch.
 					// When the build pipeline has baked a matching index into the distribution
 					// (marker present), the shipped index already covers the bundled demo data,
 					// so we skip the rebuild and search works immediately on first run.
-					// The else-branch catches the remaining case: no database question answered at
-					// all, which the in-place upgrade produces by deleting needsconfig.txt. Ordinary
-					// restarts still cost nothing, because whichever branch ran on the first boot
-					// consumed the marker and the on-disk index then describes the live database.
+					//
+					// In practice the modes that get here are demo, empty and wizard. NO_CHANGES is
+					// declared but unreachable: MainFrame builds a "Do Not Modify the Database" button
+					// and then leaves it out of the buttonList that attaches the listener and adds the
+					// buttons to the dialog, so the branch that would set it never runs, and
+					// CommandLine offers only demo/empty/expert.
+					//
+					// The else-branch below is therefore NOT a redundant second path for the in-place
+					// upgrade - it is the only one. That upgrade deletes needsconfig.txt, so no mode
+					// is ever chosen and applyDatabaseChange stays null, which is exactly the case
+					// this if cannot see. Ordinary restarts still cost nothing, because whichever
+					// branch ran on the first boot consumed the marker and the on-disk index then
+					// describes the live database.
 					if (applyDatabaseChange != null) {
 						if (canReusePrebuiltSearchIndex(applyDatabaseChange,
 								OpenmrsUtil.hasPrebuiltSearchIndex())) {

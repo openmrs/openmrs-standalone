@@ -301,7 +301,7 @@ check_demo_patients_off() { # $1 = label, $2 = dump path
 # Starter option and pass this whole gate. mysqldump omits the INSERT statement entirely for an empty
 # table, so the presence of that line is the population test. Nothing else covers it: the assertion
 # on patient counts lives in BundledDbDumpImportTest, which reads src/main/db/ directly rather than
-# the assembled zip, and the build workflow packages with -DskipTests.
+# the assembled zip.
 check_patient_rows() { # $1 = label, $2 = dump path, $3 = none|some
     local label="$1" sql="$2" want="$3" t populated=""
     for t in patient obs visit; do
