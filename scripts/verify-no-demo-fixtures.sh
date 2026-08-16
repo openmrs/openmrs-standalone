@@ -186,7 +186,12 @@ STALE=0
 VERIFIED=0
 while IFS= read -r cf; do
     [ -n "$cf" ] || continue
-    # Only what Initializer loads. The .gitkeep placeholders legitimately have no checksum.
+    # Only what Initializer loads, which is the extension list below. The two .gitkeep placeholders
+    # are skipped because nothing loads them - NOT because they have no checksum: generate-checksums.sh
+    # is a plain `find -type f` and does emit one for each, landing as `<domain>/<package>_.checksum`
+    # and `<package>/.checksum` (empty stem, since .gitkeep has no basename). Harmless, since
+    # Initializer looks a checksum up by its config file and so never reads those two, but do not read
+    # a missing entry here as evidence that none was written.
     case "$cf" in *.csv | *.xml | *.json | *.zip) ;; *) continue ;; esac
     rel=${cf#"$CFG"/}
     case "$rel" in */*/*) ;; *) continue ;; esac   # <domain>/<package>/<file>
