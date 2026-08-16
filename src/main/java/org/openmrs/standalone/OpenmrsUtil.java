@@ -298,12 +298,11 @@ public class OpenmrsUtil {
 
 	/**
 	 * Drops the marker, so {@link #hasPrebuiltSearchIndex()} stops claiming the on-disk index is the
-	 * baked demo one. Called exactly when that claim stops being true, whether or not we are the ones
-	 * who made it stop: after the baked index has been reused (OpenMRS updates it in place from the
-	 * first patient registered), after a rebuild the server accepted, and on the initialization
-	 * wizard, which replaces the database and leaves core to index the new one during its own
-	 * startup. Never after a rebuild the server refused, which overwrites nothing and leaves the
-	 * marker still true of what is on disk - see
+	 * baked demo one. Called exactly when that claim stops being true: after the baked index has been
+	 * reused (OpenMRS updates it in place from the first patient registered), and after a rebuild the
+	 * server accepted. Never after a rebuild the server refused, which overwrites nothing and leaves
+	 * the marker still true of what is on disk, and never on the initialization wizard, which
+	 * replaces the database but leaves the baked index sitting there untouched - see
 	 * {@link ApplicationController#updateSearchIndexAfterStartup(DatabaseMode, String)}.
 	 */
 	public static void clearPrebuiltSearchIndexMarker() {
@@ -325,11 +324,13 @@ public class OpenmrsUtil {
 	 * accepted.
 	 * <p>
 	 * The return value matters because the credentials below are the ones the bundled dumps ship. A
-	 * boot that imported one of those dumps can rely on them; the in-place upgrade in
-	 * docs/user-guide.md brings the operator's own {@code database/} instead, so it authenticates
-	 * against whatever password that installation set and can come back 401 with no rebuild
-	 * happening at all. Callers that consume the pre-built index marker must not do so on the
-	 * strength of having merely asked - see
+	 * boot that imported one of those dumps can rely on them; a database that came from anywhere else
+	 * authenticates against whatever password that installation set, so this can come back 401 with
+	 * no rebuild happening at all. Two installs reach that: the in-place upgrade in
+	 * docs/user-guide.md, which brings the operator's own {@code database/}, and the start after an
+	 * initialization-wizard install whose admin password was chosen in OpenMRS's advanced setup.
+	 * Callers that consume the pre-built index marker must not do so on the strength of having merely
+	 * asked - see
 	 * {@link ApplicationController#updateSearchIndexAfterStartup(DatabaseMode, String)}.
 	 * <p>
 	 * True means only that the server accepted the request: the rebuild itself runs asynchronously,

@@ -214,6 +214,41 @@ Both dumps carry the full dictionary and the same metadata — the *only* intend
 data. If the empty dump's concept, form, program or drug counts drop, the filter has over-reached and a
 clinician will find empty tabs.
 
+**Counts are not enough on their own: diff the previous dumps against the new ones.** A regeneration
+can move a value without moving a row, and every check on this page would still pass. It has already
+happened once. Against the dumps this replaced, two `concept_numeric` rows changed content with the
+row count identical:
+
+| concept | column | old dump | new dump | what the shipped config declares |
+|---|---|---|---|---|
+| CIEL 5242, Respiratory rate | `hi_absolute` | 99 | 999 | 999, in `concepts/…/findings-core_demo.csv` |
+| CIEL 785, Alkaline phosphatase | `low_absolute` | 0 | NULL | unset, in the `BasicLabTests` OCL package |
+
+The new values are the right ones: each matches the concept's own declared source. The old ones were
+each the matching *reference range* (`conceptreferencerange/…/vitalsreferenceranges.csv` gives 5242 an
+Absolute high of 99 in every band; `alpreferenceranges.csv` gives 785 an Absolute low of 0), so the
+earlier dumps were cut from a boot where reference-range bounds were landing on the concept itself.
+Initializer 2.12.0's `ConceptReferenceRangeLineProcessor` only ever writes a `ConceptReferenceRange`,
+and core reads `concept_numeric` to *derive* a default range rather than writing back to it, so the
+current behaviour is the correct one. `hi_absolute`/`low_absolute` are what `ObsValidator` enforces,
+so a silent move here changes what a clinician is allowed to record.
+
+Nothing automated catches this, and a hardcoded expectation would just be an upstream number copied
+with nothing tying the two together. Compare the tables instead, before committing:
+
+```bash
+for t in concept_numeric concept_reference_range; do
+  for d in demo empty; do
+    git show HEAD:src/main/db/$d-db-$VER.sql | awk "/INSERT INTO \`$t\`/,/;\$/" > /tmp/$d-$t.old
+    awk "/INSERT INTO \`$t\`/,/;\$/" src/main/db/$d-db-$VER.sql > /tmp/$d-$t.new
+    diff /tmp/$d-$t.old /tmp/$d-$t.new && echo "$d/$t unchanged"
+  done
+done
+```
+
+Anything it prints is a clinical range that moved: account for it (upstream changed, or the load did)
+before pushing, rather than discovering it in a hospital.
+
 Also verify the filter's edits reached the DATABASES, not just the config — both dumps are cut from a
 boot of that config, so a stale dump is how this regresses:
 
@@ -228,7 +263,7 @@ boot of that config, so a stale dump is how this regresses:
   until someone creates a user and finds they cannot reach reporting, billing or appointments. Both
   `scripts/generate-{empty-db,demo-data}-locally.sh` now restart before dumping for this reason.
 
-Both of those are also enforced automatically, by `scripts/verify-no-demo-fixtures.sh` — run from
+All four of those are also enforced automatically, by `scripts/verify-no-demo-fixtures.sh` — run from
 **both** publish paths (`build-o3-standalone.yml` on a branch push, `release.yml` on a tag) against
 the *assembled artifact*: shipped config plus both bundled DB zips. It also rejects a **truncated**
 dump (missing mysqldump's completion trailer, or implausibly small), which is the one failure the

@@ -1,15 +1,19 @@
 package org.openmrs.standalone;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
+import java.lang.reflect.Field;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.junit.jupiter.api.Test;
 import org.mockito.MockedStatic;
 import org.mockito.Mockito;
+import org.objenesis.ObjenesisStd;
 
 /**
  * Unit tests for the headless UI-mode decision in {@link ApplicationController}, and for the
@@ -37,8 +41,9 @@ class ApplicationControllerTest {
 	@Test
 	void canReusePrebuiltSearchIndex_wizardImport_cannotReuseTheBakedIndex() {
 		// "Cannot reuse" is all this predicate says. The wizard is the one mode that does not go on
-		// to rebuild either - it replaces the database and core indexes the new one - so what happens
-		// instead is updateSearchIndexAfterStartup's business, tested below.
+		// to rebuild either, because nothing can answer the request while OpenMRS is serving its own
+		// setup pages, so what happens instead is updateSearchIndexAfterStartup's business, tested
+		// below.
 		assertFalse(ApplicationController.canReusePrebuiltSearchIndex(
 				DatabaseMode.USE_INITIALIZATION_WIZARD, true));
 	}
@@ -140,13 +145,16 @@ class ApplicationControllerTest {
 	}
 
 	@Test
-	void updateSearchIndexAfterStartup_wizardMode_dropsTheMarkerWithoutAsking() {
+	void updateSearchIndexAfterStartup_wizardMode_asksNothingAndKeepsTheMarker() {
 		// The wizard deletes the database, so OpenMRS is still serving its own setup pages while this
-		// runs and no rebuild request can be answered; when that setup finishes, core indexes the new
-		// database itself. Asking was therefore never going to work, and the marker has to go anyway
-		// because the index it describes is about to be replaced by one we never triggered. Keeping
-		// it left every later start acting on that stale claim - a second full re-index where the
-		// wizard kept the default password, and a permanent warning about demo data where it did not.
+		// runs and no rebuild request can be answered - asking only prints a failure on a boot where
+		// nothing is wrong. The marker must survive, though. Core does NOT index the replacement
+		// database for us: openmrs-api 2.8.8's newest core-data snapshot is
+		// liquibase-core-data-2.7.x.xml, which seeds search.indexVersion with '8', and that equals
+		// OpenmrsConstants.SEARCH_INDEX_VERSION, so setupSearchIndex() skips updateSearchIndex() for
+		// exactly the reason the bundled dumps have to ask. Spending it here left the baked demo
+		// index in place with nothing able to correct it, since a later boot imports nothing and
+		// would see no marker to act on.
 		try (MockedStatic<OpenmrsUtil> util = Mockito.mockStatic(OpenmrsUtil.class)) {
 			util.when(OpenmrsUtil::hasPrebuiltSearchIndex).thenReturn(true);
 
@@ -154,7 +162,32 @@ class ApplicationControllerTest {
 					DatabaseMode.USE_INITIALIZATION_WIZARD, SERVER_URL);
 
 			util.verify(() -> OpenmrsUtil.rebuildEntireSearchIndex(Mockito.anyString()), Mockito.never());
-			util.verify(OpenmrsUtil::clearPrebuiltSearchIndexMarker);
+			util.verify(OpenmrsUtil::clearPrebuiltSearchIndexMarker, Mockito.never());
+		}
+	}
+
+	@Test
+	void updateSearchIndexAfterStartup_wizardInstallThenItsNextStart_rebuildsAgainstWhatTheWizardCreated() {
+		// The whole point of keeping the marker above, as the sequence a wizard install actually
+		// runs: the boot that chose the wizard asks for nothing, and the next start - which imports
+		// nothing, so null - finds the marker still there and rebuilds against the database OpenMRS
+		// created in between. Spend the marker in the first call and this second one goes quiet,
+		// leaving that install searching its own data through the baked demo index for good.
+		try (MockedStatic<OpenmrsUtil> util = Mockito.mockStatic(OpenmrsUtil.class)) {
+			AtomicBoolean markerOnDisk = new AtomicBoolean(true);
+			util.when(OpenmrsUtil::hasPrebuiltSearchIndex).thenAnswer(call -> markerOnDisk.get());
+			util.when(OpenmrsUtil::clearPrebuiltSearchIndexMarker).thenAnswer(call -> {
+				markerOnDisk.set(false);
+				return null;
+			});
+			util.when(() -> OpenmrsUtil.rebuildEntireSearchIndex(SERVER_URL)).thenReturn(true);
+
+			ApplicationController.updateSearchIndexAfterStartup(
+					DatabaseMode.USE_INITIALIZATION_WIZARD, SERVER_URL);
+			ApplicationController.updateSearchIndexAfterStartup(null, SERVER_URL);
+
+			util.verify(() -> OpenmrsUtil.rebuildEntireSearchIndex(SERVER_URL));
+			assertFalse(markerOnDisk.get(), "the rebuild was accepted, so that start spent the marker");
 		}
 	}
 
@@ -215,11 +248,12 @@ class ApplicationControllerTest {
 	@Test
 	void updateSearchIndexAfterStartup_demoInstallThenAStartThatImportedNothing_staysQuiet() {
 		// The whole first-boot-then-restart sequence, with the marker behaving like the file it is.
-		// This is the contract ApplicationController.finished() has to hold up by clearing
-		// applyDatabaseChange: it used to leave the field set, so the second start in a process said
-		// DEMO_DATABASE again, and with the marker spent by the first start that is no longer a reuse
-		// but a full mass re-index of a database the index already matched. Swap the null below for
-		// DEMO_DATABASE and rebuildEntireSearchIndex is called, which is exactly what users saw.
+		// This is what settleSearchIndexForStart buys by clearing applyDatabaseChange: the field used
+		// to stay set, so the second start in a process said DEMO_DATABASE again, and with the marker
+		// spent by the first start that is no longer a reuse but a full mass re-index of a database
+		// the index already matched. Swap the null below for DEMO_DATABASE and rebuildEntireSearchIndex
+		// is called, which is exactly what users saw. That the null actually arrives is
+		// settleSearchIndexForStart_afterSettlingTheIndex_consumesTheMode's job, below.
 		try (MockedStatic<OpenmrsUtil> util = Mockito.mockStatic(OpenmrsUtil.class)) {
 			AtomicBoolean markerOnDisk = new AtomicBoolean(true);
 			util.when(OpenmrsUtil::hasPrebuiltSearchIndex).thenAnswer(call -> markerOnDisk.get());
@@ -234,6 +268,84 @@ class ApplicationControllerTest {
 			util.verify(() -> OpenmrsUtil.rebuildEntireSearchIndex(Mockito.anyString()), Mockito.never());
 			assertFalse(markerOnDisk.get(), "the first start reused the baked index, so it spent the marker");
 		}
+	}
+
+	// settleSearchIndexForStart: the instance-side half, which reads the configured mode and then
+	// spends it. Objenesis allocates the controller past its constructor, which would otherwise boot
+	// Tomcat and MariaDB; CommandLineTest reaches this same field the same way.
+
+	private static ApplicationController controllerWithoutItsConstructor(DatabaseMode mode) throws Exception {
+		ApplicationController controller = new ObjenesisStd().newInstance(ApplicationController.class);
+		Field field = ApplicationController.class.getDeclaredField("applyDatabaseChange");
+		field.setAccessible(true);
+		field.set(controller, mode);
+		return controller;
+	}
+
+	private static Object applyDatabaseChangeOf(ApplicationController controller) throws Exception {
+		Field field = ApplicationController.class.getDeclaredField("applyDatabaseChange");
+		field.setAccessible(true);
+		return field.get(controller);
+	}
+
+	@Test
+	void settleSearchIndexForStart_afterSettlingTheIndex_consumesTheMode() throws Exception {
+		// Without this the mode outlives the start that answered it, and the Stop/Start above is read
+		// as a fresh import: measured against a stub endpoint, a Demo install went from 0 rebuild
+		// requests to 1 across one Stop/Start, and Starter from 1 to 2.
+		ApplicationController controller = controllerWithoutItsConstructor(DatabaseMode.DEMO_DATABASE);
+		try (MockedStatic<OpenmrsUtil> util = Mockito.mockStatic(OpenmrsUtil.class)) {
+			util.when(OpenmrsUtil::hasPrebuiltSearchIndex).thenReturn(true);
+
+			controller.settleSearchIndexForStart(SERVER_URL);
+
+			util.verify(OpenmrsUtil::clearPrebuiltSearchIndexMarker);
+		}
+		assertNull(applyDatabaseChangeOf(controller),
+			"the start that settled the index must consume the mode it was configured with");
+	}
+
+	@Test
+	void settleSearchIndexForStart_readsTheModeBeforeClearingIt() throws Exception {
+		// Order matters as much as the clearing does: read first, then spend. Clearing ahead of the
+		// index decision would make every start look like an ordinary restart, so the Starter import
+		// would keep the demo index - the bug this whole slice exists to fix.
+		ApplicationController controller = controllerWithoutItsConstructor(DatabaseMode.EMPTY_DATABASE);
+		try (MockedStatic<OpenmrsUtil> util = Mockito.mockStatic(OpenmrsUtil.class)) {
+			util.when(OpenmrsUtil::hasPrebuiltSearchIndex).thenReturn(true);
+			util.when(() -> OpenmrsUtil.rebuildEntireSearchIndex(SERVER_URL)).thenReturn(true);
+
+			controller.settleSearchIndexForStart(SERVER_URL);
+
+			util.verify(() -> OpenmrsUtil.rebuildEntireSearchIndex(SERVER_URL));
+		}
+		assertNull(applyDatabaseChangeOf(controller), "and it is still spent afterwards");
+	}
+
+	@Test
+	void settleSearchIndexForStart_startThatImportedNothing_staysNull() throws Exception {
+		// The ordinary restart, which must not somehow acquire a mode on its way through.
+		ApplicationController controller = controllerWithoutItsConstructor(null);
+		try (MockedStatic<OpenmrsUtil> util = Mockito.mockStatic(OpenmrsUtil.class)) {
+			util.when(OpenmrsUtil::hasPrebuiltSearchIndex).thenReturn(false);
+
+			controller.settleSearchIndexForStart(SERVER_URL);
+
+			util.verify(() -> OpenmrsUtil.rebuildEntireSearchIndex(Mockito.anyString()), Mockito.never());
+		}
+		assertNull(applyDatabaseChangeOf(controller));
+	}
+
+	@Test
+	void setApplyDatabaseChange_beforeTheStart_isWhatSettleReads() throws Exception {
+		// The other half of the one-shot contract: what CommandLine and MainFrame write is what the
+		// next start settles against. Pinned so that the field is not renamed or bypassed without the
+		// reflection above failing loudly.
+		ApplicationController controller = controllerWithoutItsConstructor(null);
+
+		controller.setApplyDatabaseChange(DatabaseMode.USE_INITIALIZATION_WIZARD);
+
+		assertEquals(DatabaseMode.USE_INITIALIZATION_WIZARD, applyDatabaseChangeOf(controller));
 	}
 
 	@Test

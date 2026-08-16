@@ -252,15 +252,23 @@ public class ApplicationController {
 	 * <p>
 	 * One rule decides the marker on every path through here. It claims "{@code appdata/lucene} is
 	 * still the index the build pipeline baked against the bundled demo database", so it is dropped
-	 * exactly when that stops being true, whoever made it stop: after the baked index is reused,
-	 * after a rebuild the server <em>accepted</em>, and on the wizard mode, whose replacement
-	 * database OpenMRS indexes for itself.
+	 * exactly when that stops being true: after the baked index is reused, and after a rebuild the
+	 * server <em>accepted</em>. Nothing else on any path replaces that index, so nothing else spends
+	 * the marker.
+	 * <p>
+	 * The wizard mode is the one that looks like it should and does not. It asks for no rebuild,
+	 * because it has just deleted the database and OpenMRS is serving its own setup pages, but the
+	 * database that setup creates arrives with {@code search.indexVersion} already matching core's
+	 * {@code OpenmrsConstants.SEARCH_INDEX_VERSION}, so core's own {@code setupSearchIndex()} skips
+	 * its rebuild too and the baked demo index is still there afterwards. Keeping the marker is what
+	 * lets the next start put it right.
 	 * <p>
 	 * A rebuild the server refused overwrites nothing, so the marker still describes what is on disk
 	 * and the next boot is free to try again. That case is not hypothetical -
 	 * {@link OpenmrsUtil#rebuildEntireSearchIndex(String)} signs in with the credentials the bundled
-	 * dumps ship, so the in-place upgrade in docs/user-guide.md, which brings the operator's own
-	 * {@code database/} and its own admin password, can answer 401 indefinitely. Since nothing here
+	 * dumps ship, so any database that did not come from one of them can answer 401 indefinitely: the
+	 * in-place upgrade in docs/user-guide.md, which brings the operator's own {@code database/}, or a
+	 * wizard install whose admin password they chose in OpenMRS's advanced setup. Since nothing here
 	 * can tell a rebuild done by hand from one never done at all, the retry repeats until a start
 	 * succeeds, and the message it prints says which file to delete to stop it.
 	 * <p>
@@ -271,8 +279,9 @@ public class ApplicationController {
 	 * for the in-place upgrade - it is the only one, because that upgrade deletes
 	 * {@code needsconfig.txt} and so is never asked the database question at all.
 	 * <p>
-	 * The mode describes the start that is finishing, not the process: {@code applyDatabaseChange} is
-	 * cleared once this has read it, so a later Stop/Start imports nothing and is told so.
+	 * The mode describes the start that is finishing, not the process: the only caller outside the
+	 * tests, {@link #settleSearchIndexForStart(String)}, clears {@code applyDatabaseChange} once this
+	 * has read it, so a later Stop/Start imports nothing and is told so.
 	 *
 	 * @param mode the database this start imported, or null when it imported nothing
 	 * @param resourceUrl the running web application's base URL
@@ -287,21 +296,25 @@ public class ApplicationController {
 		}
 
 		if (mode == DatabaseMode.USE_INITIALIZATION_WIZARD) {
-			// Nothing to ask for, and nothing left for the marker to describe. This mode deleted
-			// database/ (see init()), so OpenMRS is sitting on its own setup wizard while this runs
-			// and the REST call cannot be answered by anything. When that wizard finishes, core
-			// indexes the new database itself: Context.startup calls setupSearchIndex(), which finds
-			// the search.indexVersion global property blank on a database it has just created and
-			// runs a full rebuild into appdata/lucene. The bundled dumps ship that property already
-			// set, which is why demo and empty do NOT get that for free and have to ask below.
+			// Nothing worth asking for yet: this mode deleted database/ (see init()), so OpenMRS is
+			// sitting on its own setup wizard while this runs and no rebuild request can be answered
+			// by anything. Firing one only prints a failure on a boot where nothing is wrong.
 			//
-			// The marker outlives core's rebuild - it sits beside indexes/, not in it - so drop it
-			// here, or every later start acts on a claim about an index that is already gone and
-			// either burns a second full re-index or warns about demo data that is not there.
+			// The marker stays, though, because core will NOT index the replacement database for us.
+			// openmrs-api 2.8.8 ships no 2.8.x core-data snapshot, so the wizard's createTables step
+			// runs liquibase-core-data-2.7.x.xml, which seeds search.indexVersion with '8' rather
+			// than leaving it blank; that is exactly OpenmrsConstants.SEARCH_INDEX_VERSION, so
+			// Context.startup's setupSearchIndex() finds them equal and skips updateSearchIndex().
+			// (Context.checkCoreDataset() cannot rescue it either: it fills a core global property in
+			// only when absent, never overwriting one that is there.) It is the same reason the
+			// bundled dumps, which also ship '8', have to ask below.
+			//
+			// So the baked demo index survives this whole mode untouched, and keeping the marker is
+			// what lets the NEXT start correct it through mustRebuildUnimportedDatabase below, once
+			// there is a database and a server that can answer.
 			if (hasPrebuiltIndex) {
-				System.out.println("The initialization wizard replaces the database, so OpenMRS builds its own"
-				        + " search index; dropping the pre-built one rather than rebuilding it here.");
-				OpenmrsUtil.clearPrebuiltSearchIndexMarker();
+				System.out.println("The initialization wizard is replacing the database, so there is nothing to"
+				        + " rebuild against yet; the next start indexes whatever it creates.");
 			}
 			return;
 		}
@@ -332,6 +345,32 @@ public class ApplicationController {
 			        + OpenmrsUtil.PREBUILT_SEARCH_INDEX_MARKER.getPath()
 			        + " afterwards or this message returns on every start.");
 		}
+	}
+
+	/**
+	 * Settles {@code appdata/lucene} for the start that has just come up, and then consumes the
+	 * database mode that start was configured with.
+	 * <p>
+	 * The two halves belong together, which is why they are one method rather than two lines inside
+	 * {@code start()}'s {@code SwingWorker}. Left set, the field made the second start in a process
+	 * claim an import that never happened, and with the marker already spent by the first start that
+	 * is not a reuse but a full mass re-index of a database the index already matched - search
+	 * answering nothing for minutes while Hibernate Search purges and repopulates. See
+	 * {@link #setApplyDatabaseChange(DatabaseMode)} for the one-shot contract.
+	 * <p>
+	 * Called from {@code finished()} rather than from {@code start()}: a start that never got this
+	 * far, because Tomcat did not come up, has not settled the index yet, and its retry must still
+	 * see the mode it was configured with. {@code finished()} always runs on the event dispatch
+	 * thread, so the next start reads what this one wrote.
+	 * <p>
+	 * Package-private and separated out so a test can hold it to that contract without booting
+	 * Tomcat and MariaDB, which is what the constructor does.
+	 *
+	 * @param resourceUrl the running web application's base URL
+	 */
+	void settleSearchIndexForStart(String resourceUrl) {
+		updateSearchIndexAfterStartup(applyDatabaseChange, resourceUrl);
+		applyDatabaseChange = null;
 	}
 
 	/**
@@ -383,18 +422,7 @@ public class ApplicationController {
 						StandaloneUtil.launchBrowser(userInterface.getTomcatPort(), contextName);
 					}
 
-					updateSearchIndexAfterStartup(applyDatabaseChange, resourceUrl);
-
-					// Consumed - see setApplyDatabaseChange for the one-shot contract. Left set, the
-					// second start in a process claimed an import that never happened, and with the
-					// marker already spent that is a full mass re-index of a database the index
-					// matched, search answering nothing while it ran.
-					//
-					// Here rather than in start(): a start that never reached this line, because
-					// Tomcat did not come up, has not settled the index yet, and its retry must
-					// still see the mode it was configured with. finished() always runs on the
-					// event dispatch thread, so the next start reads what this one wrote.
-					applyDatabaseChange = null;
+					settleSearchIndexForStart(resourceUrl);
 
 					//if in non interactive mode, block such that tomcat does not exit
 					if (nonInteractive) {
@@ -744,12 +772,16 @@ public class ApplicationController {
 	/**
 	 * Indicates that the user has requested a database change.
 	 * <p>
-	 * The request is one-shot: {@link #init} imports it, and the start that follows clears it once it
-	 * has settled the search index, so a second start in the same process (the GUI's Start button,
-	 * the command line's {@code start}) correctly reports that it imported nothing. Setting it again
-	 * afterwards - which CommandLine's {@code demo}/{@code empty}/{@code expert} commands still allow
-	 * at the running prompt - therefore does not schedule an import; only the initial-config loop in
-	 * {@code init} acts on it.
+	 * The request is one-shot: {@link #init} imports it, and
+	 * {@link #settleSearchIndexForStart(String)} clears it on the start that follows, so a second
+	 * start in the same process (the GUI's Start button, the command line's {@code start}) correctly
+	 * reports that it imported nothing.
+	 * <p>
+	 * Only the initial-config loop in {@code init} ever acts on it as an import request, so setting
+	 * it again afterwards - which CommandLine's {@code demo}/{@code empty}/{@code expert} commands
+	 * still allow at the running prompt, undocumented there - imports nothing. It is not inert,
+	 * though: the next start still reads it when it settles the index, so a mode typed at the running
+	 * prompt can buy a rebuild that boot did not need.
 	 *
 	 * @param modeToApply the database to import on the next start
 	 */
