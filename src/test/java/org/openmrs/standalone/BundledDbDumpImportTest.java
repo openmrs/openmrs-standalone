@@ -171,19 +171,25 @@ class BundledDbDumpImportTest {
      * between the two is invisible to every assertion in {@link #assertSharedContract(Statement,
      * String)} — each one passes on each side independently.
      * <p>
-     * Not hypothetical. The two dumps are cut from separate boots of the same pinned config, and the
-     * boots do not always agree about which source wins for a concept that has both its own declared
-     * bounds and a {@code conceptreferencerange} CSV: on 2026-08-13 the starter boot ended with
-     * respiratory rate's declared {@code hi_absolute} of 999 and the demo boot, 90 minutes later,
-     * with the 99 its reference-range bands carry. That pair sat in this branch until review caught
-     * it by hand. {@code hi_absolute}/{@code low_absolute} are what core validates an obs against
-     * when no reference-range criterion matches the patient, so the two options would have accepted
-     * different observations.
+     * Not hypothetical. The two dumps are cut by separate scripts, and only one of them used to apply
+     * the {@code ConceptNumeric} clamp that docs/releasing.md §2 step (c) requires: the starter dump
+     * shipped respiratory rate's declared {@code hi_absolute} of 999 where the demo dump shipped the
+     * 99 its reference-range bands carry. That reproduced on every run rather than drifting, and it
+     * sat in this branch until it was caught by hand. {@code hi_absolute}/{@code low_absolute} are
+     * what core validates an obs against when no reference-range criterion matches the patient, so
+     * the two options would have accepted different observations.
      * <p>
-     * Compares by content rather than against a hardcoded number: the right value is whatever the
-     * content package declares, and copying it here would just be an upstream constant with nothing
-     * tying the two together. docs/releasing.md §2 says how to decide which side is right when this
-     * fails, and it is not automatically the freshly-cut one.
+     * Compares the dumps to each other rather than to a hardcoded number, which is deliberate but
+     * bounded: it catches the clamp reaching one boot and not the other, and it CANNOT catch the
+     * clamp being skipped on both. Only step (c)'s divergence query settles that, and §2 says so.
+     * When this fails, that query decides which side is right — it is not automatically the fresher
+     * dump, and the unclamped side is the one that looks like the content package.
+     * <p>
+     * {@code scripts/verify-no-demo-fixtures.sh} makes the same comparison and the pair is not
+     * redundant, so do not delete either as a duplicate of the other. That script runs only from the
+     * publish workflows (a push to the release branch, or a release tag); this one also runs on a
+     * pull request. The script's copy earns its keep by reading the bundled zips instead of
+     * {@code src/main/db/}, so it also catches an assembly that shipped a stale dump.
      */
     @Test
     public void bothDumpsShouldAgreeOnClinicalBounds() throws Exception {
@@ -195,10 +201,21 @@ class BundledDbDumpImportTest {
         List<String> starter = tableRows(findBundledDump("empty-db-"), table);
         List<String> demo = tableRows(findBundledDump("demo-db-"), table);
 
-        // Non-vacuity first. A dump-format change that stopped this matching would otherwise report
-        // two empty lists as agreement, which is the one outcome a check like this must not have.
-        assertTrue(starter.size() >= 50,
+        // Non-vacuity first, and on BOTH sides. Two empty lists compare equal and would report
+        // agreement, which is the one outcome a check like this must not have. One empty side is the
+        // subtler half: it is not equal to the other, so without its own floor it comes back as a
+        // value disagreement listing every row of the readable dump, and sends whoever reads that to
+        // re-cut a database whose actual problem is that mysqldump changed how it writes an INSERT.
+        //
+        // A did-we-read-anything floor, deliberately well below the smallest table this runs on
+        // (concept_reference_range, 74 rows): pinning it near the real count would turn a legitimate
+        // upstream trim into a failure that blames the harness. Over-collection needs no floor — a
+        // block-end bug runs on into the patient tables, where the two dumps disagree loudly.
+        assertTrue(starter.size() >= 10,
                 "only " + starter.size() + " `" + table + "` rows found in the Starter dump — this"
+                        + " check is not reading the table it thinks it is");
+        assertTrue(demo.size() >= 10,
+                "only " + demo.size() + " `" + table + "` rows found in the Demo dump — this"
                         + " check is not reading the table it thinks it is");
 
         List<String> onlyInStarter = new ArrayList<>(starter);
@@ -223,6 +240,9 @@ class BundledDbDumpImportTest {
      * ISO-8859-1 rather than UTF-8 because both dumps carry invalid UTF-8 in openconceptlab's hash
      * column, which a UTF-8 reader throws on. Every byte maps in this charset, and these rows are
      * compared against each other rather than interpreted, so a byte-faithful read is exactly right.
+     * <p>
+     * mysqldump splits a large table across several INSERT statements, so the block closes on the
+     * {@code ;} and the next statement's header re-opens it.
      */
     private List<String> tableRows(File dump, String table) throws IOException {
         String header = "INSERT INTO `" + table + "` VALUES";

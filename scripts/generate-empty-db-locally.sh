@@ -206,6 +206,37 @@ fi
 
 wait_until_stable "role_privilege" "(SELECT COUNT(*) FROM role_privilege)" 1
 
+# ── Step 5b: Clamp ConceptNumeric bounds, exactly as the demo script does ───
+# The same UPDATE runs in generate-demo-data-locally.sh, where it is load-bearing:
+# referencedemodata clamps a generated obs to the concept's ConceptNumeric bounds while core >= 2.8
+# validates it against the concept's ConceptReferenceRange bounds, so a wider ConceptNumeric lets it
+# generate a value core then rejects, aborting the run part-way.
+#
+# Nothing generates obs here, so this script does not need it to survive - it needs it so that the
+# two dumps AGREE. Without it the starter dump ships the unclamped bounds (on refapp 3.7.1: 5242
+# hi_absolute 999 and 785 low_absolute unset) while the demo dump ships the clamped ones (99 and 0),
+# deterministically, every time both scripts are run. That shipped once: the two databases disagreed
+# about what a clinician may record, and every count on both sides still added up.
+#
+# docs/releasing.md §2 step (c) is the same statement in the Docker runbook, which cuts both dumps
+# from one boot and so only needs it once. These two scripts boot separately, so it belongs in both.
+# BundledDbDumpImportTest.bothDumpsShouldAgreeOnClinicalBounds is what fails if this is removed.
+echo "🔧 Clamping ConceptNumeric bounds into their reference-range intersection..."
+docker exec "$DB_CONTAINER" mysql -uroot -p"$DB_ROOT_PASSWORD" openmrs -e "
+UPDATE concept_numeric cn
+  JOIN (SELECT concept_id, MAX(low_absolute) AS rr_low, MIN(hi_absolute) AS rr_hi
+          FROM concept_reference_range GROUP BY concept_id) rr
+    ON rr.concept_id = cn.concept_id
+   SET cn.low_absolute = CASE WHEN rr.rr_low IS NOT NULL
+                              THEN GREATEST(COALESCE(cn.low_absolute, rr.rr_low), rr.rr_low)
+                              ELSE cn.low_absolute END,
+       cn.hi_absolute  = CASE WHEN rr.rr_hi IS NOT NULL
+                              THEN LEAST(COALESCE(cn.hi_absolute, rr.rr_hi), rr.rr_hi)
+                              ELSE cn.hi_absolute END
+ WHERE (rr.rr_low IS NOT NULL AND (cn.low_absolute IS NULL OR cn.low_absolute < rr.rr_low))
+    OR (rr.rr_hi  IS NOT NULL AND (cn.hi_absolute  IS NULL OR cn.hi_absolute  > rr.rr_hi));" \
+  || { echo "❌ Could not clamp ConceptNumeric bounds."; exit 1; }
+
 # ── Step 6: Determine version ──────────────────────────────────────────────
 cd "$PROJECT_ROOT"
 REFAPP_VERSION=$(mvn help:evaluate -Dexpression=refapp.version -q -DforceStdout -B 2>/dev/null || echo "unknown")

@@ -214,39 +214,41 @@ Both dumps carry the full dictionary and the same metadata — the *only* intend
 data. If the empty dump's concept, form, program or drug counts drop, the filter has over-reached and a
 clinician will find empty tabs.
 
-**Counts are not enough on their own: the two boots can disagree about a clinical bound.** A
-regeneration can move a value without moving a row, and every count on this page still adds up. Worse,
-the two dumps are cut from *separate* boots of the same pinned config, so the move can land on one of
-them and not the other — and then each dump looks perfectly healthy on its own.
+**Counts are not enough on their own: check that step (c)'s clamp reached BOTH dumps.** A
+regeneration can move a value without moving a row, and every count on this page still adds up. The
+clamp is the value most likely to move, and the two local scripts boot separately, so it can land in
+one dump and not the other — after which each dump looks perfectly healthy on its own.
 
-That is what happened here. Two `concept_numeric` rows are contested, because each concept declares
-its own bounds *and* has a `conceptreferencerange` CSV that declares different ones:
+That shipped once, on this branch. The starter dump was cut without the clamp and the demo dump with
+it, so the two databases disagreed about what a clinician may record:
 
-| concept | column | declared on the concept | declared in its reference ranges |
+| concept | column | unclamped | clamped by step (c) — **ship this** |
 |---|---|---|---|
-| CIEL 5242, Respiratory rate | `hi_absolute` | **999**, in `concepts/…/findings-core_demo.csv` | 99, in `conceptreferencerange/…/vitalsreferenceranges.csv` (all 14 age bands) |
-| CIEL 785, Alkaline phosphatase | `low_absolute` | **unset**, in the `BasicLabTests` OCL package | 0, in `alpreferenceranges.csv` (all bands) |
+| CIEL 5242, Respiratory rate | `hi_absolute` | 999 | **99** |
+| CIEL 785, Alkaline phosphatase | `low_absolute` | unset | **0** |
 
-**The concept's own declaration is the right answer**, and the reference-range value landing on the
-concept is the bug. Which one a boot ends on is not stable: on 2026-08-13 the starter boot finished at
-10:55 with 999/unset and the demo boot at 12:26 with 99/0, from the same `content.referenceapplication-demo=1.9.2`.
-The demo dump was corrected in place to match rather than re-cut, because a re-cut is a coin toss on
-exactly this value and would churn 17 MB of regenerated uuids to settle two numbers.
+**The clamped value is the right one, and it is worth knowing why the other one is tempting.** 999 is
+exactly what `concepts/…/findings-core_demo.csv` declares for 5242, and the `BasicLabTests` OCL
+package really does give 785 no `low_absolute` — so the unclamped dump looks like the one that
+faithfully reflects the content package, and the clamp looks like corruption. It is the other way
+round: step (c) exists to *override* the declared bound, because `DemoObsGenerator` clamps a generated
+obs to `ConceptNumeric` while core ≥2.8 validates it against `ConceptReferenceRange`, so leaving
+`ConceptNumeric` wider lets the module produce a value core rejects — which aborts demo generation
+part-way (the warning at the top of this section). Read the two together before touching either.
 
-Why it matters: `hi_absolute`/`low_absolute` are what core validates an obs against when no
-reference-range criterion matches the patient (`ConceptServiceImpl.getConceptReferenceRange` falls
-back to `getDefaultReferenceRange(conceptNumeric)`, and `ObsValidator.validateAbsoluteRanges` rejects
-`valueNumeric` outside it). The 5242 bands key off patient age, so the fallback is what a patient with
-no usable birthdate is validated against — and the two options would have applied different limits.
+This was not boot nondeterminism. `scripts/generate-demo-data-locally.sh` applied the clamp and
+`scripts/generate-empty-db-locally.sh` did not, so the split reproduced on every run. That script now
+applies it too, which is the actual fix; the two dumps were brought back into line by editing the two
+rows rather than re-cutting 17 MB to change two numbers.
 
-`BundledDbDumpImportTest.bothDumpsShouldAgreeOnClinicalBounds` and `verify-no-demo-fixtures.sh` now
-both refuse a pair of dumps that disagree on `concept_numeric` or `concept_reference_range`. Neither
-pins a number: the right value is whatever the content package declares, and copying it into a test
-would be an upstream constant with nothing tying the two together. **When that check fails, do not
-assume the freshly-cut dump is right** — open the concept's own CSV or OCL package and match against
-that.
+`BundledDbDumpImportTest.bothDumpsShouldAgreeOnClinicalBounds` and `verify-no-demo-fixtures.sh` refuse
+a pair of dumps that disagree on `concept_numeric` or `concept_reference_range`. They compare the two
+dumps to each other rather than to a number, so they catch the clamp reaching one boot and not the
+other — **they cannot catch it being skipped on both**. The check that settles it absolutely is the
+divergence query in step (c): re-run it against each dump and it must return no rows. If the
+agreement check fails, that query says which side is right; do not assume it is the fresher dump.
 
-Counts still will not tell you a bound moved in *both* dumps at once, so diff against the previous
+Counts will not tell you a bound moved in *both* dumps at once either, so diff against the previous
 ones too, before committing:
 
 ```bash
@@ -291,17 +293,20 @@ unzip -q target/referenceapplication-standalone-$VER.zip -d /tmp/check
 scripts/verify-no-demo-fixtures.sh "/tmp/check/referenceapplication-standalone-$VER"
 ```
 
-Faster still, and it does not need a packaged zip: `BundledDbDumpImportTest` imports the starter dump
-into a real embedded MariaDB through the standalone's own import path and asserts the same contract
-(no patients, no `Site N`, dictionary present, a Login Location, converged grants) in ~25 s —
+Faster still, and it does not need a packaged zip: `BundledDbDumpImportTest` imports **each** dump
+into a real embedded MariaDB through the standalone's own import path and asserts the shared contract
+(no `Site N`, dictionary present, a Login Location, converged grants, the strip's edits) on both,
+plus what is specific to each — no patients in the starter, 50 with encounters in the demo. A third
+test reads the two dumps as files and holds them to the same clinical bounds. About a minute —
 
 ```bash
 mvn -o -N compiler:compile compiler:testCompile surefire:test -Dtest=BundledDbDumpImportTest
 ```
 
-That test exists because the starter dump is otherwise never executed anywhere: CI boots only the
-*demo* dump (for the Lucene bake), and `OpenmrsUtil.importSqlFile` prints a failed import rather than
-throwing, so a malformed starter dump would first surface as a user picking "Starter Implementation".
+That test exists because the dumps are otherwise barely executed: `OpenmrsUtil.importSqlFile` prints
+a failed import rather than throwing, so a malformed dump would first surface as a user picking that
+option. CI does boot the *demo* dump for the Lucene bake, but only on a push to the release branch —
+never on a pull request — and the starter dump is booted nowhere else at all.
 
 (3.7.1 actuals: demo = 4254 concept / 11 location / 7 form / 50 patient / 5821 obs / 278 visit /
 1415 enc / 668 role_privilege / 11 stockmgmt_party; empty is identical minus the patient data.

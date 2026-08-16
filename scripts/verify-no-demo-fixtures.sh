@@ -20,6 +20,9 @@ set -uo pipefail
 #   * an empty dump taken before the convergence restart in docs/releasing.md §2 step (d) looks
 #     perfectly healthy while shipping privilege-level roles ~180 grants short — nobody notices
 #     until someone creates a user in a starter implementation.
+#   * a clinical bound that reached one dump's boot and not the other's — step (c)'s ConceptNumeric
+#     clamp is the one that moves. Each dump then looks healthy on its own, and only holding the two
+#     against each other shows that the options would validate the same observation differently.
 #
 # Checks the ASSEMBLED artifact (shipped Initializer config + both bundled DB zips), not the repo, so
 # it also catches an assembly that bundled the wrong file. Run it locally before pushing a dump
@@ -380,22 +383,26 @@ check_complete demo "$DEMO_SQL"
 # other check here, because each of those evaluates one dump at a time and both sides pass on their
 # own — a concept simply carries a different number in each.
 #
-# It has happened. The two dumps are cut from separate boots, and the boots do not always agree about
-# which source wins for a concept that has both its own declared bounds and a conceptreferencerange
-# CSV: on 2026-08-13 the starter boot ended with respiratory rate's declared hi_absolute of 999 and
-# the demo boot, 90 minutes later on the same pinned config, with the 99 its reference-range bands
-# carry. hi_absolute/low_absolute are what core validates an obs against when no reference-range
-# criterion matches the patient, so the two options would have accepted different observations.
+# It has happened. docs/releasing.md §2 step (c) clamps every ConceptNumeric into its
+# reference-range intersection before either dump is cut, and generate-empty-db-locally.sh used to
+# skip it while generate-demo-data-locally.sh applied it - so the starter dump shipped respiratory
+# rate's declared hi_absolute of 999 where the demo dump shipped the 99 its reference-range bands
+# carry, reproducibly rather than by drift. hi_absolute/low_absolute are what core validates an obs
+# against when no reference-range criterion matches the patient, so the two options would have
+# accepted different observations.
 #
-# Compared by content, not against a hardcoded number: the right value is whatever the content
-# package declares, and pinning it here would be an upstream constant with nothing tying the two
-# together. docs/releasing.md §2 says how to decide which side is right, and it is not automatically
-# the dump that was cut most recently. BundledDbDumpImportTest asserts the same thing at PR time,
-# from src/main/db/; this is the copy that opens the bundled zips, so it also catches an assembly
-# that shipped a stale dump.
+# Compares the two dumps to each other rather than to a number. That is deliberate and bounded: it
+# catches the clamp reaching one boot and not the other, and it CANNOT catch the clamp being skipped
+# on both - only step (c)'s divergence query settles that, and §2 says so. The unclamped side is the
+# one that matches what the content package declares, so do not read "matches upstream" as "correct"
+# here. BundledDbDumpImportTest asserts the same thing from src/main/db/, and also on pull requests,
+# which this script never runs on; this is the copy that opens the bundled zips, so it additionally
+# catches an assembly that shipped a stale dump.
 #
-# LC_ALL=C throughout: both dumps are invalid UTF-8 in openconceptlab's hash column, and a locale-
-# aware sed or sort would either error or order the rows differently on the two sides.
+# LC_ALL=C on the sed: it streams the whole dump, and both dumps are invalid UTF-8 in
+# openconceptlab's hash column, which a locale-aware sed can error on. On sort it is belt and braces
+# - both sides get the same locale and comparator, and neither of these two tables holds a
+# non-ASCII byte - kept so the pipeline does not depend on that staying true.
 clinical_bounds() { # $1 = dump path, $2 = table
     LC_ALL=C sed -n "/^INSERT INTO \`$2\` VALUES\$/,/;\$/p" "$1" | LC_ALL=C grep '^(' | LC_ALL=C sort
 }
@@ -404,13 +411,23 @@ check_bounds_agree() { # $1 = table
     local table="$1" e d
     e=$(clinical_bounds "$EMPTY_SQL" "$table")
     d=$(clinical_bounds "$DEMO_SQL" "$table")
-    # Non-vacuity: a dump-format change that stopped this matching would otherwise compare two empty
-    # strings and report agreement, which is the one failure shape a publish gate must not have.
+    # Non-vacuity, and on BOTH sides. Two empty results compare equal and would report agreement,
+    # which is the one failure shape a publish gate must not have. One empty side is the subtler
+    # half: it is not equal to the other, so without this it comes back as a value disagreement and
+    # sends whoever is cutting the release to re-dump a database whose actual problem is that
+    # mysqldump changed how it writes an INSERT.
     [ -n "$e" ] \
         || fail "no \`$table\` rows found in the bundled starter database — this check is not reading the table it thinks it is, so it is not guarding anything"
+    [ -n "$d" ] \
+        || fail "no \`$table\` rows found in the bundled demo database — this check is not reading the table it thinks it is, so it is not guarding anything"
     if [ "$e" != "$d" ]; then
-        diff <(printf '%s\n' "$e") <(printf '%s\n' "$d") | head -20
-        fail "the two bundled databases disagree on \`$table\` (starter '<' vs demo '>' above) — both are cut from the same config, so one was written from a source the other did not use; decide which matches the content package before publishing (docs/releasing.md §2)"
+        # Capped, and the message says so rather than trailing off, or the release-cutter fixes what
+        # they can see and meets the rest on the next run. Counted in LINES, not rows: diff spends
+        # about four lines on an isolated row (`NcN`, `<`, `---`, `>`) and can spend a whole run of
+        # `<` lines before the first `>` when rows are contiguous, so a row-shaped cap here would be
+        # a number that does not mean what it says.
+        diff <(printf '%s\n' "$e") <(printf '%s\n' "$d") | head -40
+        fail "the two bundled databases disagree on \`$table\` (starter '<' vs demo '>', first 40 lines of the diff above; re-run locally for the rest) — step (c) in docs/releasing.md §2 clamps ConceptNumeric into its reference-range intersection before either dump is cut, and a dump that missed it carries the wider bound; its divergence query says which side is right, and it is not automatically the fresher dump"
     fi
 }
 
