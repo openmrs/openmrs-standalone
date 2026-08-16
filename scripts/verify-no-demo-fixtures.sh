@@ -241,9 +241,18 @@ DEMO_SQL=$(find "$DB_CHECK/demo" -name '*.sql' | head -1)
 [ -n "$EMPTY_SQL" ] || fail "bundled emptydatabase.zip contains no .sql"
 [ -n "$DEMO_SQL" ]  || fail "bundled demodatabase.zip contains no .sql"
 
+# `-a` on the two greps that COUNT matches in a dump, here and in full_grants. One NUL byte anywhere
+# in the file makes GNU grep treat it as binary, and `grep -o` then emits nothing at all — no matches,
+# and no "Binary file matches" line on stdout or stderr either — so `wc -l` reads 0 and this check
+# would pass a dump carrying all 50 placeholders. Measured on grep 3.11, along with the two things
+# that are NOT the trigger: `grep -q` still exits 0 on a binary match (so the -qaF checks below never
+# depended on their -a), and an encoding error alone does not flip grep to binary, which matters
+# because both dumps ARE invalid UTF-8 from openconceptlab's hash column. Only a NUL does it, and
+# mysqldump escapes those - both dumps measure zero - so this is insurance rather than a live bug. It
+# buys the one failure shape a publish gate must never have: a check that silently counts nothing.
 check_no_sites() { # $1 = label, $2 = dump path
     local hits
-    hits=$(grep -o "'Site [0-9]" "$2" | wc -l | tr -d ' ')
+    hits=$(grep -oa "'Site [0-9]" "$2" | wc -l | tr -d ' ')
     [ "${hits:-0}" = "0" ] \
         || fail "bundled $1 database still contains 'Site N' placeholder locations ($hits hits)"
 }
@@ -335,6 +344,11 @@ check_patient_rows() { # $1 = label, $2 = dump path, $3 = none|some
 # district and commune fields, and this is the only check that would notice.
 # Row presence, not the table's existence — the schema ships the tables either way, empty.
 check_no_stripped_content() { # $1 = label, $2 = dump path
+    # The single quotes are load-bearing and shellcheck's SC2016 hint is a trap here: those backticks
+    # are MySQL identifier quoting, so taking the advice and switching to double quotes would turn
+    # `address_hierarchy_entry` into a command substitution, leaving the needle as "INTO " and this
+    # check silently matching every dump. Suppressed rather than "fixed", with the reason attached.
+    # shellcheck disable=SC2016
     if grep -qaF 'INTO `address_hierarchy_entry`' "$2"; then
         fail "bundled $1 database carries address_hierarchy_entry rows — it was dumped before strip-demo-fixtures.sh removed the Cambodian address hierarchy, so registration would offer Cambodian provinces"
     fi
@@ -358,7 +372,10 @@ check_complete demo "$DEMO_SQL"
 
 # Counts the single `role` row plus every Privilege Level: Full grant. The absolute number is not the
 # point — the two dumps must AGREE, since both are cut from the same converged database.
-full_grants() { grep -o "('Privilege Level: Full'," "$1" | wc -l | tr -d ' '; }
+# `-a` for the reason on check_no_sites. Here it fails loudly rather than silently — both sides would
+# count 0 and trip the floor below — but the diagnosis would send whoever is cutting the release to
+# re-dump a database that was fine.
+full_grants() { grep -oa "('Privilege Level: Full'," "$1" | wc -l | tr -d ' '; }
 E=$(full_grants "$EMPTY_SQL")
 D=$(full_grants "$DEMO_SQL")
 
