@@ -26,11 +26,28 @@ import com.sun.net.httpserver.HttpServer;
  * rebuild tests answer real HTTP from a loopback stub for the same reason: what they pin down is
  * that a refused request is reported as refused, and that is a property of the exchange rather than
  * of any object we could hand in.
+ * <p>
+ * The last group closes the seam between this class and {@link ApplicationControllerTest}. That one
+ * exercises every branch of
+ * {@link ApplicationController#updateSearchIndexAfterStartup(DatabaseMode, String)} but always with
+ * {@code OpenmrsUtil}'s statics mocked, so its marker is an answer from Mockito rather than a file;
+ * this one drives the real marker and the real HTTP exchange but, until now, never through the
+ * method that actually decides. Each half was covered and the composition was not, which is exactly
+ * where a decision that reads {@code hasPrebuiltSearchIndex()} once into a local and then acts on it
+ * after mutating the file could disagree with the disk while every existing test still passed.
  */
 class OpenmrsUtilTest {
 
 	// The path under test comes from OpenmrsUtil itself; see the field's comment for why.
 	private static final File MARKER = OpenmrsUtil.PREBUILT_SEARCH_INDEX_MARKER;
+
+	/**
+	 * A base URL nothing is listening on. The composition tests below that pass it are the modes that
+	 * must not ask for a rebuild at all, so it should never be dialled; if a regression makes one of
+	 * them dial it, the connection is refused at once, the rebuild reports failure, and the marker
+	 * assertion that follows fails rather than the test hanging.
+	 */
+	private static final String UNREACHABLE = "http://127.0.0.1:1/openmrs";
 
 	private static final File LUCENE = MARKER.getParentFile();
 
@@ -187,5 +204,95 @@ class OpenmrsUtilTest {
 
 		assertFalse(OpenmrsUtil.rebuildEntireSearchIndex("http://127.0.0.1:" + port + "/openmrs"),
 			"an exception on the way out is a failure to trigger, not a rebuild");
+	}
+
+	// The composition: the real decision method, against the real marker file and a real HTTP
+	// exchange, with nothing stubbed. ApplicationControllerTest pins which branch each mode takes;
+	// what these pin is that the branch's effect actually lands on disk. Run each mode the standalone
+	// can reach, and assert the file afterwards.
+
+	/** Runs the real decision against a real marker and a real server answering {@code status}. */
+	private void settleAgainstAServerAnswering(int status, DatabaseMode mode) throws IOException {
+		HttpServer server = stubServer(status);
+		try {
+			ApplicationController.updateSearchIndexAfterStartup(mode, urlOf(server));
+		} finally {
+			server.stop(0);
+		}
+	}
+
+	@Test
+	void updateSearchIndexAfterStartup_demoImport_reallyDeletesTheMarkerFromDisk() throws IOException {
+		giveUsAMarker();
+
+		// Demo reuses the baked index, so it never asks the server; the URL is unreachable on purpose.
+		ApplicationController.updateSearchIndexAfterStartup(DatabaseMode.DEMO_DATABASE, UNREACHABLE);
+
+		assertFalse(MARKER.exists(),
+			"reuse spends the marker, and it has to be gone from the filesystem, not just from a mock");
+	}
+
+	@Test
+	void updateSearchIndexAfterStartup_starterImportAccepted_reallyDeletesTheMarkerFromDisk()
+			throws IOException {
+		giveUsAMarker();
+
+		settleAgainstAServerAnswering(204, DatabaseMode.EMPTY_DATABASE);
+
+		assertFalse(MARKER.exists(), "the server took the rebuild, so the baked index is being replaced");
+	}
+
+	@Test
+	void updateSearchIndexAfterStartup_starterImportRefused_reallyLeavesTheMarkerOnDisk()
+			throws IOException {
+		giveUsAMarker();
+
+		settleAgainstAServerAnswering(401, DatabaseMode.EMPTY_DATABASE);
+
+		assertTrue(MARKER.isFile(),
+			"a refused rebuild overwrote nothing, so the marker must survive for the next start to retry");
+	}
+
+	@Test
+	void updateSearchIndexAfterStartup_wizardMode_reallyLeavesTheMarkerOnDisk() throws IOException {
+		// The change this slice turns on, against a real file for the first time: the wizard asks for
+		// nothing AND keeps the marker, because core will not index the database its setup creates.
+		// Spending it here left an expert-mode install on the baked demo index with nothing able to
+		// notice.
+		giveUsAMarker();
+
+		ApplicationController.updateSearchIndexAfterStartup(
+				DatabaseMode.USE_INITIALIZATION_WIZARD, UNREACHABLE);
+
+		assertTrue(MARKER.isFile(),
+			"the wizard must leave the marker for the next start's null-mode rebuild to spend");
+	}
+
+	@Test
+	void updateSearchIndexAfterStartup_wizardThenTheNextStart_reallySpendsItOnTheRebuild()
+			throws IOException {
+		// Both halves in sequence on one marker file, which is the sequence a wizard install runs and
+		// the reason the branch above keeps it.
+		giveUsAMarker();
+
+		ApplicationController.updateSearchIndexAfterStartup(
+				DatabaseMode.USE_INITIALIZATION_WIZARD, UNREACHABLE);
+		assertTrue(MARKER.isFile(), "precondition: the wizard start left it alone");
+
+		settleAgainstAServerAnswering(204, null);
+
+		assertFalse(MARKER.exists(),
+			"the next start imports nothing, finds the marker, and rebuilds against what the wizard made");
+	}
+
+	@Test
+	void updateSearchIndexAfterStartup_ordinaryRestart_reallyLeavesTheFilesystemAlone()
+			throws IOException {
+		// No marker and no import: this must not create anything either.
+		skipIfARealMarkerIsPresent();
+
+		ApplicationController.updateSearchIndexAfterStartup(null, UNREACHABLE);
+
+		assertFalse(MARKER.exists(), "an ordinary restart has nothing to say about the index");
 	}
 }
