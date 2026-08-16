@@ -105,6 +105,20 @@ class OpenmrsUtilTest {
 		assertFalse(OpenmrsUtil.hasPrebuiltSearchIndex(), "and no longer reported as present");
 	}
 
+	// The one branch of clearPrebuiltSearchIndexMarker that is not exercised anywhere: the delete
+	// returning false, which prints "Could not delete ... delete it by hand". Deliberately left
+	// untested rather than overlooked, because every way of provoking it is worse than the gap.
+	// File.delete() only fails on a regular file when the PARENT directory is unwritable, so the test
+	// would have to chmod appdata/lucene and then assume the JVM is not running as root - true on the
+	// GitHub runners, false in plenty of containers - and Windows ignores the flag entirely, on a
+	// suite that runs there too. So it would be a test that passes for environmental reasons on one
+	// of three platforms.
+	//
+	// The contract, if someone finds a portable way to force it: with the marker present and
+	// undeletable, clearPrebuiltSearchIndexMarker must not throw, must leave hasPrebuiltSearchIndex()
+	// true, and must name PREBUILT_SEARCH_INDEX_MARKER.getPath() on stdout - the operator cannot act
+	// on the warning without the path, and this is the one case where they have to act by hand.
+
 	@Test
 	void clearPrebuiltSearchIndexMarker_noMarker_isAQuietNoOp() {
 		skipIfARealMarkerIsPresent();
