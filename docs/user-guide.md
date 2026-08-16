@@ -273,7 +273,9 @@ standalone's *own* first-start importer, and let the new install generate its ow
   perfectly well while describing somebody else's database. Two ways it goes wrong:
   * `❌ Failed to trigger rebuild. Status: 401` — the rebuild request signs in as `admin` with the
     password the bundled databases ship, so a changed admin password stops it. The standalone keeps
-    the pre-built marker in this case, so restarting retries; rebuilding by hand also settles it.
+    the pre-built marker in this case, so restarting retries. If you rebuild by hand instead, delete
+    `appdata/lucene/.prebuilt` afterwards: that fixes the index but not the marker, and the
+    standalone cannot see that you did it, so otherwise it retries and warns on every start.
   * `✅ Using the pre-built Lucene search index; skipping startup rebuild` — you took the fallback
     path above, which is why its step 3 says to rebuild by hand.
 * **Verify** — log in, run a patient search and a concept search, and click through the workflows

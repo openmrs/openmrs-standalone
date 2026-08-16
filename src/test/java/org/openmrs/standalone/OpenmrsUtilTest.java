@@ -112,7 +112,9 @@ class OpenmrsUtilTest {
 				DatabaseMode.EMPTY_DATABASE, OpenmrsUtil.hasPrebuiltSearchIndex()),
 			"the Starter import must rebuild rather than reuse the demo index");
 
-		// What the rebuild branch does, minus the HTTP call to the running server.
+		// What the rebuild branch does once the server has accepted the request - it clears only then,
+		// so that a refused rebuild leaves the marker true of what is still on disk. The HTTP call
+		// itself is ApplicationControllerTest's business; here it is assumed to have been taken.
 		OpenmrsUtil.clearPrebuiltSearchIndexMarker();
 
 		assertFalse(ApplicationController.canReusePrebuiltSearchIndex(
