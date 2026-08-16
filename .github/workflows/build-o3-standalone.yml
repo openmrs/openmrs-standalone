@@ -73,8 +73,8 @@ jobs:
         run: |
           mvn clean package -Pci -B \
             --settings .github/maven-settings.xml \
-            -Drefapp.version=$REFAPP_VERSION \
-            -Dopenmrs.version=$OPENMRS_VERSION
+            "-Drefapp.version=$REFAPP_VERSION" \
+            "-Dopenmrs.version=$OPENMRS_VERSION"
 
       - name: Show the built standalone zip
         run: ls -lh "target/referenceapplication-standalone-${REFAPP_VERSION}.zip"
