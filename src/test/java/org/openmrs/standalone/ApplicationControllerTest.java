@@ -294,6 +294,34 @@ class ApplicationControllerTest {
 	}
 
 	@Test
+	void updateSearchIndexAfterStartup_refusedOnADistroThatBakedNoIndex_saysNothingAboutTheMarker() {
+		// The one combination every other test here misses: an import on a build that never baked an
+		// index, whose rebuild the server does not take. Both other refused-rebuild tests have the
+		// marker present, and every marker-absent test returns early before ever reaching the rebuild,
+		// so the guard on the warning was the last unexercised branch of this method.
+		//
+		// It has to stay guarded. A locally built standalone has nothing misleading on appdata/lucene,
+		// and rebuildEntireSearchIndex has already reported the refusal itself, so widening the guard
+		// to a plain else would tell that operator their index may be the bundled demo one and to go
+		// delete a marker file that was never written.
+		String stderr = errFrom(() -> {
+			try (MockedStatic<OpenmrsUtil> util = Mockito.mockStatic(OpenmrsUtil.class)) {
+				util.when(OpenmrsUtil::hasPrebuiltSearchIndex).thenReturn(false);
+				util.when(() -> OpenmrsUtil.rebuildEntireSearchIndex(SERVER_URL)).thenReturn(false);
+
+				ApplicationController.updateSearchIndexAfterStartup(DatabaseMode.EMPTY_DATABASE, SERVER_URL);
+
+				util.verify(() -> OpenmrsUtil.rebuildEntireSearchIndex(SERVER_URL));
+				util.verify(OpenmrsUtil::clearPrebuiltSearchIndexMarker, Mockito.never());
+			}
+		});
+
+		assertFalse(stderr.contains(OpenmrsUtil.PREBUILT_SEARCH_INDEX_MARKER.getPath()),
+			"nothing baked an index here, so the operator must not be sent to delete its marker:\n"
+			        + stderr);
+	}
+
+	@Test
 	void updateSearchIndexAfterStartup_demoInstallThenAStartThatImportedNothing_staysQuiet() {
 		// The whole first-boot-then-restart sequence, with the marker behaving like the file it is.
 		// This is what settleSearchIndexForStart buys by clearing applyDatabaseChange: the field used
