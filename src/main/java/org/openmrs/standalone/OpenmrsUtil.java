@@ -281,12 +281,13 @@ public class OpenmrsUtil {
 			new File("appdata" + File.separator + "lucene" + File.separator + ".prebuilt");
 
 	/**
-	 * @return true if this distribution has not booted yet and {@code appdata/lucene} is therefore
-	 *         still the index baked against the bundled demo database. Not simply "an index was
-	 *         bundled": the marker is single-use, and the first boot consumes it either way - see
-	 *         {@link #clearPrebuiltSearchIndexMarker()} - because callers use this to decide whether
-	 *         the on-disk index can be trusted to describe that demo database, and it stops being
-	 *         trustworthy as soon as OpenMRS starts updating the index in place. We key off an
+	 * @return true if {@code appdata/lucene} is still the index baked against the bundled demo
+	 *         database, untouched since the build pipeline put it there. Not simply "an index was
+	 *         bundled": callers use this to decide whether the on-disk index can be trusted to
+	 *         describe that demo database, and it stops being trustworthy the moment anything
+	 *         overwrites or adds to that index, so the marker is cleared then - see
+	 *         {@link #clearPrebuiltSearchIndexMarker()}. It survives a boot that changed neither,
+	 *         which is what lets a refused rebuild be retried on the next start. We key off an
 	 *         explicit marker file rather than the mere presence of the lucene directory, because
 	 *         OpenMRS itself creates an empty index skeleton on startup which would otherwise be
 	 *         mistaken for a populated index.
@@ -297,13 +298,16 @@ public class OpenmrsUtil {
 
 	/**
 	 * Drops the marker, so {@link #hasPrebuiltSearchIndex()} stops claiming the on-disk index is the
-	 * baked demo one. The first boot calls this whichever path it takes, which is what makes the
-	 * marker single-use:
+	 * baked demo one. Called once the baked index is no longer what is on disk, or is about to stop
+	 * being it:
 	 * <ul>
-	 * <li>before rebuilding, because the rebuild overwrites {@code appdata/lucene} in place, and a
-	 * marker outliving it would let a later Demo import skip a rebuild it needs;</li>
+	 * <li>before rebuilding after an import, because that rebuild overwrites {@code appdata/lucene}
+	 * in place, and a marker outliving it would let a later Demo import skip a rebuild it needs;</li>
 	 * <li>after reusing the baked index, because OpenMRS then updates that index in place as soon as
-	 * anyone registers a patient, so it no longer matches what was baked.</li>
+	 * anyone registers a patient, so it no longer matches what was baked;</li>
+	 * <li>after a rebuild the server ACCEPTED on a boot that imported nothing - but not after one it
+	 * refused, which leaves the baked index exactly where it was and the marker still true of it. See
+	 * {@link ApplicationController#mustRebuildUnimportedDatabase(DatabaseMode, boolean)}.</li>
 	 * </ul>
 	 */
 	public static void clearPrebuiltSearchIndexMarker() {
@@ -320,13 +324,33 @@ public class OpenmrsUtil {
 		}
 	}
 
-	public static void rebuildEntireSearchIndex(String resourceUrl) {
+	/**
+	 * Asks the running server to rebuild its Lucene index, and reports whether the request was
+	 * accepted.
+	 * <p>
+	 * The return value matters because the credentials below are the ones the bundled dumps ship. A
+	 * boot that imported one of those dumps can rely on them; a boot that did not (the in-place
+	 * upgrade in docs/user-guide.md, which brings the operator's own {@code database/}) is
+	 * authenticating against whatever password that installation set, so this can come back 401 and
+	 * no rebuild happens at all. Callers that consume the pre-built index marker must not do so on
+	 * the strength of having merely asked - see
+	 * {@link ApplicationController#mustRebuildUnimportedDatabase(DatabaseMode, boolean)}.
+	 * <p>
+	 * True means only that the server accepted the request: the rebuild itself runs asynchronously,
+	 * and nothing here waits for it.
+	 *
+	 * @param resourceUrl the running web application's base URL
+	 * @return true if the server answered 204, i.e. the rebuild was queued
+	 */
+	public static boolean rebuildEntireSearchIndex(String resourceUrl) {
 		final String SEARCH_INDEX_URL = resourceUrl + "/ws/rest/v1/searchindexupdate";
 		try {
 			URL url = new URL(SEARCH_INDEX_URL);
 			HttpURLConnection conn = (HttpURLConnection) url.openConnection();
 
-			// Basic Auth
+			// Basic Auth with the credentials the bundled dumps ship. Correct for every boot that just
+			// imported one of them; a database the operator brought themselves may well say otherwise,
+			// which is why the caller is told whether this worked.
 			String username = "admin";
 			String password = "Admin123";
 			String auth = username + ":" + password;
@@ -346,14 +370,26 @@ public class OpenmrsUtil {
 			}
 
 			int responseCode = conn.getResponseCode();
-			if (responseCode == HttpURLConnection.HTTP_NO_CONTENT) {
+			boolean accepted = responseCode == HttpURLConnection.HTTP_NO_CONTENT;
+			if (accepted) {
 				System.out.println("✅ Search index rebuild triggered successfully on startup.");
 			} else {
 				System.err.println("❌ Failed to trigger rebuild. Status: " + responseCode);
+				if (responseCode == HttpURLConnection.HTTP_UNAUTHORIZED
+				        || responseCode == HttpURLConnection.HTTP_FORBIDDEN) {
+					// Say what to do about it. A bare status line reads as noise during a startup that
+					// otherwise looks healthy, and search then quietly answers from whatever index is on
+					// disk.
+					System.err.println("   The request signs in as the default 'admin' account, so this is"
+					        + " what a changed admin password looks like. Rebuild by hand from Home >"
+					        + " System Administration > Manage Search Index, or restart to try again.");
+				}
 			}
 			conn.disconnect();
+			return accepted;
 		} catch (Exception e) {
 			e.printStackTrace();
+			return false;
 		}
 	}
 }

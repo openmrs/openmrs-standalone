@@ -65,7 +65,9 @@ class ApplicationControllerTest {
 
 	@Test
 	void mustRebuildUnimportedDatabase_ordinaryRestart_doesNotRebuild() {
-		// Whichever branch ran on the previous boot consumed the marker, so restarts stay fast.
+		// No marker means the baked index is no longer what is on disk, so there is nothing here to
+		// correct and restarts stay fast. A marker that survived a refused rebuild is the other case,
+		// and it deliberately does fire again - see the test above.
 		assertFalse(ApplicationController.mustRebuildUnimportedDatabase(null, false));
 	}
 

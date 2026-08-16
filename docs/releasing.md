@@ -49,7 +49,7 @@ filtered config. Read that script's header for the reasoning; the short version 
 |---|---|
 | drops the 50 `Site N` locations | filler; all tagged Login + Visit, so they buried the real ones |
 | drops `Test Form 1`, `Form Engine Cookbook`, `Cookbook Library`, the orphan FR translation | developer scaffolding |
-| drops the `addresshierarchy` domain | 344 rows of **Cambodian** provinces; registration falls back to core's address template |
+| drops the `addresshierarchy` domain | `addressConfiguration.xml` + 344 rows of **Cambodian** provinces. A no-op today — Initializer's loader wants that XML directly under `addresshierarchy/` and build-distro nests it under `addresshierarchy/<package>/`, so both dumps already carried core's address template and no `address_hierarchy_entry` rows. Removed so it cannot start applying: `<wipe>true</wipe>` in that XML would swap the address template for province/district/commune fields |
 | drops payment mode `Paypal`, identifier type `SSN` | Paypal is odd for a hospital, `SSN` is US-specific with a format regex |
 | drops relationship types `Uncle/Nephew`, `Friend/Friend`, `Aunt/Niece` | the last is already retired upstream; `Clinician/Patient` and `CHW/Patient` stay |
 | **renames** `Ubuntu Hospital` → `My Hospital` | it is the hierarchy's parent and the only Visit Location, so deleting it would orphan its children. The rename also rewrites the `Parent` column of all 5 children and the description — they reference the parent by NAME, not uuid |

@@ -23,8 +23,15 @@ set -euo pipefail
 #     fixed-seed randomizer put every generated visit at "Site 42".
 #   * the developer forms `Test Form 1` (published, so it shows in the chart), `Form Engine Cookbook` and
 #     `Form Engine Cookbook Library`, plus the orphaned `Test Form 1` French translations.
-#   * the `addresshierarchy` domain - 344 rows of **Cambodian** provinces, districts and communes. Wrong
-#     everywhere else; registration falls back to core's default address template.
+#   * the `addresshierarchy` domain - `addressConfiguration.xml` plus 344 rows of **Cambodian** provinces,
+#     districts and communes. Removed as a precaution rather than a fix: the domain does not currently
+#     reach the database at all. Initializer hands it to the addresshierarchy module's
+#     AddressConfigurationLoader, which looks for the fixed name `addressConfiguration.xml` directly under
+#     <config>/addresshierarchy/, while build-distro nests every content package's files a level deeper as
+#     <domain>/<package>/<file> - so the loader never finds it. Both shipped dumps carried zero
+#     address_hierarchy_entry rows and core's default address template before this ever removed anything.
+#     It comes out because the day those paths line up, `<wipe>true</wipe>` in that XML replaces the
+#     address template with Cambodian province, district and commune fields.
 #   * payment mode `Paypal`, leaving Cash and Bank transfer.
 #   * patient identifier type `SSN` - US Social Security, with a `^[A-Z]{1}-[0-9]{7}$` format regex.
 #   * relationship types `Uncle/Nephew`, `Friend/Friend` and `Aunt/Niece`. Only `Aunt/Niece` ships

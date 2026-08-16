@@ -222,8 +222,10 @@ cp -a "$old"/appdata/person_images ./appdata/ 2>/dev/null || true   # patient ph
 
 # 5. Leave appdata/lucene alone — do NOT delete it and do NOT copy your old one over.
 #    The fresh unzip ships a search index pre-built against the bundled DEMO database. Standalone
-#    3.7.1 and later notice that this boot imported no database, rebuild that index against YOUR
-#    data on first start, and log "Updating the search index" while doing it.
+#    3.7.1 and later notice that this boot imported no database and ask the server to rebuild that
+#    index against YOUR data on first start, logging "Updating the search index" while it runs.
+#    Confirm it actually happened — see "After the upgrade" below — because the request signs in
+#    with the admin password the bundled databases ship, and yours may no longer be that.
 #
 #    Deleting it is worse, not safer: OpenMRS only recreates an empty skeleton on startup and does
 #    not repopulate it, so a deleted index leaves patient and concept search returning nothing until
@@ -254,14 +256,26 @@ standalone's *own* first-start importer, and let the new install generate its ow
 2. With no `database/` folder present yet (fresh unzip), start the standalone and choose the **demo
    database** option in the setup wizard. First start imports your SQL, then OpenMRS migrates it. Do
    **not** copy the old `openmrs-runtime.properties` on this path.
+3. **Rebuild the search index by hand** afterwards, from *Home → System Administration → Manage
+   Search Index*. Choosing the **demo database** option is what tells the standalone the shipped
+   index still matches, and it cannot tell that you swapped your own dump into that zip: it logs
+   `✅ Using the pre-built Lucene search index; skipping startup rebuild` and your patients are then
+   searched through an index built from the demo data.
 
 ### After the upgrade
 
-* **Run a search before rebuilding by hand** — a patient search and a concept search. If you left
-  `appdata/lucene` in place (step 5), the first start already rebuilt the index against your data and
-  both should return results. Rebuild through *Home → System Administration → Manage Search Index*
-  only if they come back empty — which is what you would see if that automatic rebuild was
-  interrupted, or if your build shipped no pre-built index for it to notice.
+* **Read the first start's log before trusting search.** If you left `appdata/lucene` in place
+  (step 5), that start should have logged `A pre-built search index is present but this boot imported
+  no database` followed by `✅ Search index rebuild triggered successfully on startup`. Only that
+  pair means the index describes *your* data. Rebuild through *Home → System Administration → Manage
+  Search Index* if you see anything else, and note that a search returning results is **not** the
+  confirmation — the index shipped with the download is full of demo patients, so it answers
+  perfectly well while describing somebody else's database. Two ways it goes wrong:
+  * `❌ Failed to trigger rebuild. Status: 401` — the rebuild request signs in as `admin` with the
+    password the bundled databases ship, so a changed admin password stops it. The standalone keeps
+    the pre-built marker in this case, so restarting retries; rebuilding by hand also settles it.
+  * `✅ Using the pre-built Lucene search index; skipping startup rebuild` — you took the fallback
+    path above, which is why its step 3 says to rebuild by hand.
 * **Verify** — log in, run a patient search and a concept search, and click through the workflows
   you rely on. A green login plus working search is the quickest proof the migration took.
 * **Skipping releases** — core migrations are cumulative, so jumping several refapp releases at

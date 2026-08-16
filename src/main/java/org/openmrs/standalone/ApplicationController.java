@@ -205,12 +205,13 @@ public class ApplicationController {
 	 * an index listing the 50 demo patients, none of which exist in that database. The marker file
 	 * alone cannot tell the two apart, so the database mode has to be part of the decision.
 	 * <p>
-	 * The marker is therefore single-use, and the caller consumes it either way - after reusing the
-	 * index here, and before rebuilding over it. Both directions matter: a marker outliving a rebuild
-	 * would make a later Demo import skip one it needs, and a marker outliving its own reuse would
-	 * still be claiming the baked demo index after OpenMRS had begun updating that index in place.
-	 * After any first boot, no marker survives, so {@code hasPrebuiltIndex} is only ever true on a
-	 * distribution that has not run yet.
+	 * On this path the marker is therefore single-use, and the caller consumes it either way - after
+	 * reusing the index here, and before rebuilding over it. Both directions matter: a marker
+	 * outliving a rebuild would make a later Demo import skip one it needs, and a marker outliving
+	 * its own reuse would still be claiming the baked demo index after OpenMRS had begun updating
+	 * that index in place. So after any boot that answered the database question, no marker survives.
+	 * (A boot that answered nothing is the one case where it can, deliberately - see
+	 * {@link #mustRebuildUnimportedDatabase(DatabaseMode, boolean)}.)
 	 * <p>
 	 * Pure so it can be unit-tested.
 	 *
@@ -233,8 +234,13 @@ public class ApplicationController {
 	 * and misses that do, with nothing logged.
 	 * <p>
 	 * This cannot fire on a normal first run, which always answers the database question because the
-	 * distribution ships {@code needsconfig.txt}, nor on later restarts, because whichever branch ran
-	 * first consumed the marker. Pure so it can be unit-tested.
+	 * distribution ships {@code needsconfig.txt}. It CAN fire on more than one restart, deliberately:
+	 * unlike the import branch, this one keeps the marker when the rebuild request is refused, because
+	 * a refused request has overwritten nothing and the next start is then free to try again. That
+	 * matters here more than anywhere else, since
+	 * {@link OpenmrsUtil#rebuildEntireSearchIndex(String)} signs in with the credentials the bundled
+	 * dumps ship, and this branch runs precisely when the database did not come from one of them.
+	 * Pure so it can be unit-tested.
 	 *
 	 * @param mode the database the user chose to import, or null when none was chosen
 	 * @param hasPrebuiltIndex whether the marker is still present
@@ -353,12 +359,25 @@ public class ApplicationController {
 						// database/ in and deletes needsconfig.txt, which is exactly what leaves the
 						// database question unasked. Searching their patients through an index built from
 						// demo people would return names that are not in their data and miss the ones that
-						// are, silently. Rebuild, and consume the marker so ordinary restarts after this
-						// one stay fast.
+						// are, silently.
+						//
+						// Consume the marker only if the server ACCEPTED the rebuild, which is the one
+						// place this branch has to differ from the import branch above. That branch clears
+						// first because its rebuild overwrites appdata/lucene either way. Here the request
+						// is signed with the credentials the bundled dumps ship, and this is by definition
+						// a database that did not come from one of them - so a changed admin password
+						// answers 401 and nothing is rebuilt or overwritten at all. Keeping the marker in
+						// that case leaves it describing exactly what is still on disk, and lets the next
+						// start try again instead of stranding the operator on the demo index for good.
 						System.out.println("A pre-built search index is present but this boot imported no database;"
 						        + " rebuilding so search describes the database actually in use.");
-						OpenmrsUtil.clearPrebuiltSearchIndexMarker();
-						OpenmrsUtil.rebuildEntireSearchIndex(resourceUrl);
+						if (OpenmrsUtil.rebuildEntireSearchIndex(resourceUrl)) {
+							OpenmrsUtil.clearPrebuiltSearchIndexMarker();
+						} else {
+							System.err.println("⚠️  Search still uses the index built for the bundled demo database."
+							        + " Restart to retry, or rebuild from Home > System Administration >"
+							        + " Manage Search Index.");
+						}
 					}
 
 					//if in non interactive mode, block such that tomcat does not exit

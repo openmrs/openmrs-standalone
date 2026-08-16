@@ -321,13 +321,19 @@ check_patient_rows() { # $1 = label, $2 = dump path, $3 = none|some
 }
 
 # The two strip edits whose database side nothing checked. The config-side probes for these sit near the
-# top of this file and only look at $CFG, so a dump cut before either edit would carry the content in its
-# tables and pass everything else here — and the dumps are exactly where this regresses, since they are
-# committed files that a maintainer regenerates by hand.
+# top of this file and only look at $CFG, so a dump cut before the Paypal edit would carry that payment
+# mode in its tables and pass everything else here — and the dumps are exactly where this regresses, since
+# they are committed files that a maintainer regenerates by hand.
 #
-# The address hierarchy is the sharper of the two: 344 rows of Cambodian provinces, districts and communes
-# that appear directly in the registration form's address fields, which is the complaint that started this
-# work. Row presence, not the table's existence — the schema ships the tables either way, empty.
+# Only the Paypal one can fail today. The address-hierarchy check is a floor rather than a live guard: that
+# domain never reaches the database, because Initializer's loader resolves the fixed name
+# `addressConfiguration.xml` directly under <config>/addresshierarchy/ while build-distro nests content
+# package files a level deeper as <domain>/<package>/<file>. Both dumps already carried zero
+# address_hierarchy_entry rows and core's default address template before strip-demo-fixtures.sh removed
+# the domain, so do not read a pass here as evidence the removal did anything. It stays because the day
+# those paths line up, `<wipe>true</wipe>` in that XML swaps the address template for Cambodian province,
+# district and commune fields, and this is the only check that would notice.
+# Row presence, not the table's existence — the schema ships the tables either way, empty.
 check_no_stripped_content() { # $1 = label, $2 = dump path
     if grep -qaF 'INTO `address_hierarchy_entry`' "$2"; then
         fail "bundled $1 database carries address_hierarchy_entry rows — it was dumped before strip-demo-fixtures.sh removed the Cambodian address hierarchy, so registration would offer Cambodian provinces"
