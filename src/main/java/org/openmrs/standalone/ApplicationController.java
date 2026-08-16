@@ -205,13 +205,9 @@ public class ApplicationController {
 	 * an index listing the 50 demo patients, none of which exist in that database. The marker file
 	 * alone cannot tell the two apart, so the database mode has to be part of the decision.
 	 * <p>
-	 * On this path the marker is therefore single-use, and the caller consumes it either way - after
-	 * reusing the index here, and before rebuilding over it. Both directions matter: a marker
-	 * outliving a rebuild would make a later Demo import skip one it needs, and a marker outliving
-	 * its own reuse would still be claiming the baked demo index after OpenMRS had begun updating
-	 * that index in place. So after any boot that answered the database question, no marker survives.
-	 * (A boot that answered nothing is the one case where it can, deliberately - see
-	 * {@link #mustRebuildUnimportedDatabase(DatabaseMode, boolean)}.)
+	 * Reuse costs the marker, because OpenMRS updates that index in place as soon as anyone registers
+	 * a patient, so it stops being the baked one. What happens on the other side of this decision is
+	 * {@link #updateSearchIndexAfterStartup(DatabaseMode, String)}'s business, not this method's.
 	 * <p>
 	 * Pure so it can be unit-tested.
 	 *
@@ -235,12 +231,8 @@ public class ApplicationController {
 	 * <p>
 	 * This cannot fire on a normal first run, which always answers the database question because the
 	 * distribution ships {@code needsconfig.txt}. It CAN fire on more than one restart, deliberately:
-	 * unlike the import branch, this one keeps the marker when the rebuild request is refused, because
-	 * a refused request has overwritten nothing and the next start is then free to try again. That
-	 * matters here more than anywhere else, since
-	 * {@link OpenmrsUtil#rebuildEntireSearchIndex(String)} signs in with the credentials the bundled
-	 * dumps ship, and this branch runs precisely when the database did not come from one of them.
-	 * Pure so it can be unit-tested.
+	 * a rebuild the server refuses leaves the marker in place, so the next start tries again. Pure so
+	 * it can be unit-tested.
 	 *
 	 * @param mode the database the user chose to import, or null when none was chosen
 	 * @param hasPrebuiltIndex whether the marker is still present
@@ -248,6 +240,64 @@ public class ApplicationController {
 	 */
 	static boolean mustRebuildUnimportedDatabase(DatabaseMode mode, boolean hasPrebuiltIndex) {
 		return mode == null && hasPrebuiltIndex;
+	}
+
+	/**
+	 * Brings {@code appdata/lucene} into agreement with whatever database this boot ended up running
+	 * against, and keeps the {@code .prebuilt} marker honest while doing it.
+	 * <p>
+	 * The index lives on the filesystem rather than inside the imported SQL dump, so without this a
+	 * fresh import searches an index that knows nothing about it. Runs in command-line mode too - it
+	 * was once gated behind the GUI-only browser launch.
+	 * <p>
+	 * One rule decides the marker on every path through here. It claims "{@code appdata/lucene} is
+	 * still the index the build pipeline baked against the bundled demo database", so it is dropped
+	 * exactly when that stops being true: after the baked index is reused, and after a rebuild the
+	 * server <em>accepted</em>. A rebuild it refused overwrites nothing, so the marker still describes
+	 * what is on disk and the next boot is free to try again. That case is not hypothetical -
+	 * {@link OpenmrsUtil#rebuildEntireSearchIndex(String)} signs in with the credentials the bundled
+	 * dumps ship, so any database that did not come from one of them can answer 401: an in-place
+	 * upgrade carrying the operator's own {@code database/}, or an expert-mode install whose admin
+	 * password they chose in the OpenMRS setup wizard.
+	 * <p>
+	 * In practice the modes reaching here are demo, empty and wizard. NO_CHANGES is declared but
+	 * unreachable: MainFrame builds a "Do Not Modify the Database" button and then leaves it out of
+	 * the {@code buttonList} that attaches the listener and adds the buttons to the dialog, and
+	 * CommandLine offers only demo/empty/expert. A null mode is therefore not a redundant second path
+	 * for the in-place upgrade - it is the only one, because that upgrade deletes
+	 * {@code needsconfig.txt} and so is never asked the database question at all.
+	 *
+	 * @param mode the database the user chose to import, or null when this boot imported nothing
+	 * @param resourceUrl the running web application's base URL
+	 */
+	static void updateSearchIndexAfterStartup(DatabaseMode mode, String resourceUrl) {
+		boolean hasPrebuiltIndex = OpenmrsUtil.hasPrebuiltSearchIndex();
+
+		if (canReusePrebuiltSearchIndex(mode, hasPrebuiltIndex)) {
+			System.out.println("✅ Using the pre-built Lucene search index; skipping startup rebuild.");
+			OpenmrsUtil.clearPrebuiltSearchIndexMarker();
+			return;
+		}
+
+		if (mustRebuildUnimportedDatabase(mode, hasPrebuiltIndex)) {
+			System.out.println("A pre-built search index is present but this boot imported no database;"
+			        + " rebuilding so search describes the database actually in use.");
+		} else if (mode == null) {
+			// An ordinary restart: nothing imported, and no baked index left to disagree with the
+			// database. appdata/lucene is the live index OpenMRS has been maintaining.
+			return;
+		}
+
+		if (OpenmrsUtil.rebuildEntireSearchIndex(resourceUrl)) {
+			OpenmrsUtil.clearPrebuiltSearchIndexMarker();
+		} else if (hasPrebuiltIndex) {
+			// Only worth saying when a baked index is what would be left behind. Distributions that
+			// shipped none have nothing misleading on disk, and rebuildEntireSearchIndex has already
+			// reported the failure itself.
+			System.err.println("⚠️  The rebuild was not started, so appdata/lucene may still be the index"
+			        + " built for the bundled demo database. Restart to retry, or rebuild it from"
+			        + " Home > System Administration > Manage Search Index.");
+		}
 	}
 
 	/**
@@ -299,86 +349,7 @@ public class ApplicationController {
 						StandaloneUtil.launchBrowser(userInterface.getTomcatPort(), contextName);
 					}
 
-					// Rebuild the Lucene search index whenever the user has just answered the
-					// database question. The index lives on the filesystem, not in the imported SQL
-					// dump, so without this patient search returns nothing until the index is rebuilt
-					// by hand. Must run in command-line mode too - it was previously gated behind the
-					// GUI-only browser launch.
-					// When the build pipeline has baked a matching index into the distribution
-					// (marker present), the shipped index already covers the bundled demo data,
-					// so we skip the rebuild and search works immediately on first run.
-					//
-					// In practice the modes that get here are demo, empty and wizard. NO_CHANGES is
-					// declared but unreachable: MainFrame builds a "Do Not Modify the Database" button
-					// and then leaves it out of the buttonList that attaches the listener and adds the
-					// buttons to the dialog, so the branch that would set it never runs, and
-					// CommandLine offers only demo/empty/expert.
-					//
-					// The else-branch below is therefore NOT a redundant second path for the in-place
-					// upgrade - it is the only one. That upgrade deletes needsconfig.txt, so no mode
-					// is ever chosen and applyDatabaseChange stays null, which is exactly the case
-					// this if cannot see. Ordinary restarts still cost nothing, because whichever
-					// branch ran on the first boot consumed the marker and the on-disk index then
-					// describes the live database.
-					if (applyDatabaseChange != null) {
-						if (canReusePrebuiltSearchIndex(applyDatabaseChange,
-								OpenmrsUtil.hasPrebuiltSearchIndex())) {
-							System.out.println("✅ Using the pre-built Lucene search index; skipping startup rebuild.");
-							// The marker is single-use: it means "this distribution has never booted, and
-							// appdata/lucene is still the index baked against the bundled demo dump". That
-							// stops being true the moment OpenMRS starts serving, because registering a
-							// patient updates the index in place. Consuming it here keeps every later boot
-							// out of the ambiguous state where a marker survives but no longer describes
-							// what is on disk, and costs only a rebuild if the demo database is imported a
-							// second time into the same directory - which is more correct anyway, since by
-							// then the live index may list patients that re-import has just deleted.
-							OpenmrsUtil.clearPrebuiltSearchIndexMarker();
-						} else {
-							// Clear the marker first: this rebuild overwrites appdata/lucene, which is the
-							// live index directory, so the baked demo index it described is gone either
-							// way. Nothing else clears it - deleteActiveDatabase() only removes database/
-							// and unzipDatabase() writes to db/ - so a surviving marker would make a later
-							// Demo import in this same directory skip a rebuild it now needs.
-							//
-							// Ordering it before rather than after the rebuild is not self-healing: the
-							// call below is fire-and-forget, and an ordinary restart leaves
-							// applyDatabaseChange null, so nothing retries an index that fails to
-							// rebuild - only choosing a database mode again would.
-							// It is the lesser of two evils - a marker left pointing at an index the
-							// rebuild has already begun overwriting is worse than no marker, because a
-							// later Demo import would trust it. Recover through Home > System
-							// Administration > Manage Search Index.
-							OpenmrsUtil.clearPrebuiltSearchIndexMarker();
-							OpenmrsUtil.rebuildEntireSearchIndex(resourceUrl);
-						}
-					} else if (mustRebuildUnimportedDatabase(applyDatabaseChange,
-							OpenmrsUtil.hasPrebuiltSearchIndex())) {
-						// No import this boot, yet a marker says appdata/lucene is the index baked against
-						// the bundled DEMO dump. The database sitting in this directory is then something
-						// the user brought themselves: docs/user-guide.md's in-place upgrade copies their
-						// database/ in and deletes needsconfig.txt, which is exactly what leaves the
-						// database question unasked. Searching their patients through an index built from
-						// demo people would return names that are not in their data and miss the ones that
-						// are, silently.
-						//
-						// Consume the marker only if the server ACCEPTED the rebuild, which is the one
-						// place this branch has to differ from the import branch above. That branch clears
-						// first because its rebuild overwrites appdata/lucene either way. Here the request
-						// is signed with the credentials the bundled dumps ship, and this is by definition
-						// a database that did not come from one of them - so a changed admin password
-						// answers 401 and nothing is rebuilt or overwritten at all. Keeping the marker in
-						// that case leaves it describing exactly what is still on disk, and lets the next
-						// start try again instead of stranding the operator on the demo index for good.
-						System.out.println("A pre-built search index is present but this boot imported no database;"
-						        + " rebuilding so search describes the database actually in use.");
-						if (OpenmrsUtil.rebuildEntireSearchIndex(resourceUrl)) {
-							OpenmrsUtil.clearPrebuiltSearchIndexMarker();
-						} else {
-							System.err.println("⚠️  Search still uses the index built for the bundled demo database."
-							        + " Restart to retry, or rebuild from Home > System Administration >"
-							        + " Manage Search Index.");
-						}
-					}
+					updateSearchIndexAfterStartup(applyDatabaseChange, resourceUrl);
 
 					//if in non interactive mode, block such that tomcat does not exit
 					if (nonInteractive) {

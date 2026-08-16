@@ -298,17 +298,11 @@ public class OpenmrsUtil {
 
 	/**
 	 * Drops the marker, so {@link #hasPrebuiltSearchIndex()} stops claiming the on-disk index is the
-	 * baked demo one. Called once the baked index is no longer what is on disk, or is about to stop
-	 * being it:
-	 * <ul>
-	 * <li>before rebuilding after an import, because that rebuild overwrites {@code appdata/lucene}
-	 * in place, and a marker outliving it would let a later Demo import skip a rebuild it needs;</li>
-	 * <li>after reusing the baked index, because OpenMRS then updates that index in place as soon as
-	 * anyone registers a patient, so it no longer matches what was baked;</li>
-	 * <li>after a rebuild the server ACCEPTED on a boot that imported nothing - but not after one it
-	 * refused, which leaves the baked index exactly where it was and the marker still true of it. See
-	 * {@link ApplicationController#mustRebuildUnimportedDatabase(DatabaseMode, boolean)}.</li>
-	 * </ul>
+	 * baked demo one. Called exactly when that claim stops being true: after the baked index has been
+	 * reused (OpenMRS updates it in place from the first patient registered) and after a rebuild the
+	 * server accepted. Never after a rebuild it refused, which overwrites nothing and leaves the
+	 * marker still true of what is on disk - see
+	 * {@link ApplicationController#updateSearchIndexAfterStartup(DatabaseMode, String)}.
 	 */
 	public static void clearPrebuiltSearchIndexMarker() {
 		if (!PREBUILT_SEARCH_INDEX_MARKER.isFile()) {
@@ -330,11 +324,12 @@ public class OpenmrsUtil {
 	 * <p>
 	 * The return value matters because the credentials below are the ones the bundled dumps ship. A
 	 * boot that imported one of those dumps can rely on them; a boot that did not (the in-place
-	 * upgrade in docs/user-guide.md, which brings the operator's own {@code database/}) is
+	 * upgrade in docs/user-guide.md, which brings the operator's own {@code database/}, or an
+	 * expert-mode install whose admin password was chosen in the OpenMRS setup wizard) is
 	 * authenticating against whatever password that installation set, so this can come back 401 and
 	 * no rebuild happens at all. Callers that consume the pre-built index marker must not do so on
 	 * the strength of having merely asked - see
-	 * {@link ApplicationController#mustRebuildUnimportedDatabase(DatabaseMode, boolean)}.
+	 * {@link ApplicationController#updateSearchIndexAfterStartup(DatabaseMode, String)}.
 	 * <p>
 	 * True means only that the server accepted the request: the rebuild itself runs asynchronously,
 	 * and nothing here waits for it.

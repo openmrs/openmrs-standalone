@@ -4,10 +4,12 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import org.junit.jupiter.api.Test;
+import org.mockito.MockedStatic;
+import org.mockito.Mockito;
 
 /**
- * Unit tests for the headless UI-mode decision in {@link ApplicationController}. These cover the
- * fallback that prevents a HeadlessException when the GUI is requested on a host with no display.
+ * Unit tests for the headless UI-mode decision in {@link ApplicationController}, and for the
+ * post-startup search index decision the same class owns.
  */
 class ApplicationControllerTest {
 
@@ -79,6 +81,84 @@ class ApplicationControllerTest {
 			assertFalse(ApplicationController.mustRebuildUnimportedDatabase(mode, true),
 				"mode " + mode + " is an import, so the import path owns the index decision");
 			assertFalse(ApplicationController.mustRebuildUnimportedDatabase(mode, false));
+		}
+	}
+
+	// updateSearchIndexAfterStartup: what the two predicates above actually compose into. The marker
+	// says "appdata/lucene is still the baked demo index", so it must be spent exactly when that stops
+	// being true. Stubbing OpenmrsUtil rather than writing real files keeps these away from the
+	// working directory - OpenmrsUtilTest owns the file-system side of the same marker.
+
+	private static final String SERVER_URL = "http://localhost:8081/openmrs";
+
+	@Test
+	void updateSearchIndexAfterStartup_demoImportWithBakedIndex_reusesItAndSpendsTheMarker() {
+		try (MockedStatic<OpenmrsUtil> util = Mockito.mockStatic(OpenmrsUtil.class)) {
+			util.when(OpenmrsUtil::hasPrebuiltSearchIndex).thenReturn(true);
+
+			ApplicationController.updateSearchIndexAfterStartup(DatabaseMode.DEMO_DATABASE, SERVER_URL);
+
+			util.verify(() -> OpenmrsUtil.rebuildEntireSearchIndex(Mockito.anyString()), Mockito.never());
+			util.verify(OpenmrsUtil::clearPrebuiltSearchIndexMarker);
+		}
+	}
+
+	@Test
+	void updateSearchIndexAfterStartup_importRebuildAccepted_spendsTheMarker() {
+		try (MockedStatic<OpenmrsUtil> util = Mockito.mockStatic(OpenmrsUtil.class)) {
+			util.when(OpenmrsUtil::hasPrebuiltSearchIndex).thenReturn(true);
+			util.when(() -> OpenmrsUtil.rebuildEntireSearchIndex(SERVER_URL)).thenReturn(true);
+
+			ApplicationController.updateSearchIndexAfterStartup(DatabaseMode.EMPTY_DATABASE, SERVER_URL);
+
+			util.verify(OpenmrsUtil::clearPrebuiltSearchIndexMarker);
+		}
+	}
+
+	@Test
+	void updateSearchIndexAfterStartup_importRebuildRefused_keepsTheMarker() {
+		// Expert mode is the reachable case: the OpenMRS setup wizard has not run yet, so the REST
+		// call cannot succeed, and the operator then picks their own admin password. Spending the
+		// marker here left appdata/lucene holding the baked demo index with nothing ever rebuilding
+		// it, because a later boot imports nothing and would see no marker to act on.
+		try (MockedStatic<OpenmrsUtil> util = Mockito.mockStatic(OpenmrsUtil.class)) {
+			util.when(OpenmrsUtil::hasPrebuiltSearchIndex).thenReturn(true);
+			util.when(() -> OpenmrsUtil.rebuildEntireSearchIndex(SERVER_URL)).thenReturn(false);
+
+			ApplicationController.updateSearchIndexAfterStartup(
+					DatabaseMode.USE_INITIALIZATION_WIZARD, SERVER_URL);
+
+			util.verify(() -> OpenmrsUtil.rebuildEntireSearchIndex(SERVER_URL));
+			util.verify(OpenmrsUtil::clearPrebuiltSearchIndexMarker, Mockito.never());
+		}
+	}
+
+	@Test
+	void updateSearchIndexAfterStartup_upgradeRebuildRefused_keepsTheMarkerForTheNextBoot() {
+		// The in-place upgrade meeting a changed admin password. Keeping the marker is what makes the
+		// next start try again instead of leaving them on the demo index for good.
+		try (MockedStatic<OpenmrsUtil> util = Mockito.mockStatic(OpenmrsUtil.class)) {
+			util.when(OpenmrsUtil::hasPrebuiltSearchIndex).thenReturn(true);
+			util.when(() -> OpenmrsUtil.rebuildEntireSearchIndex(SERVER_URL)).thenReturn(false);
+
+			ApplicationController.updateSearchIndexAfterStartup(null, SERVER_URL);
+
+			util.verify(() -> OpenmrsUtil.rebuildEntireSearchIndex(SERVER_URL));
+			util.verify(OpenmrsUtil::clearPrebuiltSearchIndexMarker, Mockito.never());
+		}
+	}
+
+	@Test
+	void updateSearchIndexAfterStartup_ordinaryRestart_touchesNothing() {
+		// No import and no marker: appdata/lucene is the live index OpenMRS maintains, and rebuilding
+		// it on every start would cost minutes for nothing.
+		try (MockedStatic<OpenmrsUtil> util = Mockito.mockStatic(OpenmrsUtil.class)) {
+			util.when(OpenmrsUtil::hasPrebuiltSearchIndex).thenReturn(false);
+
+			ApplicationController.updateSearchIndexAfterStartup(null, SERVER_URL);
+
+			util.verify(() -> OpenmrsUtil.rebuildEntireSearchIndex(Mockito.anyString()), Mockito.never());
+			util.verify(OpenmrsUtil::clearPrebuiltSearchIndexMarker, Mockito.never());
 		}
 	}
 

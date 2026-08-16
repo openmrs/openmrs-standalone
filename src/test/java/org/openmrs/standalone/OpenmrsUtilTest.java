@@ -120,11 +120,12 @@ class OpenmrsUtilTest {
 			"a Demo import after that rebuild must rebuild too - the baked index is gone");
 	}
 
-	// rebuildEntireSearchIndex reports whether the server took the request. The in-place upgrade in
-	// docs/user-guide.md is the caller that needs this: it signs in with the credentials the bundled
-	// dumps ship, against a database that by definition did not come from one of them, so "asked" and
-	// "rebuilt" are not the same thing there. Treating them as the same dropped the marker on a 401
-	// and left that installation searching its own patients through the baked demo index for good.
+	// rebuildEntireSearchIndex reports whether the server took the request, which is what lets
+	// ApplicationController.updateSearchIndexAfterStartup spend the pre-built index marker only when
+	// something really was rebuilt. It signs in with the credentials the bundled dumps ship, so on any
+	// database that did not come from one of them - an in-place upgrade, an expert-mode install -
+	// "asked" and "rebuilt" are not the same thing. Treating them as the same dropped the marker on a
+	// 401 and left that installation searching its own patients through the baked demo index for good.
 
 	/** Serves one canned status on the rebuild endpoint, on a loopback port the OS picks. */
 	private HttpServer stubServer(int status) throws IOException {
