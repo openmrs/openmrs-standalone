@@ -375,6 +375,48 @@ check_no_stripped_content demo "$DEMO_SQL"
 check_complete starter "$EMPTY_SQL"
 check_complete demo "$DEMO_SQL"
 
+# The clinical bounds must be IDENTICAL in the two dumps, for the same reason the grants below must
+# be: one converged database, two cuts of it. This is the one difference that is invisible to every
+# other check here, because each of those evaluates one dump at a time and both sides pass on their
+# own — a concept simply carries a different number in each.
+#
+# It has happened. The two dumps are cut from separate boots, and the boots do not always agree about
+# which source wins for a concept that has both its own declared bounds and a conceptreferencerange
+# CSV: on 2026-08-13 the starter boot ended with respiratory rate's declared hi_absolute of 999 and
+# the demo boot, 90 minutes later on the same pinned config, with the 99 its reference-range bands
+# carry. hi_absolute/low_absolute are what core validates an obs against when no reference-range
+# criterion matches the patient, so the two options would have accepted different observations.
+#
+# Compared by content, not against a hardcoded number: the right value is whatever the content
+# package declares, and pinning it here would be an upstream constant with nothing tying the two
+# together. docs/releasing.md §2 says how to decide which side is right, and it is not automatically
+# the dump that was cut most recently. BundledDbDumpImportTest asserts the same thing at PR time,
+# from src/main/db/; this is the copy that opens the bundled zips, so it also catches an assembly
+# that shipped a stale dump.
+#
+# LC_ALL=C throughout: both dumps are invalid UTF-8 in openconceptlab's hash column, and a locale-
+# aware sed or sort would either error or order the rows differently on the two sides.
+clinical_bounds() { # $1 = dump path, $2 = table
+    LC_ALL=C sed -n "/^INSERT INTO \`$2\` VALUES\$/,/;\$/p" "$1" | LC_ALL=C grep '^(' | LC_ALL=C sort
+}
+
+check_bounds_agree() { # $1 = table
+    local table="$1" e d
+    e=$(clinical_bounds "$EMPTY_SQL" "$table")
+    d=$(clinical_bounds "$DEMO_SQL" "$table")
+    # Non-vacuity: a dump-format change that stopped this matching would otherwise compare two empty
+    # strings and report agreement, which is the one failure shape a publish gate must not have.
+    [ -n "$e" ] \
+        || fail "no \`$table\` rows found in the bundled starter database — this check is not reading the table it thinks it is, so it is not guarding anything"
+    if [ "$e" != "$d" ]; then
+        diff <(printf '%s\n' "$e") <(printf '%s\n' "$d") | head -20
+        fail "the two bundled databases disagree on \`$table\` (starter '<' vs demo '>' above) — both are cut from the same config, so one was written from a source the other did not use; decide which matches the content package before publishing (docs/releasing.md §2)"
+    fi
+}
+
+check_bounds_agree concept_numeric
+check_bounds_agree concept_reference_range
+
 # Counts the single `role` row plus every Privilege Level: Full grant. The absolute number is not the
 # point — the two dumps must AGREE, since both are cut from the same converged database.
 # `-a` for the reason on check_no_sites. Here it fails loudly rather than silently — both sides would

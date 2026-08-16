@@ -4,8 +4,10 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -161,6 +163,88 @@ class BundledDbDumpImportTest {
                     "every demo patient must have encounters — a lower count means generation"
                             + " crashed part-way (docs/releasing.md §2)");
         });
+    }
+
+    /**
+     * The clinical bounds have to be the SAME in both dumps, and this is the only check that can see
+     * it. Everything else here imports one dump into its own database, so a value that differs
+     * between the two is invisible to every assertion in {@link #assertSharedContract(Statement,
+     * String)} — each one passes on each side independently.
+     * <p>
+     * Not hypothetical. The two dumps are cut from separate boots of the same pinned config, and the
+     * boots do not always agree about which source wins for a concept that has both its own declared
+     * bounds and a {@code conceptreferencerange} CSV: on 2026-08-13 the starter boot ended with
+     * respiratory rate's declared {@code hi_absolute} of 999 and the demo boot, 90 minutes later,
+     * with the 99 its reference-range bands carry. That pair sat in this branch until review caught
+     * it by hand. {@code hi_absolute}/{@code low_absolute} are what core validates an obs against
+     * when no reference-range criterion matches the patient, so the two options would have accepted
+     * different observations.
+     * <p>
+     * Compares by content rather than against a hardcoded number: the right value is whatever the
+     * content package declares, and copying it here would just be an upstream constant with nothing
+     * tying the two together. docs/releasing.md §2 says how to decide which side is right when this
+     * fails, and it is not automatically the freshly-cut one.
+     */
+    @Test
+    public void bothDumpsShouldAgreeOnClinicalBounds() throws Exception {
+        assertDumpsAgreeOn("concept_numeric");
+        assertDumpsAgreeOn("concept_reference_range");
+    }
+
+    private void assertDumpsAgreeOn(String table) throws Exception {
+        List<String> starter = tableRows(findBundledDump("empty-db-"), table);
+        List<String> demo = tableRows(findBundledDump("demo-db-"), table);
+
+        // Non-vacuity first. A dump-format change that stopped this matching would otherwise report
+        // two empty lists as agreement, which is the one outcome a check like this must not have.
+        assertTrue(starter.size() >= 50,
+                "only " + starter.size() + " `" + table + "` rows found in the Starter dump — this"
+                        + " check is not reading the table it thinks it is");
+
+        List<String> onlyInStarter = new ArrayList<>(starter);
+        onlyInStarter.removeAll(demo);
+        List<String> onlyInDemo = new ArrayList<>(demo);
+        onlyInDemo.removeAll(starter);
+
+        assertEquals(Collections.emptyList(), onlyInStarter,
+                "the bundled databases disagree on `" + table + "`: these rows are in the Starter"
+                        + " dump but not the Demo one. Both are cut from the same config, so one of"
+                        + " them was written from a source the other did not use — decide which"
+                        + " matches the content package before shipping (docs/releasing.md §2)."
+                        + " Demo-only rows: " + onlyInDemo);
+        assertEquals(Collections.emptyList(), onlyInDemo,
+                "the bundled databases disagree on `" + table + "`: these rows are in the Demo dump"
+                        + " but not the Starter one (docs/releasing.md §2)");
+    }
+
+    /**
+     * The data rows of one table's INSERT block, read byte for byte.
+     * <p>
+     * ISO-8859-1 rather than UTF-8 because both dumps carry invalid UTF-8 in openconceptlab's hash
+     * column, which a UTF-8 reader throws on. Every byte maps in this charset, and these rows are
+     * compared against each other rather than interpreted, so a byte-faithful read is exactly right.
+     */
+    private List<String> tableRows(File dump, String table) throws IOException {
+        String header = "INSERT INTO `" + table + "` VALUES";
+        List<String> rows = new ArrayList<>();
+        boolean inBlock = false;
+        try (BufferedReader reader =
+                     Files.newBufferedReader(dump.toPath(), StandardCharsets.ISO_8859_1)) {
+            String line;
+            while ((line = reader.readLine()) != null) {
+                if (line.startsWith(header)) {
+                    inBlock = true;
+                } else if (inBlock) {
+                    if (line.startsWith("(")) {
+                        rows.add(line);
+                    }
+                    if (line.endsWith(";")) {
+                        inBlock = false;
+                    }
+                }
+            }
+        }
+        return rows;
     }
 
     /**

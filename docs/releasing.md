@@ -214,40 +214,56 @@ Both dumps carry the full dictionary and the same metadata — the *only* intend
 data. If the empty dump's concept, form, program or drug counts drop, the filter has over-reached and a
 clinician will find empty tabs.
 
-**Counts are not enough on their own: diff the previous dumps against the new ones.** A regeneration
-can move a value without moving a row, and every check on this page would still pass. It has already
-happened once. Against the dumps this replaced, two `concept_numeric` rows changed content with the
-row count identical:
+**Counts are not enough on their own: the two boots can disagree about a clinical bound.** A
+regeneration can move a value without moving a row, and every count on this page still adds up. Worse,
+the two dumps are cut from *separate* boots of the same pinned config, so the move can land on one of
+them and not the other — and then each dump looks perfectly healthy on its own.
 
-| concept | column | old dump | new dump | what the shipped config declares |
-|---|---|---|---|---|
-| CIEL 5242, Respiratory rate | `hi_absolute` | 99 | 999 | 999, in `concepts/…/findings-core_demo.csv` |
-| CIEL 785, Alkaline phosphatase | `low_absolute` | 0 | NULL | unset, in the `BasicLabTests` OCL package |
+That is what happened here. Two `concept_numeric` rows are contested, because each concept declares
+its own bounds *and* has a `conceptreferencerange` CSV that declares different ones:
 
-The new values are the right ones: each matches the concept's own declared source. The old ones were
-each the matching *reference range* (`conceptreferencerange/…/vitalsreferenceranges.csv` gives 5242 an
-Absolute high of 99 in every band; `alpreferenceranges.csv` gives 785 an Absolute low of 0), so the
-earlier dumps were cut from a boot where reference-range bounds were landing on the concept itself.
-Initializer 2.12.0's `ConceptReferenceRangeLineProcessor` only ever writes a `ConceptReferenceRange`,
-and core reads `concept_numeric` to *derive* a default range rather than writing back to it, so the
-current behaviour is the correct one. `hi_absolute`/`low_absolute` are what `ObsValidator` enforces,
-so a silent move here changes what a clinician is allowed to record.
+| concept | column | declared on the concept | declared in its reference ranges |
+|---|---|---|---|
+| CIEL 5242, Respiratory rate | `hi_absolute` | **999**, in `concepts/…/findings-core_demo.csv` | 99, in `conceptreferencerange/…/vitalsreferenceranges.csv` (all 14 age bands) |
+| CIEL 785, Alkaline phosphatase | `low_absolute` | **unset**, in the `BasicLabTests` OCL package | 0, in `alpreferenceranges.csv` (all bands) |
 
-Nothing automated catches this, and a hardcoded expectation would just be an upstream number copied
-with nothing tying the two together. Compare the tables instead, before committing:
+**The concept's own declaration is the right answer**, and the reference-range value landing on the
+concept is the bug. Which one a boot ends on is not stable: on 2026-08-13 the starter boot finished at
+10:55 with 999/unset and the demo boot at 12:26 with 99/0, from the same `content.referenceapplication-demo=1.9.2`.
+The demo dump was corrected in place to match rather than re-cut, because a re-cut is a coin toss on
+exactly this value and would churn 17 MB of regenerated uuids to settle two numbers.
+
+Why it matters: `hi_absolute`/`low_absolute` are what core validates an obs against when no
+reference-range criterion matches the patient (`ConceptServiceImpl.getConceptReferenceRange` falls
+back to `getDefaultReferenceRange(conceptNumeric)`, and `ObsValidator.validateAbsoluteRanges` rejects
+`valueNumeric` outside it). The 5242 bands key off patient age, so the fallback is what a patient with
+no usable birthdate is validated against — and the two options would have applied different limits.
+
+`BundledDbDumpImportTest.bothDumpsShouldAgreeOnClinicalBounds` and `verify-no-demo-fixtures.sh` now
+both refuse a pair of dumps that disagree on `concept_numeric` or `concept_reference_range`. Neither
+pins a number: the right value is whatever the content package declares, and copying it into a test
+would be an upstream constant with nothing tying the two together. **When that check fails, do not
+assume the freshly-cut dump is right** — open the concept's own CSV or OCL package and match against
+that.
+
+Counts still will not tell you a bound moved in *both* dumps at once, so diff against the previous
+ones too, before committing:
 
 ```bash
+VER=3.7.1
 for t in concept_numeric concept_reference_range; do
   for d in demo empty; do
-    git show HEAD:src/main/db/$d-db-$VER.sql | awk "/INSERT INTO \`$t\`/,/;\$/" > /tmp/$d-$t.old
-    awk "/INSERT INTO \`$t\`/,/;\$/" src/main/db/$d-db-$VER.sql > /tmp/$d-$t.new
+    git show HEAD:src/main/db/$d-db-$VER.sql | LC_ALL=C awk "/INSERT INTO \`$t\`/,/;\$/" > /tmp/$d-$t.old
+    LC_ALL=C awk "/INSERT INTO \`$t\`/,/;\$/" src/main/db/$d-db-$VER.sql > /tmp/$d-$t.new
     diff /tmp/$d-$t.old /tmp/$d-$t.new && echo "$d/$t unchanged"
   done
 done
 ```
 
-Anything it prints is a clinical range that moved: account for it (upstream changed, or the load did)
-before pushing, rather than discovering it in a hospital.
+`LC_ALL=C` because both dumps are invalid UTF-8 in openconceptlab's hash column. Read the output per
+dump, not in aggregate: a line for one `$d` and `unchanged` for the other is the split above, not a
+clean run. Anything it prints is a clinical range that moved — account for it (upstream changed, or
+the load did) before pushing, rather than discovering it in a hospital.
 
 Also verify the filter's edits reached the DATABASES, not just the config — both dumps are cut from a
 boot of that config, so a stale dump is how this regresses:
