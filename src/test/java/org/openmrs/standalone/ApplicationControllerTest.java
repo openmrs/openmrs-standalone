@@ -72,8 +72,10 @@ class ApplicationControllerTest {
 
 	@Test
 	void mustRebuildUnimportedDatabase_noImportWithBakedIndex_rebuilds() {
-		// The in-place upgrade in docs/user-guide.md: database/ copied in, needsconfig.txt deleted, so
-		// no database mode is ever chosen. Without this, patient search describes demo people.
+		// Three starts land here, and this predicate is the only thing covering any of them: the
+		// in-place upgrade in docs/user-guide.md (database/ copied in, needsconfig.txt deleted, so no
+		// mode is ever chosen), the start after an initialization-wizard install, and a retry after a
+		// refused rebuild. Without this, patient search describes demo people.
 		assertTrue(ApplicationController.mustRebuildUnimportedDatabase(null, true));
 	}
 
@@ -166,6 +168,56 @@ class ApplicationControllerTest {
 		}
 	}
 
+	// Two tests below assert on what the operator is told, so both have to redirect a standard stream
+	// and put it back. Restoring it is the part that must not be got wrong: a leaked redirect is
+	// silent, and every later test in the JVM would write into a dead buffer. Hence one helper each
+	// rather than the try/finally copied per test.
+
+	private static String outFrom(Runnable body) {
+		PrintStream original = System.out;
+		ByteArrayOutputStream captured = new ByteArrayOutputStream();
+		System.setOut(new PrintStream(captured, true));
+		try {
+			body.run();
+		}
+		finally {
+			System.setOut(original);
+		}
+		return captured.toString();
+	}
+
+	private static String errFrom(Runnable body) {
+		PrintStream original = System.err;
+		ByteArrayOutputStream captured = new ByteArrayOutputStream();
+		System.setErr(new PrintStream(captured, true));
+		try {
+			body.run();
+		}
+		finally {
+			System.setErr(original);
+		}
+		return captured.toString();
+	}
+
+	@Test
+	void updateSearchIndexAfterStartup_wizardMode_tellsTheOperatorToRestart() {
+		// This start cannot fix the index, so the operator carries the gap: between finishing the
+		// OpenMRS setup screens and restarting, search still answers from the bundled demo index.
+		// Nothing else tells them - no doc covers the wizard option - and one restart is the whole
+		// remedy, so the instruction has to survive edits to this message.
+		String told = outFrom(() -> {
+			try (MockedStatic<OpenmrsUtil> util = Mockito.mockStatic(OpenmrsUtil.class)) {
+				util.when(OpenmrsUtil::hasPrebuiltSearchIndex).thenReturn(true);
+
+				ApplicationController.updateSearchIndexAfterStartup(
+						DatabaseMode.USE_INITIALIZATION_WIZARD, SERVER_URL);
+			}
+		});
+
+		assertTrue(told.contains("Restart"),
+			"the wizard message must ask for the restart that rebuilds the index:\n" + told);
+	}
+
 	@Test
 	void updateSearchIndexAfterStartup_wizardInstallThenItsNextStart_rebuildsAgainstWhatTheWizardCreated() {
 		// The whole point of keeping the marker above, as the sequence a wizard install actually
@@ -227,20 +279,16 @@ class ApplicationControllerTest {
 		// survives it and the attempt repeats on every start; naming the file is what turns that from
 		// a warning an operator cannot act on into one they can. docs/user-guide.md tells them the
 		// same thing, so this pins the half of that promise that lives in code.
-		PrintStream originalErr = System.err;
-		ByteArrayOutputStream warning = new ByteArrayOutputStream();
-		try (MockedStatic<OpenmrsUtil> util = Mockito.mockStatic(OpenmrsUtil.class)) {
-			util.when(OpenmrsUtil::hasPrebuiltSearchIndex).thenReturn(true);
-			util.when(() -> OpenmrsUtil.rebuildEntireSearchIndex(SERVER_URL)).thenReturn(false);
-			System.setErr(new PrintStream(warning, true));
+		String warning = errFrom(() -> {
+			try (MockedStatic<OpenmrsUtil> util = Mockito.mockStatic(OpenmrsUtil.class)) {
+				util.when(OpenmrsUtil::hasPrebuiltSearchIndex).thenReturn(true);
+				util.when(() -> OpenmrsUtil.rebuildEntireSearchIndex(SERVER_URL)).thenReturn(false);
 
-			ApplicationController.updateSearchIndexAfterStartup(null, SERVER_URL);
-		}
-		finally {
-			System.setErr(originalErr);
-		}
+				ApplicationController.updateSearchIndexAfterStartup(null, SERVER_URL);
+			}
+		});
 
-		assertTrue(warning.toString().contains(OpenmrsUtil.PREBUILT_SEARCH_INDEX_MARKER.getPath()),
+		assertTrue(warning.contains(OpenmrsUtil.PREBUILT_SEARCH_INDEX_MARKER.getPath()),
 			"the warning must name the marker file, since deleting it is the only way to stop the retry:\n"
 			        + warning);
 	}

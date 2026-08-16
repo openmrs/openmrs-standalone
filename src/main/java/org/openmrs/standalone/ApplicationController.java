@@ -224,15 +224,22 @@ public class ApplicationController {
 	 * <p>
 	 * A surviving marker means {@code appdata/lucene} is the index baked against the bundled demo
 	 * dump. If this boot imported no database, then whatever is in {@code database/} arrived by other
-	 * means - the in-place upgrade in docs/user-guide.md copies the operator's own database in and
-	 * deletes {@code needsconfig.txt}, which is what leaves the database question unasked. Their
-	 * patients would then be searched through an index describing demo people: hits that do not exist
-	 * and misses that do, with nothing logged.
+	 * means, and searching it through an index describing demo people gives hits that do not exist and
+	 * misses that do, with nothing logged. Three starts arrive here, and this is the only branch that
+	 * covers any of them:
+	 * <ul>
+	 * <li>the in-place upgrade in docs/user-guide.md, which copies the operator's own database in and
+	 * deletes {@code needsconfig.txt}, so the database question is never asked;
+	 * <li>the start after an initialization-wizard install, whose replacement database OpenMRS built
+	 * during its own setup and did <em>not</em> index (see
+	 * {@link #updateSearchIndexAfterStartup(DatabaseMode, String)}) - the wizard boot itself keeps the
+	 * marker precisely so that this fires;
+	 * <li>a retry, because a rebuild the server refused leaves the marker in place.
+	 * </ul>
 	 * <p>
-	 * This cannot fire on a normal first run, which always answers the database question because the
-	 * distribution ships {@code needsconfig.txt}. It CAN fire on more than one restart, deliberately:
-	 * a rebuild the server refuses leaves the marker in place, so the next start tries again. Pure so
-	 * it can be unit-tested.
+	 * It cannot fire on a normal first run, which always answers the database question because the
+	 * distribution ships {@code needsconfig.txt}. It CAN therefore fire on more than one restart,
+	 * deliberately. Pure so it can be unit-tested.
 	 *
 	 * @param mode the database the user chose to import, or null when none was chosen
 	 * @param hasPrebuiltIndex whether the marker is still present
@@ -312,9 +319,16 @@ public class ApplicationController {
 			// So the baked demo index survives this whole mode untouched, and keeping the marker is
 			// what lets the NEXT start correct it through mustRebuildUnimportedDatabase below, once
 			// there is a database and a server that can answer.
+			//
+			// Say that out loud rather than only logging the decision: this start cannot fix the
+			// index, so between finishing OpenMRS's setup and restarting, search is still answering
+			// out of the bundled demo index. Nothing else would tell them, and one restart is the
+			// whole remedy.
 			if (hasPrebuiltIndex) {
 				System.out.println("The initialization wizard is replacing the database, so there is nothing to"
-				        + " rebuild against yet; the next start indexes whatever it creates.");
+				        + " rebuild the search index against yet. Restart the standalone once you have finished"
+				        + " the OpenMRS setup screens: until then search still answers from the index built for"
+				        + " the bundled demo database, and that restart is what rebuilds it against your data.");
 			}
 			return;
 		}
