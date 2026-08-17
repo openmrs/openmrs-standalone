@@ -48,20 +48,26 @@ filtered config. Read that script's header for the reasoning; the short version 
 | edit | why it is safe |
 |---|---|
 | drops the 50 `Site N` locations | filler; all tagged Login + Visit, so they buried the real ones |
-| drops `Test Form 1`, `Form Engine Cookbook`, `Cookbook Library`, the orphan FR translation | developer scaffolding |
+| drops locations `Ward 1`..`Ward N`, `Mobile Clinic`, `Community Outreach`, and the `Community Outreach` cash point — 11 locations become 6 | `Ward N` is `Site N` in different words: enumerated placeholders duplicating the tags `Inpatient Ward` already carries, with no children and no beds (all six `bed*` tables ship empty). `Mobile Clinic` and `Community Outreach` are Login + Visit Location with nothing pointing at them. The cash point goes because cashpoints name their location as free text, so it would dangle. **What stays, and why it must:** `Outpatient Clinic` is the only Queue, Appointment and Facility Location and the target of both queues; `My Hospital` is the Visit Location *ancestor* that lets a visit start at either remaining Login Location; `Inpatient Ward` is the last Admission/Transfer Location; `Unknown Location` is core's. `Main Pharmacy` and `Main Store` are created by the stockmanagement module, not this config, and its operation scopes key on their tags |
+| keeps only the forms on an **allowlist** — today just `ipd_admission_request` ("Ward Admission") — and drops every other form plus any translation left without its form | a form ships published, so it is a live data-entry path in every patient's chart, and its questions encode one site's protocol. To earn a place, removing it has to stop a shipped feature working; being plausible content or a good authoring example does not count — `esm-form-builder-app` ships for that. `Ward Admission` passes because it writes the disposition construct (`CIEL:169405`, disposition `ADMIT`) that esm-ward-app reads over `emrapi/inpatient/request`, and nothing else in the config produces one. The rest are covered elsewhere: notes by esm-patient-notes, lab results by `esm-patient-orders-app#exportedTestResultsFormWorkspace`, procedures by esm-patient-procedures-app's own workspace. An allowlist, not a denylist, because "drop" is the common case — a denylist would silently ship whatever forms the next refapp release adds |
 | drops the `addresshierarchy` domain | `addressConfiguration.xml` + 344 rows of **Cambodian** provinces. A no-op today — Initializer's loader wants that XML directly under `addresshierarchy/` and build-distro nests it under `addresshierarchy/<package>/`, so both dumps already carried core's address template and no `address_hierarchy_entry` rows. Removed so it cannot start applying: `<wipe>true</wipe>` in that XML would swap the address template for province/district/commune fields |
 | drops payment mode `Paypal`, identifier type `SSN` | Paypal is odd for a hospital, `SSN` is US-specific with a format regex |
 | drops relationship types `Uncle/Nephew`, `Friend/Friend`, `Aunt/Niece` | the last is already retired upstream; `Clinician/Patient` and `CHW/Patient` stay |
-| **renames** `Ubuntu Hospital` → `My Hospital` | it is the hierarchy's parent and the only Visit Location, so deleting it would orphan its children. The rename also rewrites the `Parent` column of all 5 children and the description — they reference the parent by NAME, not uuid |
+| **renames** `Ubuntu Hospital` → `My Hospital` | it is the hierarchy's parent and the only Visit Location, so deleting it would orphan its children *and* leave no Visit Location above any Login Location. The rename also rewrites the `Parent` column of its children and the description — they reference the parent by NAME, not uuid. It runs *after* the location drops, so it now rewrites 2 child references rather than 5 |
 | **sets** `createDemoPatientsOnNextStartup` to 0 | not deleted, because `generate-demo-data-locally.sh` patches that same property. Today only the shipped checksums stop Initializer applying `50`, so a site that edits any config file could find 50 demo patients in production |
 
 **Do not extend this into dropping the whole `referenceapplication-demo` package.** It is not "the
 data the demo needs" — it is the worked example of a content package an implementation should write,
 and it holds nearly everything that makes O3 usable without configuration. Measured on a distro built
 from `referenceapplication` alone: 378 concepts, no visit type, no identifier source, no diagnoses and
-no formulary — you can log in and then do nothing. What *is* deliberately kept: the clinical forms, the
-programs (HIV Care and Treatment, PMTCT and PEP/PrEP are among the most widely run OpenMRS programs),
-the billable services, appointment services and queues. Each is what makes its feature work on day one.
+no formulary — you can log in and then do nothing. What *is* deliberately kept: the programs (HIV Care
+and Treatment, PMTCT and PEP/PrEP are among the most widely run OpenMRS programs), the billable
+services, appointment services and queues. Each is what makes its feature work on day one.
+
+Forms are the exception, and the row above says why. That reasoning stops at metadata a site fills in
+with its own data; a form is not that — it arrives published and immediately usable against real
+patients, carrying one site's questions. The Starter option therefore ships one form, the only one whose
+absence breaks a feature.
 
 **⚠️ Do not trust `scripts/generate-db-dumps.sh`'s fixed `sleep 60`** — for O3 that is
 far too short. Full initialization takes **~14 minutes**: concepts load to ~4254 first
@@ -180,7 +186,9 @@ UPDATE concept_numeric cn
 #    dropped. Likewise stockmanagement creates one `stockmgmt_party` per location that exists when
 #    it starts. A second startup, with every privilege and location already present, completes both.
 #    Measured on 3.7.1: role_privilege 488 → 668 (Privilege Level: Full 215 → 307, High 213 → 301)
-#    and stockmgmt_party 3 → 11. Dumping after boot 1 - which is what earlier releases did - shipped
+#    and stockmgmt_party 3 → 6. That last number is one party per location, so it tracks the location
+#    count rather than being a constant: it read 3 → 11 before the location trim cut 11 locations to 6,
+#    and it will move again if that list changes. Dumping after boot 1 - which is what earlier releases did - shipped
 #    a starter DB whose privilege-level roles were missing 180 grants the demo DB had.
 docker compose restart web
 # poll until role_privilege stops growing (~1 min; concepts are already loaded and are not re-imported)
@@ -327,10 +335,16 @@ a failed import rather than throwing, so a malformed dump would first surface as
 option. CI does boot the *demo* dump for the Lucene bake, but only on a push to the release branch —
 never on a pull request — and the starter dump is booted nowhere else at all.
 
-(3.7.1 actuals: demo = 4254 concept / 11 location / 7 form / 50 patient / 5821 obs / 278 visit /
-1415 enc / 668 role_privilege / 11 stockmgmt_party; empty is identical minus the patient data.
-Every demo visit lands on a single Visit Location — Community Outreach on 3.7.1 — because
-`referencedemodata` draws it once from a fixed seed; that is upstream behaviour, not a bad dump.)
+(3.7.1 actuals, measured on the regeneration that introduced the form and location trims: demo = 4254
+concept / 6 location / 1 form / 50 patient / 5821 obs / 278 visit / 1415 enc / 668 role_privilege /
+6 stockmgmt_party; empty is identical minus the patient data. The location and form counts were 11 and
+7 before those trims; every other number is unchanged by them, which is the point — trimming metadata
+did not perturb the fixed-seed demo generation at all.
+Every demo visit lands on a single Visit Location — `My Hospital` now that the trim removed the other
+two, `Community Outreach` before it — because `referencedemodata` draws it once from a fixed seed; that
+is upstream behaviour, not a bad dump. Worth knowing that it *draws* rather than indexes: leaving one
+Visit Location standing was the case that could have aborted generation, and it did not — 50/50 patients
+still generated, all with encounters, and no `error.value.outOfRange` in the web log.)
 
 ### 3. Bump the version strings
 

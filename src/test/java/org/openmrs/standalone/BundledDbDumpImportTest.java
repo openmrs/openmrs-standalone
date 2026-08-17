@@ -287,6 +287,40 @@ class BundledDbDumpImportTest {
         assertTrue(locationsTagged(stmt, "Queue Location") >= 1,
                 label + " database needs a Queue Location or /home (Service queues) throws on load");
 
+        // The inpatient feature's own location tag. 'Ward Admission' — the one form that ships — sources
+        // its required admitToLocation field from this tag, and esm-ward-app lists the wards carrying it.
+        assertTrue(locationsTagged(stmt, "Admission Location") >= 1,
+                label + " database needs an Admission Location or 'Ward Admission' cannot be completed"
+                        + " and esm-ward-app has no ward to list");
+
+        // Every Login Location needs a Visit Location at or above it: O3 resolves a visit's location by
+        // walking up from the session location to the nearest one so tagged, so without it a user signs
+        // in and then cannot start a visit. Asserted per-login-location rather than as a count, because
+        // a Visit Location parked somewhere outside those chains satisfies a count and nothing else.
+        // strip-demo-fixtures.sh removed the two locations that were Visit Locations in their own right,
+        // leaving 'My Hospital' as the sole ancestor that makes this true — and it is the placeholder a
+        // site is invited to rename, so it is exactly the row someone deletes without realising.
+        assertEquals(0, count(stmt,
+                        "WITH RECURSIVE chain AS ("
+                                + "  SELECT location_id AS root, location_id AS node, parent_location"
+                                + "    FROM location WHERE retired = 0"
+                                + "  UNION ALL"
+                                + "  SELECT c.root, l.location_id, l.parent_location"
+                                + "    FROM chain c JOIN location l ON l.location_id = c.parent_location"
+                                + "   WHERE l.retired = 0)"
+                                + " SELECT COUNT(*) FROM location l"
+                                + " JOIN location_tag_map m ON m.location_id = l.location_id"
+                                + " JOIN location_tag t ON t.location_tag_id = m.location_tag_id"
+                                + "  AND t.name = 'Login Location'"
+                                + " WHERE l.retired = 0 AND NOT EXISTS ("
+                                + "   SELECT 1 FROM chain c"
+                                + "   JOIN location_tag_map m2 ON m2.location_id = c.node"
+                                + "   JOIN location_tag t2 ON t2.location_tag_id = m2.location_tag_id"
+                                + "    AND t2.name = 'Visit Location'"
+                                + "   WHERE c.root = l.location_id)"),
+                label + " database has Login Location(s) with no 'Visit Location' at or above them —"
+                        + " a user can sign in there and then cannot start a visit");
+
         // A clinician has to be able to work on day one, without configuring anything.
         assertTrue(count(stmt, "SELECT COUNT(*) FROM visit_type") >= 1,
                 label + " database needs a visit type or no visit can be started");
@@ -314,18 +348,46 @@ class BundledDbDumpImportTest {
         assertEquals(0, count(stmt, "SELECT COUNT(*) FROM patient_identifier_type"
                         + " WHERE name = 'SSN'"),
                 label + " database still defines the US-specific 'SSN' identifier type");
-        assertEquals(0, count(stmt, "SELECT COUNT(*) FROM form WHERE name IN"
-                        + " ('Test Form 1', 'Form Engine Cookbook', 'Form Engine Cookbook Library')"),
-                label + " database still contains developer forms");
+        // No assertion here for 'Test Form 1' or the two Cookbook forms: the exact form COUNT below,
+        // together with the 'Ward Admission' assertion above, already makes any other form impossible.
         assertEquals(0, count(stmt, "SELECT COUNT(*) FROM relationship_type"
                         + " WHERE CONCAT(a_is_to_b, '/', b_is_to_a) IN"
                         + " ('Uncle/Nephew', 'Aunt/Niece', 'Friend/Friend')"),
                 label + " database still contains the demo relationship types");
+        assertEquals(0, count(stmt, "SELECT COUNT(*) FROM location"
+                        + " WHERE name REGEXP '^Ward [0-9]+$'"
+                        + "    OR name IN ('Mobile Clinic', 'Community Outreach')"),
+                label + " database still contains the demo placeholder locations — 'Ward N' duplicates"
+                        + " the tags 'Inpatient Ward' already carries, and no bed is mapped to any of"
+                        + " them");
+        assertEquals(0, count(stmt, "SELECT COUNT(*) FROM cashier_cash_point"
+                        + " WHERE name = 'Community Outreach'"),
+                label + " database still has the cash point named after the removed 'Community Outreach'"
+                        + " location — cashpoints resolve their location by name, so it would dangle");
+        // Exactly one form, not merely "no developer forms". A count is what catches the failure that
+        // actually happened: a regeneration cut on a surviving Docker volume re-applied the six deleted
+        // form JSONs and shipped 7 forms from a config declaring 1, and every name-based check passed.
+        assertEquals(1, count(stmt, "SELECT COUNT(*) FROM form"),
+                label + " database must ship exactly one form (the allowlisted 'Ward Admission') —"
+                        + " anything more means the dump was cut from an unfiltered config, or on a"
+                        + " Docker volume left behind by an earlier run");
         // The clinically useful ones must survive the same edit — a filter that over-matched would
         // leave a hospital unable to record who brought the patient in.
         assertEquals(1, count(stmt, "SELECT COUNT(*) FROM relationship_type"
                         + " WHERE CONCAT(a_is_to_b, '/', b_is_to_a) = 'Clinician/Patient'"),
                 label + " database lost the 'Clinician/Patient' relationship type");
+        // strip-demo-fixtures.sh reduced the forms to one allowlist entry, `ipd_admission_request`.
+        // Named here by the form's NAME rather than its filename stem, because that is what reaches
+        // the database. This is the half of that edit that can be asserted against a committed dump:
+        // it has to be PRESENT. Asserting the absence of the six that were dropped has to wait for
+        // the dumps to be regenerated, since the ones committed today were cut before the allowlist
+        // existed and still carry all seven.
+        assertEquals(1, count(stmt, "SELECT COUNT(*) FROM form WHERE name = 'Ward Admission'"
+                        + " AND retired = 0"),
+                label + " database has no 'Ward Admission' form — it writes the disposition construct"
+                        + " (CIEL:169405, disposition ADMIT) that esm-ward-app reads over"
+                        + " emrapi/inpatient/request, and nothing else in the shipped config produces"
+                        + " one, so the ward and bed-management apps ship with a queue nothing fills");
         assertEquals("0", stringValue(stmt, "SELECT property_value FROM global_property"
                         + " WHERE property = 'referencedemodata.createDemoPatientsOnNextStartup'"),
                 "createDemoPatientsOnNextStartup must ship as 0 in the " + label + " database:"
