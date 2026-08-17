@@ -110,11 +110,13 @@ read -r RR_ROWS RR_CONCEPTS DIVERGENT OFFENDERS INVERTED <<<"$COUNTS"
 # empty one, which restarts.
 [ "${RR_ROWS:-0}" -gt 0 ] || {
     echo "❌ concept_reference_range is empty, so the clamp had nothing to clamp against and this" >&2
-    echo "   check proves nothing. Two candidates. The config: those CSVs ship only in the" >&2
-    echo "   referenceapplication-demo content package, so check that strip-demo-fixtures.sh has not" >&2
-    echo "   started removing the conceptreferencerange domain and that the domain loaded without" >&2
-    echo "   error. Or the timing: initializer loads conceptreferencerange after concepts, so a caller" >&2
-    echo "   that only waits on the concept count can arrive before any range exists." >&2
+    echo "   check proves nothing. Look at two things, in no particular order. The config: those CSVs" >&2
+    echo "   ship only in the referenceapplication-demo content package, so check that" >&2
+    echo "   strip-demo-fixtures.sh has not started removing the conceptreferencerange domain, and" >&2
+    echo "   that the domain loaded without error. And where this call sits in the boot: initializer" >&2
+    echo "   loads conceptreferencerange after concepts, so a call placed before that domain has run" >&2
+    echo "   sees an empty table. Both callers wait for an authenticated REST session first, which" >&2
+    echo "   should put them past it - if it did not, that assumption is the thing to check." >&2
     exit 1
 }
 [ "${DIVERGENT:-1}" = "0" ] || {
