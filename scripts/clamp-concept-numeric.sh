@@ -75,10 +75,10 @@ UPDATE concept_numeric cn
 
 # Now prove it, and prove it NON-VACUOUSLY. The divergence count alone is worthless on its own: with
 # no concept_reference_range rows loaded there is nothing for a ConceptNumeric to diverge FROM, so the
-# count is 0 and a clamp that updated nothing reports success. That is reachable - initializer 2.12.0's
-# Domain enum orders CONCEPT_REFERENCE_RANGE after CONCEPTS, so a clamp run early in a boot can land
-# before there is anything to clamp against - and it is silent, which is the one failure shape a
-# producer must not have. Hence both numbers: reference ranges must exist, AND nothing may still
+# count is 0 and a clamp that updated nothing reports success. Note that the guard does not rest on any
+# one cause - an empty table reads as "clean" whatever emptied it, whether the domain was stripped from
+# the config, failed to load, or simply had not loaded yet. So the check is worth having without
+# settling how it would happen. Hence both numbers: reference ranges must exist, AND nothing may still
 # exceed them. The ids come back too, because the caller is about to lose this database (see below)
 # and a bare count would leave nothing to act on.
 # The last column is a separate hazard the clamp cannot fix and TOO_WIDE cannot see. TOO_WIDE tests
@@ -120,20 +120,23 @@ read -r RR_ROWS RR_CONCEPTS DIVERGENT OFFENDERS INVERTED <<<"$COUNTS"
 [ "${DIVERGENT:-1}" = "0" ] || {
     echo "❌ ${DIVERGENT:-?} ConceptNumeric row(s) still exceed their reference-range intersection" >&2
     echo "   after the clamp: concept_id ${OFFENDERS:-unknown}." >&2
-    echo "   Demo generation would abort part-way, so this database is not safe to dump. The UPDATE" >&2
-    echo "   above uses this very test as its WHERE, so a row surviving it does not mean those bands" >&2
-    echo "   are too narrow - the likely cause is that the reference-range aggregate MOVED between the" >&2
-    echo "   two statements, because initializer loads conceptreferencerange after concepts and this" >&2
-    echo "   was called inside that window. Clamp later in the boot. Failing that, something else" >&2
-    echo "   wrote to concept_numeric or concept_reference_range in between." >&2
+    echo "   Demo generation would abort part-way, so this database is not safe to dump. Do not read" >&2
+    echo "   this as the bands being too narrow: the UPDATE above uses this very test as its WHERE, so" >&2
+    echo "   on the state it saw, no row could have survived. Something changed between the two" >&2
+    echo "   statements - either concept_numeric or concept_reference_range was written to (initializer" >&2
+    echo "   loads conceptreferencerange after concepts, so a clamp early in a boot is one way), or the" >&2
+    echo "   UPDATE did not take effect on the rows it reported. Which of those it was is not something" >&2
+    echo "   this script can tell you; the server's own log for this window is the place to look." >&2
     exit 1
 }
 [ "${INVERTED:-x}" = "-" ] || {
-    echo "❌ Clamping left concept_id ${INVERTED:-unknown} with low_absolute above hi_absolute, which" >&2
-    echo "   no observation can satisfy. This one IS the CSVs: those concepts have reference-range" >&2
-    echo "   bands whose highest Absolute low sits above their lowest Absolute high, and the clamp" >&2
-    echo "   takes each bound from its own aggregate, so it cannot reconcile them. Fix the bands in" >&2
-    echo "   the conceptreferencerange CSVs before the next boot." >&2
+    echo "❌ concept_id ${INVERTED:-unknown} has low_absolute above hi_absolute, which no observation" >&2
+    echo "   can satisfy. Two origins, and the row alone does not say which. Either the reference-range" >&2
+    echo "   bands contradict each other - highest Absolute low above lowest Absolute high - and the" >&2
+    echo "   clamp took each bound from its own aggregate without reconciling them; or the concept" >&2
+    echo "   already shipped inverted from its own source and sits inside the intersection, so the" >&2
+    echo "   clamp never matched it and left it alone. Compare the concept's declared bounds with its" >&2
+    echo "   conceptreferencerange CSV to tell them apart, and fix that source before the next boot." >&2
     exit 1
 }
 echo "✅ ConceptNumeric is within its reference-range intersection" \
