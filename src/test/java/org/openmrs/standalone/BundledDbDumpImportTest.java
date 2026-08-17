@@ -378,10 +378,8 @@ class BundledDbDumpImportTest {
                 label + " database lost the 'Clinician/Patient' relationship type");
         // strip-demo-fixtures.sh reduced the forms to one allowlist entry, `ipd_admission_request`.
         // Named here by the form's NAME rather than its filename stem, because that is what reaches
-        // the database. This is the half of that edit that can be asserted against a committed dump:
-        // it has to be PRESENT. Asserting the absence of the six that were dropped has to wait for
-        // the dumps to be regenerated, since the ones committed today were cut before the allowlist
-        // existed and still carry all seven.
+        // the database. This is the half that says the survivor is PRESENT; the exact COUNT below is
+        // what says nothing else is, and the two together are what make any other form impossible.
         assertEquals(1, count(stmt, "SELECT COUNT(*) FROM form WHERE name = 'Ward Admission'"
                         + " AND retired = 0"),
                 label + " database has no 'Ward Admission' form — it writes the disposition construct"

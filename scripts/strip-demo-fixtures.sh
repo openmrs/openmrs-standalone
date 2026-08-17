@@ -11,10 +11,14 @@ set -euo pipefail
 # `referenceapplication-demo` is not "the data the demo needs" - it is the worked example of a content
 # package an implementation should write, and it holds nearly everything that makes O3 usable without
 # configuration: the concept dictionary, the formulary, the lab and diagnosis catalogs, the identifier
-# scheme, visit types, programs, forms, queues, appointment services and billing. `referenceapplication`
+# scheme, visit types, programs, queues, appointment services and billing. `referenceapplication`
 # alone gives you a system you can log into and then do nothing with (measured: 378 concepts, no visit
-# type, no identifier source). So the Starter option ships the demo package WHOLE and edits out the
-# short list below - everything else is content a clinician needs on day one.
+# type, no identifier source). So the Starter option ships the demo package WHOLE and edits out the list
+# below rather than dropping the package.
+#
+# Forms are deliberately absent from that enumeration, and the Forms section below carries the evidence:
+# they are the one part of the package O3 does not need in order to work, because every clinical feature
+# that wants structured entry ships its own React workspace instead of a form.
 #
 # WHAT COMES OUT, AND WHY EACH ONE IS SAFE
 #
@@ -23,7 +27,8 @@ set -euo pipefail
 #     fixed-seed randomizer put every generated visit at "Site 42".
 #   * locations `Ward 1`..`Ward N`, `Mobile Clinic` and `Community Outreach`, plus the `Community Outreach`
 #     cash point that named one of them - see the Locations section, which also records why each of the
-#     four survivors cannot go. 11 locations become 6.
+#     four survivors in that CSV cannot go. The database ends up with 6 rather than 4, and 11 before:
+#     `Main Pharmacy` and `Main Store` are created by the stockmanagement module, not by this config.
 #   * every form except `Ward Admission`, and any translation left without its form - see the allowlist
 #     further down, which carries the per-form reasoning. `Test Form 1` (published, so it shows in the
 #     chart), `Form Engine Cookbook` and its Library were always going; the clinical ones followed once

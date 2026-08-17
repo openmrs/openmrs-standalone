@@ -23,6 +23,14 @@ set -uo pipefail
 #   * a clinical bound that reached one dump's boot and not the other's — step (c)'s ConceptNumeric
 #     clamp is the one that moves. Each dump then looks healthy on its own, and only holding the two
 #     against each other shows that the options would validate the same observation differently.
+#   * a dump cut on a Docker volume left behind by an earlier run. The distro copies config OVER
+#     `/openmrs/data/configuration` instead of replacing it, so a surviving volume re-applies the files
+#     the build DELETED. Observed: a dump carrying the trimmed location list and the UNtrimmed form list
+#     at once, from a config shipping one form. No single-sided check can see that, because a modified
+#     file is overwritten and looks right while a deleted one just stays — only holding the dump against
+#     the config it was supposedly cut from does. scripts/generate-*-locally.sh now `down -v` before
+#     booting; this gate is the belt to that braces, and additionally covers a stale dump the assembly
+#     bundled.
 #
 # Checks the ASSEMBLED artifact (shipped Initializer config + both bundled DB zips), not the repo, so
 # it also catches an assembly that bundled the wrong file. Run it locally before pushing a dump
@@ -113,8 +121,12 @@ fi
     || fail "no ampathforms domain in the shipped config — the layout changed, so the form checks below are not looking at anything"
 
 FORMS_KEEP=$(sed -n 's/^FORMS_KEEP="\(.*\)"$/\1/p' "$(dirname "$0")/strip-demo-fixtures.sh" 2>/dev/null | head -1)
+# An empty result means either an unreadable line or a deliberately emptied allowlist, and this gate
+# cannot tell those apart — so the message names both rather than guessing. Deciding to ship no forms at
+# all is a coherent future choice, but it is not a one-line change here: the non-vacuity guards in
+# check_forms_match_config below both assume the allowlist asks for at least one form.
 [ -n "$FORMS_KEEP" ] \
-    || fail "could not read FORMS_KEEP from $(dirname "$0")/strip-demo-fixtures.sh — this gate cannot tell which forms are supposed to ship"
+    || fail "FORMS_KEEP in $(dirname "$0")/strip-demo-fixtures.sh is unreadable or empty — this gate cannot tell which forms are supposed to ship. If shipping none was the intent, check_forms_match_config's non-vacuity guards need changing with it"
 
 EXTRA_FORMS=""
 while IFS= read -r form; do
@@ -239,6 +251,12 @@ require_tagged "Admission Location" \
 # strip-demo-fixtures.sh rewrites the Parent column when it renames). A chain that leaves the CSV counts
 # as unreachable: it may well resolve against a module-created location at runtime, but this gate cannot
 # prove a visit can start, and for a publish gate that is the safe direction to fail in.
+#
+# `-exec ... {} +`, NOT `\;`, and unlike the two per-file counters above: this walk needs every location
+# in ONE awk invocation, because a Parent may live in a different CSV from its child. With `\;` awk runs
+# once per file, that Parent resolves to nothing, and a perfectly valid config split across two files
+# fails the publish. The counters at DEMO_RT and SSN sum per-file totals through `paste -sd+ - | bc`, so
+# `\;` is right for them and wrong here.
 UNREACHABLE=$(find "$LOC" -type f -name '*.csv' -exec awk -F',' '
     function trim(s) { gsub(/^[ \t]+|[ \t]+$/, "", s); return s }
     FNR == 1 {
@@ -269,7 +287,7 @@ UNREACHABLE=$(find "$LOC" -type f -name '*.csv' -exec awk -F',' '
             }
             if (!ok) print n
         }
-    }' {} \; | sort -u | paste -sd, -)
+    }' {} + | sort -u | paste -sd, -)
 [ -z "$UNREACHABLE" ] \
     || fail "shipped Login Location(s) with no 'Visit Location' at or above them: $UNREACHABLE — a user can sign in there and then cannot start a visit. Either tag one of their ancestors 'Visit Location' or give them a Parent that has it"
 
@@ -409,11 +427,21 @@ config_form_names() {
         perl -0ne 'print "$1\n" if m{"name"\s*:\s*"([^"]*)"}' {} \; | LC_ALL=C sort -u
 }
 
-# LC_ALL=C on the sed for the reason clinical_bounds() gives: it streams the whole dump, and both dumps
-# are invalid UTF-8 in openconceptlab's hash column.
+# The single place that knows how mysqldump lays an INSERT out: the `INSERT INTO `t` VALUES` header on its
+# own line, then one `(...)` tuple per line. Both dump_form_names and clinical_bounds below depend on that
+# shape, so it is stated once — if a future dump is ever cut with --skip-extended-insert, or with the
+# --insert-ignore/--replace variants this file warns about elsewhere, there is one range to fix, not two.
+#
+# LC_ALL=C because this streams the whole dump, and both dumps are invalid UTF-8 in openconceptlab's hash
+# column, which a locale-aware sed can error on. The backticks are MySQL identifier quoting and have to
+# stay inside double quotes so $2 still expands — taking shellcheck's SC2016 advice here would turn them
+# into a command substitution.
+dump_rows() { # $1 = dump path, $2 = table; echoes one line per row tuple
+    LC_ALL=C sed -n "/^INSERT INTO \`$2\` VALUES\$/,/;\$/p" "$1" | LC_ALL=C grep '^('
+}
+
 dump_form_names() { # $1 = dump path
-    LC_ALL=C sed -n "/^INSERT INTO \`form\` VALUES\$/,/;\$/p" "$1" \
-        | LC_ALL=C grep '^(' \
+    dump_rows "$1" form \
         | LC_ALL=C sed "s/^([0-9]*,'\([^']*\)'.*/\1/" | LC_ALL=C sort -u
 }
 
@@ -573,12 +601,11 @@ check_complete demo "$DEMO_SQL"
 # which this script never runs on; this is the copy that opens the bundled zips, so it additionally
 # catches an assembly that shipped a stale dump.
 #
-# LC_ALL=C on the sed: it streams the whole dump, and both dumps are invalid UTF-8 in
-# openconceptlab's hash column, which a locale-aware sed can error on. On sort it is belt and braces
-# - both sides get the same locale and comparator, and neither of these two tables holds a
+# Row extraction is dump_rows' business, including why it forces LC_ALL=C. On the sort here it is belt and
+# braces - both sides get the same locale and comparator, and neither of these two tables holds a
 # non-ASCII byte - kept so the pipeline does not depend on that staying true.
 clinical_bounds() { # $1 = dump path, $2 = table
-    LC_ALL=C sed -n "/^INSERT INTO \`$2\` VALUES\$/,/;\$/p" "$1" | LC_ALL=C grep '^(' | LC_ALL=C sort
+    dump_rows "$1" "$2" | LC_ALL=C sort
 }
 
 check_bounds_agree() { # $1 = table
