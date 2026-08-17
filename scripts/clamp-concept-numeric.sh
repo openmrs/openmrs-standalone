@@ -24,17 +24,19 @@ set -uo pipefail
 # ones, reproducibly on every regeneration, because two scripts cut the two dumps from two separate
 # boots. The two shipped databases then disagreed about what a clinician may record, and every row
 # count on both sides still added up. Note what the actual defect was: an omission, not a divergence
-# between copies. De-duplicating would not have caught it. What catches it is the verification below,
-# which is why that lives here in the producer rather than only in the detectors. One shared copy is
-# for the next edit, so the two callers cannot drift from each other later.
+# between copies, so de-duplicating would not have caught it - and neither would the verification
+# below, which cannot run in a script that never calls this one. What caught that shape is the pair of
+# cross-dump detectors named at the end of this header. One shared copy is for the next edit, so the
+# two callers cannot drift from each other later.
 #
 # docs/releasing.md §2 step (c) is the same statement inline, for the Docker runbook that cuts both
 # dumps from one database and so only needs it once. Change this and change that.
 #
 # BundledDbDumpImportTest.bothDumpsShouldAgreeOnClinicalBounds and scripts/verify-no-demo-fixtures.sh
-# are the detectors on the other side: they compare the two shipped dumps to each other, so they
-# catch this reaching one boot and not the other. They cannot catch it being skipped on both, which
-# is the other reason the verification belongs here.
+# are the detectors on the other side: they compare the two shipped dumps to each other, so they catch
+# this reaching one boot and not the other - which is the shape that actually shipped. What they cannot
+# catch is it being skipped, or silently matching nothing, on BOTH sides at once. That case is the
+# whole reason the verification below belongs here in the producer.
 
 DB_CONTAINER="${1:-}"
 DB_ROOT_PASSWORD="${2:-}"
@@ -79,37 +81,60 @@ UPDATE concept_numeric cn
 # producer must not have. Hence both numbers: reference ranges must exist, AND nothing may still
 # exceed them. The ids come back too, because the caller is about to lose this database (see below)
 # and a bare count would leave nothing to act on.
+# The last column is a separate hazard the clamp cannot fix and TOO_WIDE cannot see. TOO_WIDE tests
+# each bound against its own aggregate and never compares rr_low with rr_hi, so a concept whose bands
+# contradict each other - MAX low above MIN hi - gets clamped to low=rr_low, hi=rr_hi and then passes
+# cleanly. Measured: inject such a band for 4184 and the row comes out low_absolute 200, hi_absolute
+# 99, with divergence reported as 0. That ships a concept no observation can satisfy, silently, so it
+# is checked separately rather than folded into the predicate the UPDATE shares.
 COUNTS=$(mysql_exec -N -B -e "
 SELECT (SELECT COUNT(*) FROM concept_reference_range),
+       (SELECT COUNT(DISTINCT concept_id) FROM concept_reference_range),
        (SELECT COUNT(*) FROM concept_numeric cn $RR_JOIN WHERE $TOO_WIDE),
        (SELECT COALESCE(GROUP_CONCAT(cn.concept_id ORDER BY cn.concept_id), '-')
-          FROM concept_numeric cn $RR_JOIN WHERE $TOO_WIDE);") || {
+          FROM concept_numeric cn $RR_JOIN WHERE $TOO_WIDE),
+       (SELECT COALESCE(GROUP_CONCAT(cn.concept_id ORDER BY cn.concept_id), '-')
+          FROM concept_numeric cn $RR_JOIN
+         WHERE cn.low_absolute IS NOT NULL AND cn.hi_absolute IS NOT NULL
+           AND cn.low_absolute > cn.hi_absolute);") || {
     echo "❌ Could not query the database to verify the clamp. The UPDATE above may or may not have" >&2
     echo "   applied, so this database is not safe to dump." >&2
     exit 1
 }
-read -r RR_ROWS DIVERGENT OFFENDERS <<<"$COUNTS"
+read -r RR_ROWS RR_CONCEPTS DIVERGENT OFFENDERS INVERTED <<<"$COUNTS"
 
 # Every failure here is terminal for the run, not something to retry in place: both callers exit on a
 # non-zero status and their EXIT trap runs `docker compose down -v`, which deletes the db-data volume.
 # So the advice has to be about the NEXT boot - there is no waiting, re-running or inspecting after
-# this returns, and 14 minutes are already spent.
+# this returns, and the boot it throws away is roughly 7 minutes in for the demo caller and 14 for the
+# empty one, which restarts.
 [ "${RR_ROWS:-0}" -gt 0 ] || {
     echo "❌ concept_reference_range is empty, so the clamp had nothing to clamp against and this" >&2
-    echo "   check proves nothing. Two causes, and which one depends on the caller:" >&2
-    echo "   - called too early in a boot, before initializer's conceptreferencerange domain ran" >&2
-    echo "     (generate-demo-data-locally.sh clamps mid-boot, so wait on more than concepts);" >&2
-    echo "   - the domain never loaded at all. Those CSVs ship in the referenceapplication-demo" >&2
-    echo "     content package, so check strip-demo-fixtures.sh has not started removing them" >&2
-    echo "     (generate-empty-db-locally.sh clamps after two full boots, so this is the likely one)." >&2
+    echo "   check proves nothing. Two candidates. The config: those CSVs ship only in the" >&2
+    echo "   referenceapplication-demo content package, so check that strip-demo-fixtures.sh has not" >&2
+    echo "   started removing the conceptreferencerange domain and that the domain loaded without" >&2
+    echo "   error. Or the timing: initializer loads conceptreferencerange after concepts, so a caller" >&2
+    echo "   that only waits on the concept count can arrive before any range exists." >&2
     exit 1
 }
 [ "${DIVERGENT:-1}" = "0" ] || {
     echo "❌ ${DIVERGENT:-?} ConceptNumeric row(s) still exceed their reference-range intersection" >&2
     echo "   after the clamp: concept_id ${OFFENDERS:-unknown}." >&2
-    echo "   Demo generation would abort part-way, so this database is not safe to dump. The clamp" >&2
-    echo "   only narrows bounds it can compute, so a row surviving it means that concept's reference" >&2
-    echo "   ranges disagree among themselves (MIN hi below MAX low) - fix the CSV, then re-run." >&2
+    echo "   Demo generation would abort part-way, so this database is not safe to dump. The UPDATE" >&2
+    echo "   above uses this very test as its WHERE, so a row surviving it does not mean those bands" >&2
+    echo "   are too narrow - the likely cause is that the reference-range aggregate MOVED between the" >&2
+    echo "   two statements, because initializer loads conceptreferencerange after concepts and this" >&2
+    echo "   was called inside that window. Clamp later in the boot. Failing that, something else" >&2
+    echo "   wrote to concept_numeric or concept_reference_range in between." >&2
     exit 1
 }
-echo "✅ ConceptNumeric is within its reference-range intersection ($RR_ROWS reference range(s) checked)."
+[ "${INVERTED:-x}" = "-" ] || {
+    echo "❌ Clamping left concept_id ${INVERTED:-unknown} with low_absolute above hi_absolute, which" >&2
+    echo "   no observation can satisfy. This one IS the CSVs: those concepts have reference-range" >&2
+    echo "   bands whose highest Absolute low sits above their lowest Absolute high, and the clamp" >&2
+    echo "   takes each bound from its own aggregate, so it cannot reconcile them. Fix the bands in" >&2
+    echo "   the conceptreferencerange CSVs before the next boot." >&2
+    exit 1
+}
+echo "✅ ConceptNumeric is within its reference-range intersection" \
+     "($RR_ROWS reference range row(s) across ${RR_CONCEPTS} concept(s))."

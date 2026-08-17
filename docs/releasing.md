@@ -166,7 +166,11 @@ UPDATE concept_numeric cn
                               ELSE cn.hi_absolute END
  WHERE (rr.rr_low IS NOT NULL AND (cn.low_absolute IS NULL OR cn.low_absolute < rr.rr_low))
     OR (rr.rr_hi  IS NOT NULL AND (cn.hi_absolute  IS NULL OR cn.hi_absolute  > rr.rr_hi));"
-# Re-run the divergence query above afterwards: it must return no rows.
+# Re-run the divergence query above afterwards: it must return no rows. Check FIRST that
+# concept_reference_range is non-empty (SELECT COUNT(*) FROM concept_reference_range; expect 74 on
+# 3.7.1) - initializer loads that domain after concepts, so clamping when only concepts have settled
+# updates nothing, and "no rows" is then what an empty table returns rather than a clean result. Both
+# numbers together are what scripts/clamp-concept-numeric.sh asserts on the local-script path.
 
 # d) Boot 2 — restart with demo STILL OFF so startup-time metadata converges, and only then dump.
 #    Each module creates its own privileges from its Liquibase changesets as it starts, but the
@@ -224,10 +228,15 @@ one dump and not the other — after which each dump looks perfectly healthy on 
 That shipped once, on this branch. The starter dump was cut without the clamp and the demo dump with
 it, so the two databases disagreed about what a clinician may record:
 
-| concept | column | unclamped | clamped by step (c) — **ship this** |
-|---|---|---|---|
-| CIEL 5242, Respiratory rate | `hi_absolute` | 999 | **99** |
-| CIEL 785, Alkaline phosphatase | `low_absolute` | unset | **0** |
+| concept | `concept_id` | column | unclamped | clamped by step (c) — **ship this** |
+|---|---|---|---|---|
+| Respiratory rate (CIEL 5242) | **4184** | `hi_absolute` | 999 | **99** |
+| Alkaline phosphatase (CIEL 785) | **210** | `low_absolute` | unset | **0** |
+
+Both numbers, because they are different numbering systems and mixing them sends you to the wrong row:
+`concept_numeric` is keyed by `concept_id`, the CSVs and OCL packages by CIEL code. In these dumps
+`concept_id` 785 is a different concept entirely (Ascariasis, uuid `148353AAA…`, with no
+`concept_numeric` row at all).
 
 **The clamped value is the right one, and it is worth knowing why the other one is tempting.** 999 is
 exactly what `concepts/…/findings-core_demo.csv` declares for 5242, and the `BasicLabTests` OCL
