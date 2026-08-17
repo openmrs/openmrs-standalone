@@ -23,6 +23,14 @@ set -uo pipefail
 #   * a clinical bound that reached one dump's boot and not the other's — step (c)'s ConceptNumeric
 #     clamp is the one that moves. Each dump then looks healthy on its own, and only holding the two
 #     against each other shows that the options would validate the same observation differently.
+#   * a dump cut on a Docker volume left behind by an earlier run. The distro copies config OVER
+#     `/openmrs/data/configuration` instead of replacing it, so a surviving volume re-applies the files
+#     the build DELETED. Observed: a dump carrying the trimmed location list and the UNtrimmed form list
+#     at once, from a config shipping one form. No single-sided check can see that, because a modified
+#     file is overwritten and looks right while a deleted one just stays — only holding the dump against
+#     the config it was supposedly cut from does. scripts/generate-*-locally.sh now `down -v` before
+#     booting; this gate is the belt to that braces, and additionally covers a stale dump the assembly
+#     bundled.
 #
 # Checks the ASSEMBLED artifact (shipped Initializer config + both bundled DB zips), not the repo, so
 # it also catches an assembly that bundled the wrong file. Run it locally before pushing a dump
@@ -50,16 +58,28 @@ SITES=$(grep -rho "Site [0-9]" "$LOC" 2>/dev/null | wc -l | tr -d ' ')
 [ "${SITES:-0}" = "0" ] \
     || fail "shipped Initializer config still defines 'Site N' placeholder locations ($SITES hits) — has strip-demo-fixtures.sh stopped matching upstream's naming?"
 
+# `Ward N` is the same shape of placeholder and gets the same check. The digit is load-bearing in the
+# pattern: an unanchored "Ward" would also match `Inpatient Ward`, which has to stay as the one Admission
+# Location, and the `Ward Admission` form, which is the one form that ships.
+WARDS=$(grep -rho "Ward [0-9]" "$LOC" 2>/dev/null | wc -l | tr -d ' ')
+[ "${WARDS:-0}" = "0" ] \
+    || fail "shipped Initializer config still defines 'Ward N' placeholder locations ($WARDS hits) — they duplicate the tags 'Inpatient Ward' already carries, and no bed is mapped to any of them"
+
 CFG="$ART_DIR/appdata/configuration"
 
 # The strip edits a plain content probe can assert; the ones needing column- or filename-awareness follow
 # below, so that between them every edit the script makes is checked by its outcome. Each is silent if the
 # filter stops matching: the script only WARNS on a miss so an upstream rename cannot break the build,
 # which is exactly why the gate has to check the outcome.
+# `Mobile Clinic` and `Community Outreach` are checked across the whole config rather than just the
+# locations domain on purpose: `Community Outreach` was also the name of a cash point, which cashpoints
+# reference by free text, so one probe catches both the location and the row that pointed at it.
 for probe in \
     "Ubuntu Hospital:the demo hospital was not renamed" \
     "Paypal:payment mode 'Paypal' is still configured" \
-    "Cambodia:the Cambodian address hierarchy is still shipped"
+    "Cambodia:the Cambodian address hierarchy is still shipped" \
+    "Mobile Clinic:the 'Mobile Clinic' demo location is still shipped" \
+    "Community Outreach:the 'Community Outreach' demo location, or the cash point named after it, is still shipped"
 do
     needle="${probe%%:*}"; why="${probe#*:}"
     hits=$(grep -rlF "$needle" "$CFG" 2>/dev/null | wc -l | tr -d ' ')
@@ -69,12 +89,12 @@ done
 [ -d "$CFG/addresshierarchy" ] \
     && fail "shipped config still has an addresshierarchy domain — it is Cambodian and wrong for any other site"
 
-# The demo relationship types and the developer forms. Both edits went unchecked on the config side for a
-# while, and neither is visible to anything else here: the bundled dumps are committed files rather than
-# products of this build, so a strip that stopped matching would ship them in the config while the dumps
-# stayed clean. Initializer would not load them on first boot either — the checksums generated after strip
-# mark them already-applied — so they would sit inert until the first config edit re-applied the domain and
-# materialised a developer form, or Uncle/Nephew, in a production system.
+# The demo relationship types. This edit went unchecked on the config side for a while, and it is not
+# visible to anything else here: the bundled dumps are committed files rather than products of this build,
+# so a strip that stopped matching would ship them in the config while the dumps stayed clean. Initializer
+# would not load them on first boot either — the checksums generated after strip mark them already-applied
+# — so they would sit inert until the first config edit re-applied the domain and materialised
+# Uncle/Nephew in a production system. The form checks below carry the same reasoning.
 if [ -d "$CFG/relationshiptypes" ]; then
     DEMO_RT=$(find "$CFG/relationshiptypes" -name '*.csv' -exec awk -F',' '
         function trim(s){gsub(/^[ \t]+|[ \t]+$/,"",s);return s}
@@ -85,15 +105,60 @@ if [ -d "$CFG/relationshiptypes" ]; then
         || fail "shipped config still defines $DEMO_RT demo relationship type(s) — Uncle/Nephew, Aunt/Niece or Friend/Friend survived strip-demo-fixtures.sh"
 fi
 
-# Fail if the forms domain itself is missing rather than reporting zero developer forms: the distro ships
-# seven real forms, so an empty result means the layout moved and this check stopped looking at anything.
+# ── Forms ───────────────────────────────────────────────────────────────────
+# strip-demo-fixtures.sh keeps an ALLOWLIST of forms rather than removing a named list, so the outcome to
+# assert is "exactly the allowlist, nothing orphaned" — not "none of yesterday's fixtures". Read the
+# allowlist from that script rather than repeating it: whoever adds a form there would otherwise get a
+# publish failure here with no clue why. Fail loudly if it cannot be read, because defaulting would make
+# this check pass for the wrong reason.
+#
+# Both directions matter, and they fail differently. An EXTRA form means the filter stopped matching and a
+# form nobody vetted is live in every patient's chart from first boot. A MISSING one is the worse half:
+# `Ward Admission` is the only shipped producer of the inpatient admission requests esm-ward-app lists
+# (emrapi/inpatient/request, filtered on dispositionType ADMIT), so losing it to an upstream rename ships
+# the ward and bed-management apps with a queue nothing can fill — and the strip only warns.
 [ -d "$CFG/ampathforms" ] \
-    || fail "no ampathforms domain in the shipped config — the layout changed, so the developer-form check below is not looking at anything"
-DEV_FORMS=$(find "$CFG/ampathforms" "$CFG/ampathformstranslations" -type f \
-    \( -name 'test_form-*' -o -name 'form-engine-cookbook-*' -o -name 'test_form_1_translations_*' \) 2>/dev/null \
-    | wc -l | tr -d ' ')
-[ "${DEV_FORMS:-0}" = "0" ] \
-    || fail "shipped config still carries $DEV_FORMS developer form file(s) — 'Test Form 1', the Form Engine Cookbook or its orphan translation survived strip-demo-fixtures.sh"
+    || fail "no ampathforms domain in the shipped config — the layout changed, so the form checks below are not looking at anything"
+
+FORMS_KEEP=$(sed -n 's/^FORMS_KEEP="\(.*\)"$/\1/p' "$(dirname "$0")/strip-demo-fixtures.sh" 2>/dev/null | head -1)
+# An empty result means either an unreadable line or a deliberately emptied allowlist, and this gate
+# cannot tell those apart — so the message names both rather than guessing. Deciding to ship no forms at
+# all is a coherent future choice, but it is not a one-line change here: the non-vacuity guards in
+# check_forms_match_config below both assume the allowlist asks for at least one form.
+[ -n "$FORMS_KEEP" ] \
+    || fail "FORMS_KEEP in $(dirname "$0")/strip-demo-fixtures.sh is unreadable or empty — this gate cannot tell which forms are supposed to ship. If shipping none was the intent, check_forms_match_config's non-vacuity guards need changing with it"
+
+EXTRA_FORMS=""
+while IFS= read -r form; do
+    [ -n "$form" ] || continue
+    base=$(basename "$form")
+    keep=0
+    for stem in $FORMS_KEEP; do
+        case "$base" in "$stem"-*.json | "$stem".json) keep=1 ;; esac
+    done
+    [ "$keep" = 1 ] || EXTRA_FORMS="$EXTRA_FORMS $base"
+done <<< "$(find "$CFG/ampathforms" -type f -name '*.json')"
+[ -z "$EXTRA_FORMS" ] \
+    || fail "shipped config carries form(s) that are not on strip-demo-fixtures.sh's allowlist ($FORMS_KEEP):${EXTRA_FORMS} — each ships published, so it is a live data-entry path in every patient's chart"
+
+for stem in $FORMS_KEEP; do
+    find "$CFG/ampathforms" -type f \( -name "$stem-*.json" -o -name "$stem.json" \) | grep -q . \
+        || fail "allowlisted form '$stem' is missing from the shipped config — upstream renamed or dropped it and strip-demo-fixtures.sh only warned. For 'ipd_admission_request' that means esm-ward-app can never receive an admission request"
+done
+
+# A translation whose form is gone cannot load, and its filename does not name its form
+# (`soap_note_translations_en-*` belongs to `soap_note_template-*`), so check the field the strip
+# matches on. Guarded by the same reasoning as everything else here: the strip warns, this fails.
+if [ -d "$CFG/ampathformstranslations" ]; then
+    while IFS= read -r translation; do
+        [ -n "$translation" ] || continue
+        FORM_NAME=$(perl -0ne 'print $1 if m{"form"\s*:\s*"([^"]*)"}' "$translation")
+        [ -n "$FORM_NAME" ] \
+            || fail "shipped translation ${translation#"$CFG"/} declares no \"form\" field — this gate cannot tell whether the form it belongs to still ships"
+        grep -rqF "\"$FORM_NAME\"" "$CFG/ampathforms" \
+            || fail "shipped translation ${translation#"$CFG"/} is orphaned — it translates '$FORM_NAME', which no shipped form declares"
+    done <<< "$(find "$CFG/ampathformstranslations" -type f -name '*.json')"
+fi
 
 # `SSN` needs a column-aware check: the bare string appears in unrelated prose.
 if [ -d "$CFG/patientidentifiertypes" ]; then
@@ -165,6 +230,67 @@ require_tagged "Login Location" \
 require_tagged "Queue Location" \
     "no shipped location is tagged 'Queue Location' — /home (Service queues) would throw on load"
 
+# The Admission Location the inpatient feature needs. `Ward Admission` sources its `admitToLocation`
+# picker from this tag, and esm-ward-app lists the wards carrying it, so with none the form cannot be
+# completed and the ward app has nothing to show. One is enough, which is why the strip keeps only
+# `Inpatient Ward` and drops `Ward 1`..`Ward N`.
+require_tagged "Admission Location" \
+    "no shipped location is tagged 'Admission Location' — 'Ward Admission' has nothing to offer in its required admitToLocation field, and esm-ward-app has no ward to list"
+
+# Every Login Location must have a Visit Location at or above it. O3 resolves a visit's location by
+# walking up from the session location to the nearest one tagged `Visit Location`; with none in that
+# chain, a user signs in perfectly well and then cannot start a visit — nothing else here notices,
+# because `require_tagged "Visit Location"` would pass on a Visit Location parked somewhere irrelevant.
+#
+# This became worth guarding when the strip dropped `Mobile Clinic` and `Community Outreach`, which were
+# Visit Locations in their own right: the shipped config went from three Visit Locations to one, and that
+# one — `My Hospital` — is now the sole reason a visit can start at either remaining Login Location. It
+# also reads as the most disposable name in the file, being a placeholder a site is told to rename.
+#
+# Parents are matched by NAME because that is how the CSV references them (the same reason
+# strip-demo-fixtures.sh rewrites the Parent column when it renames). A chain that leaves the CSV counts
+# as unreachable: it may well resolve against a module-created location at runtime, but this gate cannot
+# prove a visit can start, and for a publish gate that is the safe direction to fail in.
+#
+# `-exec ... {} +`, NOT `\;`, and unlike the two per-file counters above: this walk needs every location
+# in ONE awk invocation, because a Parent may live in a different CSV from its child. With `\;` awk runs
+# once per file, that Parent resolves to nothing, and a perfectly valid config split across two files
+# fails the publish. The counters at DEMO_RT and SSN sum per-file totals through `paste -sd+ - | bc`, so
+# `\;` is right for them and wrong here.
+UNREACHABLE=$(find "$LOC" -type f -name '*.csv' -exec awk -F',' '
+    function trim(s) { gsub(/^[ \t]+|[ \t]+$/, "", s); return s }
+    FNR == 1 {
+        nc = pc = lc = vc = 0
+        for (i = 1; i <= NF; i++) {
+            t = trim($i)
+            if (t == "Name") nc = i
+            else if (t == "Parent") pc = i
+            else if (t == "Tag|Login Location") lc = i
+            else if (t == "Tag|Visit Location") vc = i
+        }
+        next
+    }
+    nc && NF > 1 {
+        n = trim($nc)
+        if (n == "") next
+        parent[n] = pc ? trim($pc) : ""
+        if (vc && toupper(trim($vc)) == "TRUE") visit[n] = 1
+        if (lc && toupper(trim($lc)) == "TRUE") login[n] = 1
+    }
+    END {
+        for (n in login) {
+            cur = n; hops = 0; ok = 0
+            # Bounded so a Parent cycle cannot hang the publish.
+            while (cur != "" && hops++ < 20) {
+                if (cur in visit) { ok = 1; break }
+                cur = parent[cur]
+            }
+            if (!ok) print n
+        }
+    }' {} + | sort -u | paste -sd, -)
+[ -z "$UNREACHABLE" ] \
+    || fail "shipped Login Location(s) with no 'Visit Location' at or above them: $UNREACHABLE — a user can sign in there and then cannot start a visit. Either tag one of their ancestors 'Visit Location' or give them a Parent that has it"
+
 # ── Initializer checksums ───────────────────────────────────────────────────
 # Every config file Initializer can load must sit beside a checksum file holding the MD5 of its CURRENT
 # content. That is the only thing stopping Initializer re-applying the whole configuration on first boot
@@ -215,7 +341,9 @@ done <<< "$(find "$CFG" -type f)"
 [ "$STALE" -eq 0 ] \
     || fail "$STALE shipped config file(s) disagree with their Initializer checksum — see the annotations above"
 # Guard against the check silently matching nothing, which is how two earlier checks in this file
-# managed to pass while verifying zero rows. The real config carries ~94 loadable files.
+# managed to pass while verifying zero rows. The real config carries ~86 loadable files — it was ~94
+# before the form allowlist and the addresshierarchy removal, so treat the number as a rough scale check
+# rather than a count to keep in step; the floor is what does the work.
 [ "$VERIFIED" -ge 50 ] \
     || fail "only $VERIFIED config checksums verified — this check matched almost nothing, so it is not guarding anything"
 echo "Initializer checksums: $VERIFIED config file(s) match, none stale."
@@ -263,6 +391,76 @@ check_no_sites() { # $1 = label, $2 = dump path
     hits=$(grep -oa "'Site [0-9]" "$2" | wc -l | tr -d ' ')
     [ "${hits:-0}" = "0" ] \
         || fail "bundled $1 database still contains 'Site N' placeholder locations ($hits hits)"
+}
+
+# The rest of the location trim, on the dump side. Quoted SQL literals rather than bare words: `Ward` on
+# its own also appears in `Inpatient Ward` (which must stay) and the `Ward Admission` form (the one form
+# that ships), and `Community Outreach` was a cash point name as well as a location — the quotes keep this
+# to actual column values, and catching the cash point too is deliberate.
+check_no_demo_locations() { # $1 = label, $2 = dump path
+    local needle hits
+    for needle in "'Ward [0-9]" "'Mobile Clinic'" "'Community Outreach'"; do
+        # `-a` for the reason spelled out above check_no_sites: one NUL byte would make `grep -o` emit
+        # nothing at all, and this check would then pass a dump carrying every one of them.
+        hits=$(grep -oa "$needle" "$2" | wc -l | tr -d ' ')
+        [ "${hits:-0}" = "0" ] \
+            || fail "bundled $1 database still contains $needle ($hits hits) — it was dumped before strip-demo-fixtures.sh trimmed the demo locations, so the login and admission pickers carry placeholders a site has to retire by hand"
+    done
+}
+
+# The dump must carry EXACTLY the forms the shipped config declares. Compared as a set, in both
+# directions, because the two failures mean different things: an extra form in the dump is a dump cut
+# before the allowlist (or a stale one bundled), and a missing one is a config the dump never saw.
+#
+# This is the check that was missing when it mattered. A regeneration shipped all 7 forms from a config
+# declaring 1, and passed everything: a surviving Docker volume re-applied the 6 deleted JSONs, because
+# the distro copies config OVER `/openmrs/data/configuration` instead of replacing it. The same run's
+# locations were correct, since a modified file is overwritten while a deleted one just stays — so no
+# single-sided check could see it. scripts/generate-*-locally.sh now `down -v` before booting; this is
+# the belt to that braces, and unlike the scripts it also covers a stale dump bundled by the assembly.
+#
+# Matched on NAMES, not filenames: `"name"` in the JSON is what lands in `form`.`name`, and they differ
+# (ipd_admission_request -> "Ward Admission"). Reading the wrong `"name"` out of a JSON can only invent an
+# expected form the dump lacks, i.e. fail loudly, never pass wrongly.
+config_form_names() {
+    find "$CFG/ampathforms" -type f -name '*.json' -exec \
+        perl -0ne 'print "$1\n" if m{"name"\s*:\s*"([^"]*)"}' {} \; | LC_ALL=C sort -u
+}
+
+# The single place that knows how mysqldump lays an INSERT out: the `INSERT INTO `t` VALUES` header on its
+# own line, then one `(...)` tuple per line. Both dump_form_names and clinical_bounds below depend on that
+# shape, so it is stated once — if a future dump is ever cut with --skip-extended-insert, or with the
+# --insert-ignore/--replace variants this file warns about elsewhere, there is one range to fix, not two.
+#
+# LC_ALL=C because this streams the whole dump, and both dumps are invalid UTF-8 in openconceptlab's hash
+# column, which a locale-aware sed can error on. The backticks are MySQL identifier quoting and have to
+# stay inside double quotes so $2 still expands — taking shellcheck's SC2016 advice here would turn them
+# into a command substitution.
+dump_rows() { # $1 = dump path, $2 = table; echoes one line per row tuple
+    LC_ALL=C sed -n "/^INSERT INTO \`$2\` VALUES\$/,/;\$/p" "$1" | LC_ALL=C grep '^('
+}
+
+dump_form_names() { # $1 = dump path
+    dump_rows "$1" form \
+        | LC_ALL=C sed "s/^([0-9]*,'\([^']*\)'.*/\1/" | LC_ALL=C sort -u
+}
+
+check_forms_match_config() { # $1 = label, $2 = dump path
+    local expected actual extra missing
+    expected=$(config_form_names)
+    actual=$(dump_form_names "$2")
+    # Non-vacuity on both sides: two empty sets compare equal and would report agreement, which is the
+    # one failure shape a publish gate must not have.
+    [ -n "$expected" ] \
+        || fail "the shipped config declares no form at all — the allowlist check above should have caught this, so this gate is not reading the forms it thinks it is"
+    [ -n "$actual" ] \
+        || fail "bundled $1 database has no \`form\` rows — the shipped config declares $(printf '%s' "$expected" | paste -sd, -), so this dump was cut from a different configuration"
+    extra=$(comm -13 <(printf '%s\n' "$expected") <(printf '%s\n' "$actual") | paste -sd, -)
+    missing=$(comm -23 <(printf '%s\n' "$expected") <(printf '%s\n' "$actual") | paste -sd, -)
+    [ -z "$extra" ] \
+        || fail "bundled $1 database carries form(s) the shipped config does not declare: $extra — each is published, so it is live in every patient's chart. Either the dump predates the form allowlist, or it was cut on a Docker volume left by an earlier run (see the pre-boot 'down -v' in scripts/generate-*-locally.sh)"
+    [ -z "$missing" ] \
+        || fail "bundled $1 database is missing form(s) the shipped config declares: $missing — the dump was cut from an older configuration. If 'Ward Admission' is in that list, esm-ward-app can never receive an admission request"
 }
 
 # A dump cut short — the classic failure of dumping before initialization finished — still parses as
@@ -367,6 +565,10 @@ check_no_stripped_content() { # $1 = label, $2 = dump path
 
 check_no_sites starter "$EMPTY_SQL"
 check_no_sites demo "$DEMO_SQL"
+check_no_demo_locations starter "$EMPTY_SQL"
+check_no_demo_locations demo "$DEMO_SQL"
+check_forms_match_config starter "$EMPTY_SQL"
+check_forms_match_config demo "$DEMO_SQL"
 check_renamed starter "$EMPTY_SQL"
 check_renamed demo "$DEMO_SQL"
 check_demo_patients_off starter "$EMPTY_SQL"
@@ -399,12 +601,11 @@ check_complete demo "$DEMO_SQL"
 # which this script never runs on; this is the copy that opens the bundled zips, so it additionally
 # catches an assembly that shipped a stale dump.
 #
-# LC_ALL=C on the sed: it streams the whole dump, and both dumps are invalid UTF-8 in
-# openconceptlab's hash column, which a locale-aware sed can error on. On sort it is belt and braces
-# - both sides get the same locale and comparator, and neither of these two tables holds a
+# Row extraction is dump_rows' business, including why it forces LC_ALL=C. On the sort here it is belt and
+# braces - both sides get the same locale and comparator, and neither of these two tables holds a
 # non-ASCII byte - kept so the pipeline does not depend on that staying true.
 clinical_bounds() { # $1 = dump path, $2 = table
-    LC_ALL=C sed -n "/^INSERT INTO \`$2\` VALUES\$/,/;\$/p" "$1" | LC_ALL=C grep '^(' | LC_ALL=C sort
+    dump_rows "$1" "$2" | LC_ALL=C sort
 }
 
 check_bounds_agree() { # $1 = table

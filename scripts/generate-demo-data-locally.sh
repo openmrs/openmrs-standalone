@@ -133,6 +133,20 @@ perl -0pi -e 's{(<property>referencedemodata\.createDemoPatientsOnNextStartup</p
 echo "🔧 Demo generation disabled for boot 1 (so the ConceptNumeric clamp can be applied first)."
 
 # ── Step 3: Start OpenMRS ───────────────────────────────────────────────────
+# Tear down volumes BEFORE booting, not only in the exit trap. `openmrs-data:/openmrs/data/` is a named
+# volume and Initializer reads `/openmrs/data/configuration`, which the distro's startup populates by
+# copying over whatever is already there rather than replacing the tree. So a volume surviving an earlier
+# run — a crash, a Ctrl-C, or any `docker compose` invocation that stopped without `-v` — keeps the config
+# files that this build DELETED, and Initializer loads them again.
+#
+# That is not hypothetical: it silently put all 7 forms into a dump cut from a config shipping 1. The
+# asymmetry is what makes it so quiet — a MODIFIED file (the locations CSV) is overwritten and looks
+# correct, while a DELETED one (the six form JSONs) is simply left behind, so the same dump can show a
+# trimmed location list and an untrimmed form list and every other check still passes.
+# Kept identical to the copy in generate-empty-db-locally.sh — these scripts are deliberate mirrors.
+echo "🧹 Removing any volumes left by an earlier run (stale appdata config would be re-applied)..."
+docker compose "${COMPOSE_ARGS[@]}" down -v 2>/dev/null || true
+
 echo "🚀 Starting OpenMRS in Docker (boot 1 — concepts only, demo generation off)..."
 docker compose "${COMPOSE_ARGS[@]}" up -d --build web
 

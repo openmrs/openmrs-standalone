@@ -11,18 +11,29 @@ set -euo pipefail
 # `referenceapplication-demo` is not "the data the demo needs" - it is the worked example of a content
 # package an implementation should write, and it holds nearly everything that makes O3 usable without
 # configuration: the concept dictionary, the formulary, the lab and diagnosis catalogs, the identifier
-# scheme, visit types, programs, forms, queues, appointment services and billing. `referenceapplication`
+# scheme, visit types, programs, queues, appointment services and billing. `referenceapplication`
 # alone gives you a system you can log into and then do nothing with (measured: 378 concepts, no visit
-# type, no identifier source). So the Starter option ships the demo package WHOLE and edits out the
-# short list below - everything else is content a clinician needs on day one.
+# type, no identifier source). So the Starter option ships the demo package WHOLE and edits out the list
+# below rather than dropping the package.
+#
+# Forms are deliberately absent from that enumeration, and the Forms section below carries the evidence:
+# they are the one part of the package O3 does not need in order to work, because every clinical feature
+# that wants structured entry ships its own React workspace instead of a form.
 #
 # WHAT COMES OUT, AND WHY EACH ONE IS SAFE
 #
 #   * locations `Site 1`..`Site 50` - filler for exercising the login location picker. All 50 are tagged
 #     Login + Visit Location, so they swamp the real ones. They also skew demo data: referencedemodata's
 #     fixed-seed randomizer put every generated visit at "Site 42".
-#   * the developer forms `Test Form 1` (published, so it shows in the chart), `Form Engine Cookbook` and
-#     `Form Engine Cookbook Library`, plus the orphaned `Test Form 1` French translations.
+#   * locations `Ward 1`..`Ward N`, `Mobile Clinic` and `Community Outreach`, plus the `Community Outreach`
+#     cash point that named one of them - see the Locations section, which also records why each of the
+#     four survivors in that CSV cannot go. The database ends up with 6 rather than 4, and 11 before:
+#     `Main Pharmacy` and `Main Store` are created by the stockmanagement module, not by this config.
+#   * every form except `Ward Admission`, and any translation left without its form - see the allowlist
+#     further down, which carries the per-form reasoning. `Test Form 1` (published, so it shows in the
+#     chart), `Form Engine Cookbook` and its Library were always going; the clinical ones followed once
+#     the only argument for keeping them turned out to be "as an example to learn from", which is the
+#     same argument the Cookbook was cut for.
 #   * the `addresshierarchy` domain - `addressConfiguration.xml` plus 344 rows of **Cambodian** provinces,
 #     districts and communes. Removed as a precaution rather than a fix: the domain does not currently
 #     reach the database at all. Initializer hands it to the addresshierarchy module's
@@ -51,11 +62,16 @@ set -euo pipefail
 #     Initializer applying `50`, so a starter implementation that edits any config file could find 50
 #     demo patients appearing in its production database on the next boot.
 #
-# DELIBERATELY LEFT ALONE: the clinical forms (`SOAP Note`, `Ward Admission`, `Laboratory Test Results`,
-# `Surgical Operation`, `Mental Health Assessment`, `Covid 19`), the programs (HIV Care and Treatment,
-# PMTCT, PEP/PrEP are among the most widely run OpenMRS programs), the billable services, appointment
-# services and queues. Those are plausible clinical content, and each is what makes its feature usable
-# out of the box. Removing them would leave a clinician with empty tabs to configure.
+# DELIBERATELY LEFT ALONE: the programs (HIV Care and Treatment, PMTCT, PEP/PrEP are among the most
+# widely run OpenMRS programs), the billable services, appointment services and queues. Those are
+# plausible clinical content, and each is what makes its feature usable out of the box. Removing them
+# would leave a clinician with empty tabs to configure.
+#
+# Forms are the one place that reasoning does NOT reach, which is why they get an allowlist below rather
+# than a place on this list. A program with no enrolments is an empty tab a site fills in; a published
+# form is a live data-entry path in every patient's chart from first boot, and its questions encode one
+# site's protocol. Every O3 clinical feature that needs structured entry ships its own React workspace
+# instead of a form, so removing them costs no feature - measured, not assumed, per-form below.
 #
 # WHY AT THE CONFIG LAYER, not with DELETEs against the finished dump: the standalone ships ONE
 # `appdata/configuration` shared by both database options, and Initializer reloads any config file whose
@@ -178,12 +194,41 @@ if ! find "$CONFIG_DIR/locations" -type f -name '*.csv' | grep -q .; then
 fi
 
 drop_rows locations '^Site [0-9]+$' "'Site N' placeholder location(s)"
+
+# `Ward 1`..`Ward N` are the `Site N` pattern in different words: enumerated placeholders carrying the
+# exact tag set `Inpatient Ward` already has (Login + Admission + Transfer), with no children and no beds -
+# all six `bed*` tables ship empty, so bed management has nothing mapped to them. One Admission Location is
+# all the Ward Admission form's `admitToLocation` picker and esm-ward-app need. The pattern is anchored so
+# it cannot touch `Inpatient Ward`. `Mobile Clinic` and `Community Outreach` are Login + Visit Location
+# with no children and nothing pointing at them; a site's own facilities go there instead.
+#
+# WHERE THE TRIM STOPS, and why each survivor is load-bearing rather than merely plausible:
+#   * `Outpatient Clinic` - the only Queue Location (/home Service Queues throws with none), the only
+#     Appointment Location and Facility Location, and the location both `queue` rows name by uuid.
+#   * `My Hospital` - the Visit Location ANCESTOR that lets a visit start at either remaining Login
+#     Location, and the parent of the rest of the hierarchy. Dropping the last Visit Location above a
+#     Login Location is the silent way to make this build unable to start a visit.
+#   * `Inpatient Ward` - the one Admission and Transfer Location left, and the IPD cash point's location.
+#   * `Unknown Location` - core's own fallback, not content-package content.
+#   * `Main Pharmacy` and `Main Store` are not reachable from here at all: the stockmanagement module
+#     creates them at startup, and its operation scopes are keyed on their location TAGS
+#     (`stockmgmt_operation_type_location_scope.location_tag`), so removing them would break stock
+#     operations rather than tidy anything.
+drop_rows locations '^(Ward [0-9]+|Mobile Clinic|Community Outreach)$' "demo location(s)"
+
 rename_row locations 'Ubuntu Hospital' "$HOSPITAL_PLACEHOLDER"
 
 # ── Other single-item removals ──────────────────────────────────────────────
 drop_rows paymentmodes '^Paypal$' "payment mode 'Paypal'"
 drop_rows patientidentifiertypes '^SSN$' "identifier type 'SSN'"
 drop_rows relationshiptypes '^(Uncle\/Nephew|Aunt\/Niece|Friend\/Friend)$' "demo relationship type(s)"
+
+# Goes with the location above, because cashpoints name their location as free TEXT rather than by uuid:
+# leaving this row would ship a cash point whose location cannot resolve. That is not hypothetical - it is
+# the state `OPD Cash Point` already ships in, since its CSV names `Opd Clinic` and the location is called
+# `Outpatient Clinic`, so it lands with location_id NULL. One dangling cash point is an upstream bug to
+# report; adding a second on purpose is ours to avoid.
+drop_rows cashpoints '^Community Outreach$' "cash point for the removed 'Community Outreach' location"
 
 # ── Country-specific address hierarchy ──────────────────────────────────────
 if [ -d "$CONFIG_DIR/addresshierarchy" ]; then
@@ -194,27 +239,87 @@ else
     warn "no addresshierarchy domain - already removed, or upstream dropped it."
 fi
 
-# ── Developer / test forms ──────────────────────────────────────────────────
-# Basenames carry a content-package suffix (e.g. `-core_demo`), hence the trailing glob. The cookbook
-# glob covers the Cookbook Library form too. `test_form-*` deliberately does NOT match
-# `test_results_entry_form_v2-*` ("Laboratory Test Results"), which is a real form and stays.
+# ── Forms ───────────────────────────────────────────────────────────────────
+# An ALLOWLIST of stems to KEEP, not a list to remove, because "drop" is now the common case: a denylist
+# would silently ship whatever forms the next Reference Application release adds, and a form arrives
+# published, so it is live in every patient's chart before anyone reviews it.
+#
+# The rule for earning a place: removing the form has to stop a shipped feature working. Being plausible
+# clinical content is not enough, and neither is being a good example of form authoring - `esm-form-
+# builder-app` ships in the frontend for that, and the Cookbook was already cut on exactly that ground.
+#
+# `ipd_admission_request` ("Ward Admission") is the only one that passes. It is not documentation: it
+# writes the inpatient disposition construct (CIEL:169405) carrying disposition = ADMIT TO HOSPITAL
+# (CIEL:169402 -> 168619, the `ADMIT` entry in dispositions/dispositionConfig.json) plus admitToLocation
+# from the `Admission Location` location tag. esm-ward-app reads precisely that, over
+# emrapi/inpatient/request filtered on dispositionType ADMIT, and nothing else in the shipped config
+# produces one - so dropping it would ship the ward and bed-management apps with a queue nothing can
+# fill.
+#
+# What comes out, and what covers it instead. Each was checked against the shipped frontend's
+# routes.json, not assumed:
+#   * `Test Form 1`, `Form Engine Cookbook`, `Form Engine Cookbook Library` - developer scaffolding.
+#   * `SOAP Note Template` and `Structured SOAP note` - two SOAP forms on different encounter types
+#     (Visit Note and Consultation). Clinical notes are esm-patient-notes' job and it needs no form. The
+#     Template also stood on four bespoke concepts with no CIEL mapping, and was the only form carrying
+#     translations, i.e. it existed to demonstrate the translation feature.
+#   * `Laboratory Test Results` - lab result entry is `esm-patient-orders-app#
+#     exportedTestResultsFormWorkspace`, declared in esm-laboratory-app's routes.json. Not this form.
+#   * `Surgical Operation` - esm-patient-procedures-app ships its own `proceduresFormWorkspace` over the
+#     emrapi procedure types. Not this form.
+#   * `Covid 19` - epidemic-specific, and the only reason its concept CSV ships.
+#   * `Mental Health Assessment Form` - PHQ-2/PHQ-9 is a real instrument, but nothing stops working
+#     without it, and a site that screens for depression will author its own anyway.
+#
+# Basenames carry a content-package suffix (e.g. `-core_demo`), hence both globs per stem.
+FORMS_KEEP="ipd_admission_request"
+
+if [ ! -d "$CONFIG_DIR/ampathforms" ]; then
+    echo "❌ No ampathforms domain under $CONFIG_DIR - has the distro config layout changed?"
+    exit 1
+fi
+
+form_is_kept() { # $1 = basename; true if an allowlisted stem claims it
+    local base="$1" stem
+    for stem in $FORMS_KEEP; do
+        case "$base" in "$stem"-*.json | "$stem".json) return 0 ;; esac
+    done
+    return 1
+}
+
 REMOVED_FORMS=0
-for pattern in \
-    'ampathforms:test_form-*.json' \
-    'ampathforms:form-engine-cookbook-*.json' \
-    'ampathformstranslations:test_form_1_translations_*.json'
-do
-    domain="${pattern%%:*}"
-    glob="${pattern#*:}"
-    [ -d "$CONFIG_DIR/$domain" ] || continue
-    while IFS= read -r form; do
-        [ -n "$form" ] || continue
+KEPT_FORMS=0
+while IFS= read -r form; do
+    [ -n "$form" ] || continue
+    if form_is_kept "$(basename "$form")"; then
+        KEPT_FORMS=$((KEPT_FORMS + 1))
+    else
         rm -f "$form"
         echo "   - removed ${form#"$CONFIG_DIR"/}"
         REMOVED_FORMS=$((REMOVED_FORMS + 1))
-    done <<< "$(find "$CONFIG_DIR/$domain" -type f -name "$glob")"
-done
-[ "$REMOVED_FORMS" -gt 0 ] || warn "no developer form definitions found - already filtered, or upstream renamed them."
+    fi
+done <<< "$(find "$CONFIG_DIR/ampathforms" -type f -name '*.json')"
+[ "$REMOVED_FORMS" -gt 0 ] || warn "no forms to remove - already filtered, or upstream moved the domain."
+# A warn, not a failure, for the same reason every other miss here warns: an upstream rename must not
+# break the build. The publish gate turns this into a hard failure, where it can say which feature dies.
+[ "$KEPT_FORMS" -gt 0 ] \
+    || warn "none of the allowlisted forms ($FORMS_KEEP) is present - upstream renamed them, and esm-ward-app now has no way to receive an admission request."
+
+# Translations name their form in a top-level `"form"` field, and there is no reliable mapping from a
+# translation's FILENAME to its form's (`soap_note_translations_en-*` belongs to
+# `soap_note_template-*`), so match on that field. An orphan is exactly the shape of the `Test Form 1`
+# French translations this has always removed: Initializer has nothing to attach it to.
+if [ -d "$CONFIG_DIR/ampathformstranslations" ]; then
+    while IFS= read -r translation; do
+        [ -n "$translation" ] || continue
+        form_name=$(perl -0ne 'print $1 if m{"form"\s*:\s*"([^"]*)"}' "$translation")
+        if [ -n "$form_name" ] && grep -rqF "\"$form_name\"" "$CONFIG_DIR/ampathforms"; then
+            continue
+        fi
+        rm -f "$translation"
+        echo "   - removed ${translation#"$CONFIG_DIR"/} (translates '${form_name:-?}', which no longer ships)"
+    done <<< "$(find "$CONFIG_DIR/ampathformstranslations" -type f -name '*.json')"
+fi
 
 # ── Demo patient generation ─────────────────────────────────────────────────
 # Set to 0, not deleted - see the header. Matched across newlines because the property and its value sit
