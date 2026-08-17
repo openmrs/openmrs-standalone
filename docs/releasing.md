@@ -40,18 +40,28 @@ The build bundles per-version dumps `src/main/db/{demo,empty}-db-${refapp.versio
 (see `src/main/assembly/zip-{demo,empty}-database.xml`). They MUST exist for the new
 version or the build's Lucene-bake gate fails. Needs Docker + JDK 21.
 
-**The build strips the demo content package's test scaffolding** from the distro config —
+**The build makes the demo content package fit for a real implementation** —
 `scripts/strip-demo-fixtures.sh`, wired into `pom-step-01.xml` as the `strip-demo-fixtures` exec
 execution, which must stay ahead of `generate-checksums` so the shipped checksums describe the
-filtered config. It drops the 50 `Site N` placeholder locations (all tagged Login Location, so
-they buried the 7 real ones in the login picker, and they skewed demo data: `referencedemodata`'s
-fixed seed put *every* generated visit at "Site 42") and the developer forms (`Test Form 1`,
-`Form Engine Cookbook`, `Form Engine Cookbook Library`). Extend the fixture list there if a later
-refapp release adds more scaffolding. Note the distro cannot simply drop the whole
-`referenceapplication-demo` content package: `referenceapplication` alone is a 10-file overlay,
-while the demo package supplies every location, the patient identifier types and idgen source,
-visit/encounter types, roles, forms and 22 of the 24 OCL packages — without it you cannot pick a
-session location, register a patient, or record anything.
+filtered config. Read that script's header for the reasoning; the short version is:
+
+| edit | why it is safe |
+|---|---|
+| drops the 50 `Site N` locations | filler; all tagged Login + Visit, so they buried the real ones |
+| drops `Test Form 1`, `Form Engine Cookbook`, `Cookbook Library`, the orphan FR translation | developer scaffolding |
+| drops the `addresshierarchy` domain | `addressConfiguration.xml` + 344 rows of **Cambodian** provinces. A no-op today — Initializer's loader wants that XML directly under `addresshierarchy/` and build-distro nests it under `addresshierarchy/<package>/`, so both dumps already carried core's address template and no `address_hierarchy_entry` rows. Removed so it cannot start applying: `<wipe>true</wipe>` in that XML would swap the address template for province/district/commune fields |
+| drops payment mode `Paypal`, identifier type `SSN` | Paypal is odd for a hospital, `SSN` is US-specific with a format regex |
+| drops relationship types `Uncle/Nephew`, `Friend/Friend`, `Aunt/Niece` | the last is already retired upstream; `Clinician/Patient` and `CHW/Patient` stay |
+| **renames** `Ubuntu Hospital` → `My Hospital` | it is the hierarchy's parent and the only Visit Location, so deleting it would orphan its children. The rename also rewrites the `Parent` column of all 5 children and the description — they reference the parent by NAME, not uuid |
+| **sets** `createDemoPatientsOnNextStartup` to 0 | not deleted, because `generate-demo-data-locally.sh` patches that same property. Today only the shipped checksums stop Initializer applying `50`, so a site that edits any config file could find 50 demo patients in production |
+
+**Do not extend this into dropping the whole `referenceapplication-demo` package.** It is not "the
+data the demo needs" — it is the worked example of a content package an implementation should write,
+and it holds nearly everything that makes O3 usable without configuration. Measured on a distro built
+from `referenceapplication` alone: 378 concepts, no visit type, no identifier source, no diagnoses and
+no formulary — you can log in and then do nothing. What *is* deliberately kept: the clinical forms, the
+programs (HIV Care and Treatment, PMTCT and PEP/PrEP are among the most widely run OpenMRS programs),
+the billable services, appointment services and queues. Each is what makes its feature work on day one.
 
 **⚠️ Do not trust `scripts/generate-db-dumps.sh`'s fixed `sleep 60`** — for O3 that is
 far too short. Full initialization takes **~14 minutes**: concepts load to ~4254 first
@@ -141,6 +151,8 @@ DB=$(docker compose ps -q db)
 # intersection, so the module's clamp can only produce values core will accept. This is
 # version-independent — no need to re-derive the offending concept ids by hand (on 3.7.1 it changes
 # exactly the two the query above reports: 210 low NULL→0, 4184 hi 999→99).
+# The local-script path runs the same statement from scripts/clamp-concept-numeric.sh, which also
+# asserts the outcome afterwards; keep the two in step if you edit either.
 docker exec $DB mysql -uroot -popenmrs openmrs -e "
 UPDATE concept_numeric cn
   JOIN (SELECT concept_id, MAX(low_absolute) AS rr_low, MIN(hi_absolute) AS rr_hi
@@ -154,7 +166,11 @@ UPDATE concept_numeric cn
                               ELSE cn.hi_absolute END
  WHERE (rr.rr_low IS NOT NULL AND (cn.low_absolute IS NULL OR cn.low_absolute < rr.rr_low))
     OR (rr.rr_hi  IS NOT NULL AND (cn.hi_absolute  IS NULL OR cn.hi_absolute  > rr.rr_hi));"
-# Re-run the divergence query above afterwards: it must return no rows.
+# Re-run the divergence query above afterwards: it must return no rows. Check FIRST that
+# concept_reference_range is non-empty (SELECT COUNT(*) FROM concept_reference_range; expect 74 on
+# 3.7.1) - initializer loads that domain after concepts, so clamping when only concepts have settled
+# updates nothing, and "no rows" is then what an empty table returns rather than a clean result. Both
+# numbers together are what scripts/clamp-concept-numeric.sh asserts on the local-script path.
 
 # d) Boot 2 — restart with demo STILL OFF so startup-time metadata converges, and only then dump.
 #    Each module creates its own privileges from its Liquibase changesets as it starts, but the
@@ -195,13 +211,87 @@ cd ../..
 patient must have encounters — a lower obs count with <50 patients-with-encounters means the
 generation crashed part-way, see the warning above):
 
-| dump  | concept | location | `Site N` | form | patient | obs    | pts w/ enc | role_privilege | size   |
-|-------|---------|----------|----------|------|---------|--------|------------|----------------|--------|
-| demo  | ~4254   | 11       | **0**    | 7    | 50      | ~5800  | 50         | 668            | ~17 MB |
-| empty | ~4254   | 11       | **0**    | 7    | **0**   | 0      | 0          | 668            | ~14 MB |
+| dump  | concept | location | `Site N` | form | program | drug | patient | obs    | pts w/ enc | role_privilege | size    |
+|-------|---------|----------|----------|------|---------|------|---------|--------|------------|----------------|---------|
+| demo  | ~4254   | 11       | **0**    | 7    | 4       | 323  | 50      | ~5800  | 50         | 668            | ~18 MB  |
+| empty | ~4254   | 11       | **0**    | 7    | 4       | 323  | **0**   | 0      | 0          | 668            | ~15 MB  |
 
-Two of those columns are new, and both fail silently if you skip a step:
+Both dumps carry the full dictionary and the same metadata — the *only* intended difference is patient
+data. If the empty dump's concept, form, program or drug counts drop, the filter has over-reached and a
+clinician will find empty tabs.
 
+**Counts are not enough on their own: check that step (c)'s clamp reached BOTH dumps.** A
+regeneration can move a value without moving a row, and every count on this page still adds up. The
+clamp is the value most likely to move, and the two local scripts boot separately, so it can land in
+one dump and not the other — after which each dump looks perfectly healthy on its own.
+
+That shipped once, on this branch. The starter dump was cut without the clamp and the demo dump with
+it, so the two databases disagreed about what a clinician may record:
+
+| concept | `concept_id` | column | unclamped | clamped by step (c) — **ship this** |
+|---|---|---|---|---|
+| Respiratory rate (CIEL 5242) | **4184** | `hi_absolute` | 999 | **99** |
+| Alkaline phosphatase (CIEL 785) | **210** | `low_absolute` | unset | **0** |
+
+Both numbers, because they are different numbering systems and mixing them sends you to the wrong row:
+`concept_numeric` is keyed by `concept_id`, the CSVs and OCL packages by CIEL code. In these dumps
+`concept_id` 785 is a different concept entirely (Ascariasis, uuid `148353AAA…`, with no
+`concept_numeric` row at all).
+
+**The clamped value is the right one, and it is worth knowing why the other one is tempting.** 999 is
+exactly what `concepts/…/findings-core_demo.csv` declares for 5242, and the `BasicLabTests` OCL
+package really does give 785 no `low_absolute` — so the unclamped dump looks like the one that
+faithfully reflects the content package, and the clamp looks like corruption. It is the other way
+round: step (c) exists to *override* the declared bound, because `DemoObsGenerator` clamps a generated
+obs to `ConceptNumeric` while core ≥2.8 validates it against `ConceptReferenceRange`, so leaving
+`ConceptNumeric` wider lets the module produce a value core rejects — which aborts demo generation
+part-way (the warning at the top of this section). Read the two together before touching either.
+
+This was not boot nondeterminism. `scripts/generate-demo-data-locally.sh` applied the clamp and
+`scripts/generate-empty-db-locally.sh` did not, so the split reproduced on every run. Both local
+generators now call one copy, `scripts/clamp-concept-numeric.sh`, which asserts the outcome afterwards.
+Be precise about what went wrong, because it changes what prevents it: the starter script had **no**
+copy, so this was an omission rather than two copies drifting, and sharing the statement would not by
+itself have caught it. The assertion is what catches it, which is why that sits in the producer and not
+only in the detectors below; sharing the statement is for the next edit. Step (c) above keeps its own
+inline copy for this Docker runbook, so that is still two places to keep in step, and
+`scripts/generate-db-dumps.sh` clamps nowhere at all (its single-boot flow has no window to do it in;
+it is also unreachable today, since its workflow is not on the default branch and so cannot be
+dispatched). The two committed dumps were brought back into line by editing the two rows rather than
+re-cutting 17 MB to change two numbers.
+
+`BundledDbDumpImportTest.bothDumpsShouldAgreeOnClinicalBounds` and `verify-no-demo-fixtures.sh` refuse
+a pair of dumps that disagree on `concept_numeric` or `concept_reference_range`. They compare the two
+dumps to each other rather than to a number, so they catch the clamp reaching one boot and not the
+other — **they cannot catch it being skipped on both**. The check that settles it absolutely is the
+divergence query in step (c): re-run it against each dump and it must return no rows. If the
+agreement check fails, that query says which side is right; do not assume it is the fresher dump.
+
+Counts will not tell you a bound moved in *both* dumps at once either, so diff against the previous
+ones too, before committing:
+
+```bash
+VER=3.7.1
+for t in concept_numeric concept_reference_range; do
+  for d in demo empty; do
+    git show HEAD:src/main/db/$d-db-$VER.sql | LC_ALL=C awk "/INSERT INTO \`$t\`/,/;\$/" > /tmp/$d-$t.old
+    LC_ALL=C awk "/INSERT INTO \`$t\`/,/;\$/" src/main/db/$d-db-$VER.sql > /tmp/$d-$t.new
+    diff /tmp/$d-$t.old /tmp/$d-$t.new && echo "$d/$t unchanged"
+  done
+done
+```
+
+`LC_ALL=C` because both dumps are invalid UTF-8 in openconceptlab's hash column. Read the output per
+dump, not in aggregate: a line for one `$d` and `unchanged` for the other is the split above, not a
+clean run. Anything it prints is a clinical range that moved — account for it (upstream changed, or
+the load did) before pushing, rather than discovering it in a hospital.
+
+Also verify the filter's edits reached the DATABASES, not just the config — both dumps are cut from a
+boot of that config, so a stale dump is how this regresses:
+
+* **`Ubuntu Hospital` must appear in neither dump, and `My Hospital` in both.**
+* **`createDemoPatientsOnNextStartup` must be `0`** in both:
+  `SELECT property_value FROM global_property WHERE property LIKE '%createDemoPatients%';`
 * **`Site N` must be 0 in both dumps** — a non-zero count means `strip-demo-fixtures.sh` did not run
   (or upstream renamed the fixtures and the filter warned instead of matching):
   `SELECT COUNT(*) FROM location WHERE name REGEXP '^Site [0-9]+$';`
@@ -210,7 +300,7 @@ Two of those columns are new, and both fail silently if you skip a step:
   until someone creates a user and finds they cannot reach reporting, billing or appointments. Both
   `scripts/generate-{empty-db,demo-data}-locally.sh` now restart before dumping for this reason.
 
-Both of those are also enforced automatically, by `scripts/verify-no-demo-fixtures.sh` — run from
+All four of those are also enforced automatically, by `scripts/verify-no-demo-fixtures.sh` — run from
 **both** publish paths (`build-o3-standalone.yml` on a branch push, `release.yml` on a tag) against
 the *assembled artifact*: shipped config plus both bundled DB zips. It also rejects a **truncated**
 dump (missing mysqldump's completion trailer, or implausibly small), which is the one failure the
@@ -222,17 +312,20 @@ unzip -q target/referenceapplication-standalone-$VER.zip -d /tmp/check
 scripts/verify-no-demo-fixtures.sh "/tmp/check/referenceapplication-standalone-$VER"
 ```
 
-Faster still, and it does not need a packaged zip: `BundledDbDumpImportTest` imports the starter dump
-into a real embedded MariaDB through the standalone's own import path and asserts the same contract
-(no patients, no `Site N`, dictionary present, a Login Location, converged grants) in ~25 s —
+Faster still, and it does not need a packaged zip: `BundledDbDumpImportTest` imports **each** dump
+into a real embedded MariaDB through the standalone's own import path and asserts the shared contract
+(no `Site N`, dictionary present, a Login Location, converged grants, the strip's edits) on both,
+plus what is specific to each — no patients in the starter, 50 with encounters in the demo. A third
+test reads the two dumps as files and holds them to the same clinical bounds. About a minute —
 
 ```bash
 mvn -o -N compiler:compile compiler:testCompile surefire:test -Dtest=BundledDbDumpImportTest
 ```
 
-That test exists because the starter dump is otherwise never executed anywhere: CI boots only the
-*demo* dump (for the Lucene bake), and `OpenmrsUtil.importSqlFile` prints a failed import rather than
-throwing, so a malformed starter dump would first surface as a user picking "Starter Implementation".
+That test exists because the dumps are otherwise barely executed: `OpenmrsUtil.importSqlFile` prints
+a failed import rather than throwing, so a malformed dump would first surface as a user picking that
+option. CI does boot the *demo* dump for the Lucene bake, but only on a push to the release branch —
+never on a pull request — and the starter dump is booted nowhere else at all.
 
 (3.7.1 actuals: demo = 4254 concept / 11 location / 7 form / 50 patient / 5821 obs / 278 visit /
 1415 enc / 668 role_privilege / 11 stockmgmt_party; empty is identical minus the patient data.

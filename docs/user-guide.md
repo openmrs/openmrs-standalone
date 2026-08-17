@@ -163,7 +163,7 @@ carry *your* state — everything else is shipped fresh by the new build:
 | `appdata/modules/`                                  | New module versions ship here, not inside the war.|
 | `appdata/frontend/`                                 | New O3 SPA build.                                |
 | `appdata/configuration/`, `appdata/configuration_checksums/` | New distro configuration + Initializer checksums. |
-| `appdata/lucene/`                                   | Search index — rebuild it on the new version rather than reuse it. |
+| `appdata/lucene/`                                   | Search index — the new build ships one and rebuilds it against your data on first start (step 5). |
 
 **⚠️ The DB password lives in the runtime properties, not the data files.** On first setup the
 standalone replaces the placeholder password `test` with a random 12-character password and
@@ -220,8 +220,16 @@ cp -a "$old"/appdata/complex_obs   ./appdata/ 2>/dev/null || true   # attachment
 cp -a "$old"/appdata/person_images ./appdata/ 2>/dev/null || true   # patient photos
 # …and any of YOUR OWN added .omod files (not the distro's) from appdata/modules/.
 
-# 5. Force a clean search index on the new version (analyzer/version can change):
-rm -rf appdata/lucene
+# 5. Leave appdata/lucene alone — do NOT delete it and do NOT copy your old one over.
+#    The fresh unzip ships a search index pre-built against the bundled DEMO database. Standalone
+#    3.7.1 and later notice that this boot imported no database and ask the server to rebuild that
+#    index against YOUR data on first start, logging "Updating the search index" while it runs.
+#    Confirm it actually happened — see "After the upgrade" below — because the request signs in
+#    with the admin password the bundled databases ship, and yours may no longer be that.
+#
+#    Deleting it is worse, not safer: OpenMRS only recreates an empty skeleton on startup and does
+#    not repopulate it, so a deleted index leaves patient and concept search returning nothing until
+#    you rebuild by hand. Both behaviours were measured on a built standalone.
 
 # 6. Start the new standalone. First start runs Liquibase migrations — give it time.
 java -jar openmrs-standalone.jar
@@ -248,11 +256,28 @@ standalone's *own* first-start importer, and let the new install generate its ow
 2. With no `database/` folder present yet (fresh unzip), start the standalone and choose the **demo
    database** option in the setup wizard. First start imports your SQL, then OpenMRS migrates it. Do
    **not** copy the old `openmrs-runtime.properties` on this path.
+3. **Rebuild the search index by hand** afterwards, from *Home → System Administration → Manage
+   Search Index*. Choosing the **demo database** option is what tells the standalone the shipped
+   index still matches, and it cannot tell that you swapped your own dump into that zip: it logs
+   `✅ Using the pre-built Lucene search index; skipping startup rebuild` and your patients are then
+   searched through an index built from the demo data.
 
 ### After the upgrade
 
-* **Rebuild the search index** — *Home → System Administration → Manage Search Index* (you deleted
-  `appdata/lucene` so it starts empty).
+* **Read the first start's log before trusting search.** If you left `appdata/lucene` in place
+  (step 5), that start should have logged `A pre-built search index is present but this boot imported
+  no database` followed by `✅ Search index rebuild triggered successfully on startup`. Only that
+  pair means the index describes *your* data. Rebuild through *Home → System Administration → Manage
+  Search Index* if you see anything else, and note that a search returning results is **not** the
+  confirmation — the index shipped with the download is full of demo patients, so it answers
+  perfectly well while describing somebody else's database. Two ways it goes wrong:
+  * `❌ Failed to trigger rebuild. Status: 401` — the rebuild request signs in as `admin` with the
+    password the bundled databases ship, so a changed admin password stops it. The standalone keeps
+    the pre-built marker in this case, so restarting retries. If you rebuild by hand instead, delete
+    `appdata/lucene/.prebuilt` afterwards: that fixes the index but not the marker, and the
+    standalone cannot see that you did it, so otherwise it retries and warns on every start.
+  * `✅ Using the pre-built Lucene search index; skipping startup rebuild` — you took the fallback
+    path above, which is why its step 3 says to rebuild by hand.
 * **Verify** — log in, run a patient search and a concept search, and click through the workflows
   you rely on. A green login plus working search is the quickest proof the migration took.
 * **Skipping releases** — core migrations are cumulative, so jumping several refapp releases at

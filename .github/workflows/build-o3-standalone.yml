@@ -60,14 +60,21 @@ jobs:
 
       # Build the O3 standalone distribution. The 3.7.1 distro defines exactly the
       # modules and versions to bundle. Docker init is skipped under -Pci; demo data ships
-      # via the bundled src/main/db/demo-db-${REFAPP_VERSION}.sql dump. Tests run in
-      # standalone-ci.yml.
+      # via the bundled src/main/db/demo-db-${REFAPP_VERSION}.sql dump.
+      #
+      # Tests run HERE, not only in standalone-ci.yml. That workflow triggers on the same push but
+      # GitHub cannot make one workflow depend on another, so a red run there would not stop this one
+      # uploading — and this is the artifact the README's nightly.link button serves. Some assertions
+      # exist nowhere else: BundledDbDumpImportTest checks the Starter dump ships no patients and that
+      # 'Privilege Level: Full' clears an absolute floor of 250 grants, where the shell gate below can
+      # only check the two dumps against each other. A few minutes of tests against a job that already
+      # waits up to 20 for the index bake is the cheapest insurance here.
       - name: Build standalone distribution
         run: |
-          mvn clean package -Pci -B -DskipTests \
+          mvn clean package -Pci -B \
             --settings .github/maven-settings.xml \
-            -Drefapp.version=$REFAPP_VERSION \
-            -Dopenmrs.version=$OPENMRS_VERSION
+            "-Drefapp.version=$REFAPP_VERSION" \
+            "-Dopenmrs.version=$OPENMRS_VERSION"
 
       - name: Show the built standalone zip
         run: ls -lh "target/referenceapplication-standalone-${REFAPP_VERSION}.zip"
@@ -95,13 +102,17 @@ jobs:
         working-directory: target
         run: bash "$GITHUB_WORKSPACE/scripts/verify-no-demo-fixtures.sh" "artifact/referenceapplication-standalone-${REFAPP_VERSION}"
 
-      # Pre-build ("bake") the Lucene search index so the downloaded standalone serves patient
-      # and concept search instantly on first run, instead of paying the index-rebuild cost (and
-      # showing empty search results) during first startup. We boot a THROWAWAY copy — never the
-      # uploaded artifact — against its bundled demo DB; on first boot the standalone rebuilds the
-      # index (no marker yet), and we copy only appdata/lucene back into the pristine artifact plus
-      # a .prebuilt marker the standalone reads (OpenmrsUtil.hasPrebuiltSearchIndex) to skip the
-      # rebuild. The published tree stays byte-identical to a normal build apart from that index.
+      # Pre-build ("bake") the Lucene search index so the downloaded standalone serves patient and
+      # concept search instantly on first run, instead of paying the index-rebuild cost (and showing
+      # empty search results) during first startup. We boot a THROWAWAY copy — never the uploaded
+      # artifact — against its bundled demo DB; on first boot the standalone rebuilds the index (no
+      # marker yet), and we copy only appdata/lucene back into the pristine artifact plus a .prebuilt
+      # marker. The published tree stays byte-identical to a normal build apart from that index.
+      #
+      # This benefits the DEMO database option only. The index describes demo data, so
+      # ApplicationController.canReusePrebuiltSearchIndex reuses it exclusively for a demo import —
+      # choosing "Starter Implementation" rebuilds regardless of the marker, because reusing an index
+      # that lists 50 patients absent from that database would be worse than the rebuild it saves.
       - name: Bake the Lucene search index into the demo appdata
         working-directory: target
         run: |
@@ -188,7 +199,7 @@ jobs:
         run: |
           P="artifact/referenceapplication-standalone-${REFAPP_VERSION}/appdata/lucene"
           [ -f "$P/.prebuilt" ] \
-            || { echo "::error::.prebuilt marker missing — refusing to publish a standalone that would rebuild the index on first run"; exit 1; }
+            || { echo "::error::.prebuilt marker missing — refusing to publish a standalone whose DEMO option would rebuild the index on first run (the Starter option rebuilds either way, by design)"; exit 1; }
           N=$(find "$P/indexes" -type f 2>/dev/null | wc -l | tr -d ' ')
           [ "${N:-0}" -ge 1 ] \
             || { echo "::error::baked Lucene index is empty ($N files) — refusing to publish"; exit 1; }

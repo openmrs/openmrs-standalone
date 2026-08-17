@@ -32,13 +32,20 @@ Two things that make a single-site migration simpler than the general case:
 - **The migration is a database restore into a matching-version distro.** Because the versions
   match, Liquibase is a no-op and Initializer merely re-affirms its UUID-keyed configuration
   idempotently — no demo patients regenerate (the demo flag is already consumed in your database).
-  One visible difference: the standalone ships a **curated** copy of that configuration, with the
-  demo content package's placeholder locations (`Site 1`–`Site 50`) and developer forms stripped
-  (`scripts/strip-demo-fixtures.sh`), whereas this distro uses the upstream config as published —
-  so Initializer *will* create those 50 placeholder login locations in your migrated database on
-  first boot. Your own data is untouched. To keep them out, copy the standalone's
+  One visible difference: the standalone ships a **curated** copy of that configuration
+  (`scripts/strip-demo-fixtures.sh` — see its header for the full list), whereas this distro uses the
+  upstream config as published. So on first boot Initializer *will* re-introduce what the standalone
+  filtered out: the 50 `Site N` login locations, the developer forms, the `SSN` identifier type, the
+  `Paypal` payment mode and the `Uncle/Nephew`, `Aunt/Niece` and `Friend/Friend` relationship types —
+  and it will rename your hospital back from `My Hospital` to `Ubuntu Hospital`, since the
+  standalone's rename lives in that config rather than in your database. Your own data is untouched.
+  The Cambodian address hierarchy the standalone also drops is *not* on that list: it never loads in
+  either build, because Initializer looks for `addressConfiguration.xml` directly under
+  `addresshierarchy/` and the generated distro nests it under `addresshierarchy/<package>/`.
+  To keep the rest out, copy the standalone's
   `appdata/configuration` over the generated distro's `web/openmrs_config` before you build the
-  `web` image (Phase 2 below); otherwise just retire the extra locations afterwards.
+  `web` image (Phase 2 below); otherwise retire the extra metadata afterwards and rename the hospital
+  again.
 
 ---
 

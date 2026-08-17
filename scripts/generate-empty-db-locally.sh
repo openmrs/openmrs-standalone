@@ -5,7 +5,10 @@
 #   2. Booting OpenMRS in Docker with no demo data
 #   3. Restarting once so startup-time metadata (role_privilege, stock parties) converges — a
 #      first-boot snapshot ships privilege-level roles ~180 grants short
-#   4. Dumping the database to src/main/db/
+#   4. Clamping ConceptNumeric bounds into their reference-range intersection (shared with
+#      generate-demo-data-locally.sh, which needs it to generate demo data at all). Nothing here
+#      generates obs, so this is purely so the two shipped dumps agree about clinical bounds
+#   5. Dumping the database to src/main/db/
 #
 # Usage:
 #   ./scripts/generate-empty-db-locally.sh [--skip-build] [--timeout 1800] [--poll-interval 30]
@@ -205,6 +208,20 @@ if [ -z "$DB_CONTAINER" ]; then
 fi
 
 wait_until_stable "role_privilege" "(SELECT COUNT(*) FROM role_privilege)" 1
+
+# ── Step 5b: Clamp ConceptNumeric bounds ────────────────────────────────────
+# Nothing generates obs in this script, so it does not need the clamp to survive its own boot - it
+# needs it so the two shipped dumps AGREE. Without it the starter dump carries the unclamped bounds
+# while the demo dump carries the clamped ones, deterministically on every regeneration, and the two
+# databases then disagree about what a clinician may record while every row count still adds up.
+# See the shared script's header for why the clamp exists and what it moves.
+#
+# The last thing that touches the database, after the convergence restart above. Placement is not
+# delicate: the demo script clamps before two further web restarts and its clamped values survive
+# into the dump, so a restart is not something the clamp needs protecting from. It sits here simply
+# because this script has no reason to clamp earlier.
+"$SCRIPT_DIR/clamp-concept-numeric.sh" "$DB_CONTAINER" "$DB_ROOT_PASSWORD" \
+  || { echo "❌ ConceptNumeric clamp failed; refusing to dump."; exit 1; }
 
 # ── Step 6: Determine version ──────────────────────────────────────────────
 cd "$PROJECT_ROOT"
