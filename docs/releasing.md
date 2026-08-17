@@ -151,6 +151,8 @@ DB=$(docker compose ps -q db)
 # intersection, so the module's clamp can only produce values core will accept. This is
 # version-independent — no need to re-derive the offending concept ids by hand (on 3.7.1 it changes
 # exactly the two the query above reports: 210 low NULL→0, 4184 hi 999→99).
+# The local-script path runs the same statement from scripts/clamp-concept-numeric.sh, which also
+# asserts the outcome afterwards; keep the two in step if you edit either.
 docker exec $DB mysql -uroot -popenmrs openmrs -e "
 UPDATE concept_numeric cn
   JOIN (SELECT concept_id, MAX(low_absolute) AS rr_low, MIN(hi_absolute) AS rr_hi
@@ -237,9 +239,17 @@ obs to `ConceptNumeric` while core ≥2.8 validates it against `ConceptReference
 part-way (the warning at the top of this section). Read the two together before touching either.
 
 This was not boot nondeterminism. `scripts/generate-demo-data-locally.sh` applied the clamp and
-`scripts/generate-empty-db-locally.sh` did not, so the split reproduced on every run. That script now
-applies it too, which is the actual fix; the two dumps were brought back into line by editing the two
-rows rather than re-cutting 17 MB to change two numbers.
+`scripts/generate-empty-db-locally.sh` did not, so the split reproduced on every run. Both local
+generators now call one copy, `scripts/clamp-concept-numeric.sh`, which asserts the outcome afterwards.
+Be precise about what went wrong, because it changes what prevents it: the starter script had **no**
+copy, so this was an omission rather than two copies drifting, and sharing the statement would not by
+itself have caught it. The assertion is what catches it, which is why that sits in the producer and not
+only in the detectors below; sharing the statement is for the next edit. Step (c) above keeps its own
+inline copy for this Docker runbook, so that is still two places to keep in step, and
+`scripts/generate-db-dumps.sh` clamps nowhere at all (its single-boot flow has no window to do it in;
+it is also unreachable today, since its workflow is not on the default branch and so cannot be
+dispatched). The two committed dumps were brought back into line by editing the two rows rather than
+re-cutting 17 MB to change two numbers.
 
 `BundledDbDumpImportTest.bothDumpsShouldAgreeOnClinicalBounds` and `verify-no-demo-fixtures.sh` refuse
 a pair of dumps that disagree on `concept_numeric` or `concept_reference_range`. They compare the two

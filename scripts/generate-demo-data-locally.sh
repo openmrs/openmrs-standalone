@@ -217,28 +217,17 @@ if [ -z "$DB_CONTAINER" ]; then
 fi
 
 # ── Step 5: Clamp ConceptNumeric bounds, then turn demo generation on ───────
-# referencedemodata clamps generated numeric obs to the concept's ConceptNumeric absolute bounds,
-# but core >= 2.8 validates obs against its ConceptReferenceRange bounds. Where those diverge, a
-# clamped value is still rejected and the activator aborts the WHOLE remaining run — with a fixed
-# RNG seed, identically every time. Clamping every ConceptNumeric into its reference-range
-# intersection first is version-independent: no offending concept ids to re-derive by hand.
+# Load-bearing here, unlike in generate-empty-db-locally.sh: without it referencedemodata aborts
+# part-way through generating the 50 patients. See the shared script's header for the mechanism.
+#
+# Waiting on concepts is necessary but NOT sufficient on its own - Initializer loads the
+# conceptreferencerange domain after the concepts it refers to, so this can still be reached before
+# there is anything to clamp against. That is exactly what the shared script refuses to pass
+# silently: it fails if concept_reference_range is empty rather than reporting a vacuous success.
 wait_until_stable "concepts" "(SELECT COUNT(*) FROM concept)" 1000
 
-echo "🔧 Clamping ConceptNumeric bounds into their reference-range intersection..."
-docker exec "$DB_CONTAINER" mysql -uroot -p"$DB_ROOT_PASSWORD" openmrs -e "
-UPDATE concept_numeric cn
-  JOIN (SELECT concept_id, MAX(low_absolute) AS rr_low, MIN(hi_absolute) AS rr_hi
-          FROM concept_reference_range GROUP BY concept_id) rr
-    ON rr.concept_id = cn.concept_id
-   SET cn.low_absolute = CASE WHEN rr.rr_low IS NOT NULL
-                              THEN GREATEST(COALESCE(cn.low_absolute, rr.rr_low), rr.rr_low)
-                              ELSE cn.low_absolute END,
-       cn.hi_absolute  = CASE WHEN rr.rr_hi IS NOT NULL
-                              THEN LEAST(COALESCE(cn.hi_absolute, rr.rr_hi), rr.rr_hi)
-                              ELSE cn.hi_absolute END
- WHERE (rr.rr_low IS NOT NULL AND (cn.low_absolute IS NULL OR cn.low_absolute < rr.rr_low))
-    OR (rr.rr_hi  IS NOT NULL AND (cn.hi_absolute  IS NULL OR cn.hi_absolute  > rr.rr_hi));" \
-  || { echo "❌ Could not clamp ConceptNumeric bounds."; exit 1; }
+"$SCRIPT_DIR/clamp-concept-numeric.sh" "$DB_CONTAINER" "$DB_ROOT_PASSWORD" \
+  || { echo "❌ ConceptNumeric clamp failed; demo generation would abort part-way."; exit 1; }
 
 # Now switch demo generation on and restart so referencedemodata runs with the clamp in place.
 # `docker compose up -d web` would NOT recreate an already-running container — it must be `restart`.
