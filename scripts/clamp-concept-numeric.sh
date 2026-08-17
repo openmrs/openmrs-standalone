@@ -127,7 +127,7 @@ read -r RR_ROWS RR_CONCEPTS DIVERGENT OFFENDERS INVERTED <<<"$COUNTS"
     echo "   on the state it saw, no row could have survived. Something changed between the two" >&2
     echo "   statements - either concept_numeric or concept_reference_range was written to (initializer" >&2
     echo "   loads conceptreferencerange after concepts, so a clamp early in a boot is one way), or the" >&2
-    echo "   UPDATE did not take effect on the rows it reported. Which of those it was is not something" >&2
+    echo "   UPDATE did not take effect despite exiting cleanly. Which of those it was is not something" >&2
     echo "   this script can tell you; the server's own log for this window is the place to look." >&2
     exit 1
 }

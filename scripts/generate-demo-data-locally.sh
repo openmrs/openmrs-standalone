@@ -220,10 +220,11 @@ fi
 # Load-bearing here, unlike in generate-empty-db-locally.sh: without it referencedemodata aborts
 # part-way through generating the 50 patients. See the shared script's header for the mechanism.
 #
-# Waiting on concepts is necessary but NOT sufficient on its own - Initializer loads the
-# conceptreferencerange domain after the concepts it refers to, so this can still be reached before
-# there is anything to clamp against. That is exactly what the shared script refuses to pass
-# silently: it fails if concept_reference_range is empty rather than reporting a vacuous success.
+# Waiting on concepts is not by itself a guarantee that the reference ranges are in: initializer loads
+# the conceptreferencerange domain after the concepts it refers to. Whether the REST-session wait above
+# has already put us past that is not something this repo settles, so the shared script asserts the
+# outcome rather than trusting the ordering - it fails if concept_reference_range is empty instead of
+# reporting a vacuous success.
 wait_until_stable "concepts" "(SELECT COUNT(*) FROM concept)" 1000
 
 "$SCRIPT_DIR/clamp-concept-numeric.sh" "$DB_CONTAINER" "$DB_ROOT_PASSWORD" \
