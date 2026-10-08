@@ -26,8 +26,8 @@
 		     {demo,empty}-db-${refapp.version}.sql, and an unmatched version fails the build with
 		     "archive cannot be empty"), and the core version the chosen refapp pins. CI passes both
 		     explicitly; keep these in step at every version bump - see docs/releasing.md. -->
-		<openmrs.version>2.8.8</openmrs.version>
-		<refapp.version>3.7.1</refapp.version>
+		<openmrs.version>2.8.10</openmrs.version>
+		<refapp.version>3.8.0-rc.1</refapp.version>
 		<!-- The SPA bridge omod. The refapp distro leaves this version unset, so the SDK
 		     defaults it to a -SNAPSHOT; pin it to a release for reproducible builds.
 		     Override with -Dspa.version. -->

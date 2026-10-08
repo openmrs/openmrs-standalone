@@ -144,9 +144,10 @@ sed -i '' 's/^MYSQL_DEV_PORT=.*/MYSQL_DEV_PORT=3399/' .env   # only if the host 
 
 # b) Boot 1 — init WITHOUT demo (demo is driven by the `referencedemodata` module via the
 #    Initializer GP `referencedemodata.createDemoPatientsOnNextStartup`, NOT by
-#    OMRS_CONFIG_ADD_DEMO_DATA). Set it to 0 so only concepts load.
-sed -i '' 's#<value>50</value>#<value>0</value>#' \
-  web/openmrs_config/globalproperties/referenceapplication-demo/globalproperties-core_demo.xml
+#    OMRS_CONFIG_ADD_DEMO_DATA). Set it to 0 so only concepts load. Find the file by the property:
+#    3.8.0 moved it from referenceapplication-demo into referenceapplication-showcase.
+GP_FILE=$(grep -rl 'referencedemodata.createDemoPatientsOnNextStartup' web/openmrs_config/globalproperties)
+sed -i '' 's#<value>50</value>#<value>0</value>#' "$GP_FILE"
 docker compose up -d --build web
 DB=$(docker compose ps -q db)
 # wait until concepts stabilize (~4254) — patient/obs stay 0; watch with:
@@ -199,14 +200,22 @@ docker exec $DB mysqldump --single-transaction --routines --triggers -u root -po
 
 # e) Boot 3 — turn demo back on and restart so referencedemodata regenerates with the fix in place.
 #    NB: `docker compose up -d web` will NOT recreate an already-running container — use `restart`.
-sed -i '' 's#<value>0</value>#<value>50</value>#' \
-  web/openmrs_config/globalproperties/referenceapplication-demo/globalproperties-core_demo.xml
+#    Also allow overlapping visits for this boot only: the refapp config sets
+#    visits.allowOverlappingVisits=false, and referencedemodata can start a patient's next visit up to a
+#    day before the previous one ends. Core rejects it and the rest of the run aborts with "This visit
+#    overlaps with another visit of the same patient". Whether it trips depends on the date the run
+#    happens (the generator clamps against the clock), so 3.7.1 passed and 3.8.0-rc.1 did not.
+sed -i '' 's#<value>0</value>#<value>50</value>#' "$GP_FILE"
 docker exec $DB mysql -uroot -popenmrs -e \
-  "UPDATE global_property SET property_value='50' WHERE property='referencedemodata.createDemoPatientsOnNextStartup';" openmrs
+  "UPDATE global_property SET property_value='50' WHERE property='referencedemodata.createDemoPatientsOnNextStartup';
+   UPDATE global_property SET property_value='true' WHERE property='visits.allowOverlappingVisits';" openmrs
 docker compose restart web
 # poll until patient=50 and obs stabilize (~7 min, concepts already loaded); confirm NO
 # "Exception caught while creating demo data" in `docker compose logs web`, and all 50 patients
-# have encounters (SELECT COUNT(DISTINCT patient_id) FROM encounter).
+# have encounters (SELECT COUNT(DISTINCT patient_id) FROM encounter). Then restore the shipped rule
+# (Initializer will not: the file's checksum still matches):
+docker exec $DB mysql -uroot -popenmrs -e \
+  "UPDATE global_property SET property_value='false' WHERE property='visits.allowOverlappingVisits';" openmrs
 
 # DEMO dump (concepts + fix + demo):
 docker exec $DB mysqldump --single-transaction --routines --triggers -u root -popenmrs openmrs \

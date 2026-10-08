@@ -122,9 +122,13 @@ services:
 EOF
 COMPOSE_ARGS+=(-f "$OVERRIDE_FILE")
 
-DEMO_GP_FILE="$DISTRO_DIR/web/openmrs_config/globalproperties/referenceapplication-demo/globalproperties-core_demo.xml"
-if [ ! -f "$DEMO_GP_FILE" ]; then
-  echo "❌ Demo global-property config not found at $DEMO_GP_FILE — has the distro config layout changed?"
+# Find the file by the property it carries, not by path: 3.8.0 moved it from the demo content
+# package into referenceapplication-showcase, and a fixed path then edits a file that no longer has it.
+DEMO_GP_FILE=$(grep -rl 'referencedemodata.createDemoPatientsOnNextStartup' \
+  "$DISTRO_DIR/web/openmrs_config/globalproperties" 2>/dev/null | head -1 || true)
+if [ -z "$DEMO_GP_FILE" ]; then
+  echo "❌ No config file under $DISTRO_DIR/web/openmrs_config/globalproperties sets"
+  echo "   referencedemodata.createDemoPatientsOnNextStartup — has the distro config layout changed?"
   exit 1
 fi
 # Match the property by name so an unrelated <value>50</value> elsewhere in the file cannot be hit.
@@ -246,9 +250,20 @@ wait_until_stable "concepts" "(SELECT COUNT(*) FROM concept)" 1000
 
 # Now switch demo generation on and restart so referencedemodata runs with the clamp in place.
 # `docker compose up -d web` would NOT recreate an already-running container — it must be `restart`.
+#
+# Allow overlapping visits for this boot only. The refapp config sets visits.allowOverlappingVisits to
+# false, and referencedemodata (2.7.0) can start a patient's next visit before their previous one ends:
+# it adds -1439..+1439 minutes to a 0..364-day gap, and clamps late starts back to "now". Core then
+# rejects the visit and the whole remaining run aborts. The RNG is fixed-seed but the clamps read the
+# clock, so whether a run trips it depends on the day it runs: 3.7.1 passed, 3.8.0-rc.1 failed on
+# 2026-10-08 at 50 patients / ~4200 obs. Restored to false below, before the convergence restart.
+OVERLAP_GP="visits.allowOverlappingVisits"
+SHIPPED_OVERLAP=$(docker exec "$DB_CONTAINER" mysql -uroot -p"$DB_ROOT_PASSWORD" -N -B openmrs -e \
+  "SELECT property_value FROM global_property WHERE property='$OVERLAP_GP';" | tr -d ' ')
 docker exec "$DB_CONTAINER" mysql -uroot -p"$DB_ROOT_PASSWORD" openmrs -e \
   "UPDATE global_property SET property_value='50'
-    WHERE property='referencedemodata.createDemoPatientsOnNextStartup';" \
+    WHERE property='referencedemodata.createDemoPatientsOnNextStartup';
+   UPDATE global_property SET property_value='true' WHERE property='$OVERLAP_GP';" \
   || { echo "❌ Could not re-enable demo generation."; exit 1; }
 echo "🔁 Restarting web to generate demo data..."
 docker compose "${COMPOSE_ARGS[@]}" restart web
@@ -269,6 +284,9 @@ if [ -n "$WEB_CONTAINER" ] && docker exec "$WEB_CONTAINER" \
      grep -q "Exception caught while creating demo data" /openmrs/data/openmrs.log 2>/dev/null; then
   echo "❌ Demo generation aborted part-way (see docs/releasing.md §2 — ConceptNumeric vs"
   echo "   ConceptReferenceRange bounds). Refusing to write a partial demo dump."
+  # Print the cause now: the exit trap removes the container, and the log with it.
+  docker exec "$WEB_CONTAINER" grep -A 30 "Exception caught while creating demo data" \
+    /openmrs/data/openmrs.log | grep -E "Exception|Caused by|^\s+at org\.openmrs" | head -40 || true
   exit 1
 fi
 
@@ -279,6 +297,20 @@ if [ "${ORPHANS:-1}" != "0" ]; then
   echo "❌ ${ORPHANS} demo patient(s) have no encounters — generation did not complete."
   exit 1
 fi
+
+# Put the overlap rule back to what the config shipped (unset means core's default, so leave it).
+# Initializer will not do it on restart: the file's checksum still matches, so it is skipped.
+if [ -n "$SHIPPED_OVERLAP" ]; then
+  docker exec "$DB_CONTAINER" mysql -uroot -p"$DB_ROOT_PASSWORD" openmrs -e \
+    "UPDATE global_property SET property_value='$SHIPPED_OVERLAP' WHERE property='$OVERLAP_GP';" \
+    || { echo "❌ Could not restore $OVERLAP_GP to '$SHIPPED_OVERLAP'."; exit 1; }
+fi
+OVERLAPS=$(docker exec "$DB_CONTAINER" mysql -uroot -p"$DB_ROOT_PASSWORD" -N -B openmrs -e \
+  "SELECT COUNT(*) FROM visit a JOIN visit b ON a.patient_id = b.patient_id AND a.visit_id < b.visit_id
+    WHERE a.voided = 0 AND b.voided = 0
+      AND a.date_started < COALESCE(b.date_stopped, NOW()) AND b.date_started < COALESCE(a.date_stopped, NOW());" \
+  | tr -d ' ')
+echo "ℹ️  $OVERLAP_GP restored to '${SHIPPED_OVERLAP:-<unset>}'; ${OVERLAPS} overlapping demo visit pair(s) generated."
 
 # Restart with demo already generated (the GP is consumed, so no second batch) so that startup-time
 # metadata converges: module privileges are created by each module's Liquibase changesets, but the
