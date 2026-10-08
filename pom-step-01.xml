@@ -34,34 +34,6 @@
                             </target>
                         </configuration>
                     </execution>
-                </executions>
-            </plugin>
-            <plugin>
-                <groupId>org.openmrs.maven.plugins</groupId>
-                <artifactId>openmrs-sdk-maven-plugin</artifactId>
-                <executions>
-                    <execution>
-                        <id>openmrs-sdk:generate-distro</id>
-                        <phase>generate-resources</phase>
-                        <goals>
-                            <goal>generate-distro</goal>
-                        </goals>
-                        <configuration>
-                            <outputLocation>${project.build.directory}/openmrs3x</outputLocation>
-                            <batchAnswers>
-                                <batchAnswer>Reference Application 3.x</batchAnswer>
-                                <batchAnswer>${refapp.version}</batchAnswer>
-                            </batchAnswers>
-                            <testMode>true</testMode>
-                        </configuration>
-                    </execution>
-                </executions>
-            </plugin>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-antrun-plugin</artifactId>
-                <version>3.1.0</version>
-                <executions>
                     <!-- Pin the OpenMRS core war to the platform version this standalone targets,
                          and pin the SPA bridge omod to a release version (the refapp distro leaves it
                          unset, so the SDK would otherwise default it to a -SNAPSHOT). Every other
@@ -90,7 +62,22 @@
             <plugin>
                 <groupId>org.openmrs.maven.plugins</groupId>
                 <artifactId>openmrs-sdk-maven-plugin</artifactId>
-                 <executions>
+                <executions>
+                    <execution>
+                        <id>openmrs-sdk:generate-distro</id>
+                        <phase>generate-resources</phase>
+                        <goals>
+                            <goal>generate-distro</goal>
+                        </goals>
+                        <configuration>
+                            <outputLocation>${project.build.directory}/openmrs3x</outputLocation>
+                            <batchAnswers>
+                                <batchAnswer>Reference Application 3.x</batchAnswer>
+                                <batchAnswer>${refapp.version}</batchAnswer>
+                            </batchAnswers>
+                            <testMode>true</testMode>
+                        </configuration>
+                    </execution>
                     <execution>
                         <id>openmrs-sdk:build-distro</id>
                         <goals>
