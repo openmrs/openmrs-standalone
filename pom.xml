@@ -173,6 +173,31 @@
 					<target>1.8</target>
 				</configuration>
 			</plugin>
+			<!-- Load Mockito's byte-buddy agent at JVM start instead of letting mockito-inline
+			     self-attach it at runtime. Self-attach fails on the GitHub ubuntu-24.04 runner's
+			     JDK 21 ("Could not self-attach to current VM using external process"), erroring
+			     every test that builds an inline mock; -XX:+DisableAttachMechanism reproduces it
+			     locally. The properties goal exposes the jar path as
+			     ${net.bytebuddy:byte-buddy-agent:jar} for the argLine below. -->
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-dependency-plugin</artifactId>
+				<executions>
+					<execution>
+						<id>locate-byte-buddy-agent</id>
+						<goals>
+							<goal>properties</goal>
+						</goals>
+					</execution>
+				</executions>
+			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-surefire-plugin</artifactId>
+				<configuration>
+					<argLine>-javaagent:${net.bytebuddy:byte-buddy-agent:jar}</argLine>
+				</configuration>
+			</plugin>
 		</plugins>
 
 		<pluginManagement>
